@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Habit Week</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#f4fbff}
+.card{position:relative;overflow:hidden;border:1px solid rgba(198,226,255,.20);border-radius:22px;padding:18px;background:radial-gradient(circle at 15% 0%,rgba(181,221,255,.15),transparent 28%),radial-gradient(circle at 90% 15%,rgba(218,199,255,.12),transparent 32%),linear-gradient(155deg,rgba(7,20,34,.96),rgba(5,13,25,.96));box-shadow:0 14px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.05)}
+.glow{position:absolute;right:-55px;bottom:-70px;width:200px;height:200px;border-radius:50%;background:rgba(193,214,255,.08);filter:blur(25px);pointer-events:none}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.eyebrow{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#a9cbe0}
+.title{font-size:17px;font-weight:750;letter-spacing:-.02em;margin-top:2px}
+.sub{font-size:10px;color:#829aaa;text-align:right}
+.week{display:grid;grid-template-columns:repeat(7,minmax(42px,1fr));gap:10px;align-items:start}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.day-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:#9fb4c3}
+.day-box{appearance:none;-webkit-appearance:none;width:52px;height:52px;max-width:100%;border-radius:14px;border:1px solid rgba(213,231,244,.20);background:linear-gradient(145deg,rgba(139,157,170,.20),rgba(95,112,126,.18));box-shadow:inset 0 1px 0 rgba(255,255,255,.04);cursor:pointer;transition:transform .16s ease,border-color .2s ease,box-shadow .2s ease,background .2s ease;position:relative}
+.day-box:hover{transform:translateY(-1px);border-color:rgba(220,236,248,.38)}
+.day-box.selected{outline:2px solid rgba(190,220,255,.34);outline-offset:2px}
+.day-box.yellow{background:linear-gradient(145deg,#fff0ad,#f1d57c);border-color:rgba(255,244,192,.62);box-shadow:0 0 16px rgba(244,215,123,.16),inset 0 1px 0 rgba(255,255,255,.38)}
+.day-box.green{background:linear-gradient(145deg,#c8f0d5,#94d4aa);border-color:rgba(208,249,220,.62);box-shadow:0 0 16px rgba(150,215,173,.15),inset 0 1px 0 rgba(255,255,255,.38)}
+.day-box.purple{background:linear-gradient(145deg,#e2d4ff,#bca4f1);border-color:rgba(234,221,255,.68);box-shadow:0 0 18px rgba(187,162,242,.20),inset 0 1px 0 rgba(255,255,255,.40)}
+.count{position:absolute;right:6px;bottom:5px;font-size:9px;font-weight:750;color:rgba(14,25,34,.72);font-variant-numeric:tabular-nums}
+.day-box.gray .count{color:#a5b6c2}
+.editor{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)}
+.editor-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.editor-title{font-size:12px;font-weight:700}
+.editor-date{font-size:10px;color:#829aaa}
+.habits{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.habit{appearance:none;-webkit-appearance:none;border:1px solid rgba(211,230,243,.17);border-radius:12px;background:rgba(156,185,205,.07);color:#9fb4c3;padding:9px 7px;font:650 10px/1 Inter,ui-sans-serif,system-ui;cursor:pointer;transition:transform .15s ease,background .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease}
+.habit:hover{transform:translateY(-1px);border-color:rgba(219,237,249,.34)}
+.habit.on{background:linear-gradient(145deg,rgba(211,200,255,.95),rgba(181,211,255,.92));color:#17222c;border-color:rgba(235,229,255,.62);box-shadow:0 0 14px rgba(192,204,255,.14)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:8.5px;color:#748b9a}
+.legend-item{display:flex;align-items:center;gap:4px}
+.swatch{width:7px;height:7px;border-radius:3px;display:inline-block}.swatch.gray{background:#6e7f8b}.swatch.yellow{background:#f1d57c}.swatch.green{background:#94d4aa}.swatch.purple{background:#bca4f1}
+.foot{display:flex;justify-content:space-between;margin-top:12px;font-size:8px;color:#607988}
+@media(max-width:520px){.week{gap:6px}.day-box{width:44px;height:44px;border-radius:12px}.habits{grid-template-columns:repeat(3,1fr)}.head{align-items:flex-start}.sub{text-align:left}}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="glow"></div>
+<div class="head"><div><div class="eyebrow">Habit tracker</div><div class="title">This week</div></div><div class="sub" id="weekRange"></div></div>
+<div class="week" id="week"></div>
+<div class="editor"><div class="editor-head"><div class="editor-title" id="editorTitle">Today</div><div class="editor-date" id="editorDate"></div></div><div class="habits" id="habits"></div><div class="legend"><span class="legend-item"><span class="swatch gray"></span>0</span><span class="legend-item"><span class="swatch yellow"></span>1–2</span><span class="legend-item"><span class="swatch green"></span>3–4</span><span class="legend-item"><span class="swatch purple"></span>5/5</span></div></div>
+<div class="foot"><span>Focus · Recall · Reset · Chinese · Log</span><span>saved on this device</span></div>
+</div>
+<script>
+const TZ='America/Indiana/Indianapolis';
+const HABITS=['Focus','Recall','Reset','Chinese','Log'];
+const DAY_LABELS=['M','T','W','T','F','S','S'];
+function tzParts(){const f=new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});return Object.fromEntries(f.formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]))}
+function todayUTC(){const p=tzParts();return Date.UTC(+p.year,+p.month-1,+p.day)}
+function mondayUTC(){const d=todayUTC(),dow=new Date(d).getUTCDay();return d-((dow+6)%7)*86400000}
+function iso(ms){return new Date(ms).toISOString().slice(0,10)}
+function fmt(ms,opts){return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',...opts}).format(new Date(ms))}
+const monday=mondayUTC();
+const weekKey='ocean-habits-v1-'+iso(monday);
+let data={};try{data=JSON.parse(localStorage.getItem(weekKey))||{}}catch(e){data={}}
+function ensureDay(i){const k=iso(monday+i*86400000);if(!Array.isArray(data[k])||data[k].length!==HABITS.length)data[k]=Array(HABITS.length).fill(false);return k}
+for(let i=0;i<7;i++)ensureDay(i);
+let selected=Math.max(0,Math.min(6,Math.round((todayUTC()-monday)/86400000)));
+function score(i){return data[ensureDay(i)].filter(Boolean).length}
+function stateClass(n){if(n===5)return'purple';if(n>=3)return'green';if(n>=1)return'yellow';return'gray'}
+function save(){try{localStorage.setItem(weekKey,JSON.stringify(data))}catch(e){}}
+function renderWeek(){const root=document.getElementById('week');root.innerHTML='';for(let i=0;i<7;i++){const n=score(i);const wrap=document.createElement('div');wrap.className='day';const label=document.createElement('div');label.className='day-label';label.textContent=DAY_LABELS[i];const btn=document.createElement('button');btn.className='day-box '+stateClass(n)+(i===selected?' selected':'');btn.title=fmt(monday+i*86400000,{weekday:'long',month:'short',day:'numeric'});const c=document.createElement('span');c.className='count';c.textContent=n+'/5';btn.appendChild(c);btn.addEventListener('click',()=>{selected=i;render()});wrap.append(label,btn);root.appendChild(wrap)}}
+function renderEditor(){const d=monday+selected*86400000;document.getElementById('editorTitle').textContent=iso(d)===iso(todayUTC())?'Today':fmt(d,{weekday:'long'});document.getElementById('editorDate').textContent=fmt(d,{month:'short',day:'numeric'});const root=document.getElementById('habits');root.innerHTML='';const k=ensureDay(selected);HABITS.forEach((name,j)=>{const b=document.createElement('button');b.className='habit'+(data[k][j]?' on':'');b.textContent=name;b.addEventListener('click',()=>{data[k][j]=!data[k][j];save();render()});root.appendChild(b)})}
+function render(){renderWeek();renderEditor()}
+document.getElementById('weekRange').textContent=fmt(monday,{month:'short',day:'numeric'})+' – '+fmt(monday+6*86400000,{month:'short',day:'numeric'});
+render();
+</script>
+</body>
+</html>
