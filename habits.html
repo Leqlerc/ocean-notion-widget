@@ -46,11 +46,11 @@ body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system-ui,-
 <div class="head"><div><div class="eyebrow">Habit tracker</div><div class="title">This week</div></div><div class="sub" id="weekRange"></div></div>
 <div class="week" id="week"></div>
 <div class="editor"><div class="editor-head"><div class="editor-title" id="editorTitle">Today</div><div class="editor-date" id="editorDate"></div></div><div class="habits" id="habits"></div><div class="legend"><span class="legend-item"><span class="swatch gray"></span>0</span><span class="legend-item"><span class="swatch yellow"></span>1–2</span><span class="legend-item"><span class="swatch green"></span>3–4</span><span class="legend-item"><span class="swatch purple"></span>5/5</span></div></div>
-<div class="foot"><span>Focus · Recall · Reset · Chinese · Log</span><span>saved on this device</span></div>
+<div class="foot"><span>Chinese · Meditate · Sleep early · Prayer · Avoid video games</span><span>saved on this device</span></div>
 </div>
 <script>
 const TZ='America/Indiana/Indianapolis';
-const HABITS=['Focus','Recall','Reset','Chinese','Log'];
+const HABITS=['Chinese','Meditate','Sleep early','Prayer','Avoid video games'];
 const DAY_LABELS=['M','T','W','T','F','S','S'];
 function tzParts(){const f=new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});return Object.fromEntries(f.formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]))}
 function todayUTC(){const p=tzParts();return Date.UTC(+p.year,+p.month-1,+p.day)}
@@ -58,7 +58,7 @@ function mondayUTC(){const d=todayUTC(),dow=new Date(d).getUTCDay();return d-((d
 function iso(ms){return new Date(ms).toISOString().slice(0,10)}
 function fmt(ms,opts){return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',...opts}).format(new Date(ms))}
 const monday=mondayUTC();
-const weekKey='ocean-habits-v1-'+iso(monday);
+const weekKey='ocean-habits-v2-'+iso(monday);
 let data={};try{data=JSON.parse(localStorage.getItem(weekKey))||{}}catch(e){data={}}
 function ensureDay(i){const k=iso(monday+i*86400000);if(!Array.isArray(data[k])||data[k].length!==HABITS.length)data[k]=Array(HABITS.length).fill(false);return k}
 for(let i=0;i<7;i++)ensureDay(i);
