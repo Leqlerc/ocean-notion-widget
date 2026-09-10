@@ -15,8 +15,6 @@ body{padding:0}
 .eyebrow{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#8fb5cb;font-weight:700}
 .title{font-size:14px;font-weight:760;letter-spacing:-.015em;margin-top:2px}
 .muted{color:#8199a8}
-
-/* weather */
 .weather-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .weather-main{display:flex;align-items:center;gap:10px;margin-top:9px}
 .weather-icon{font-size:32px;line-height:1;filter:drop-shadow(0 3px 9px rgba(160,215,255,.18))}
@@ -27,16 +25,6 @@ body{padding:0}
 .metric-label{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#6f8b9d}
 .metric-value{font-size:10px;font-weight:700;margin-top:2px;color:#dceaf3}
 .weather-error{font-size:10px;color:#9fb4c3;margin-top:10px}
-
-/* exam */
-.exam-line{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:10px}
-.countdown{font-size:29px;font-weight:800;line-height:.95;letter-spacing:-.045em;font-variant-numeric:tabular-nums;background:linear-gradient(120deg,#f0f5ff,#c6dbff 58%,#d9caff);-webkit-background-clip:text;background-clip:text;color:transparent}
-.countdown-label{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#71899a;margin-top:5px}
-.exam-date{font-size:10px;color:#9fb4c3;text-align:right;line-height:1.35}
-.exam-name{font-size:11px;font-weight:700;margin-top:10px;color:#eaf4fa;line-height:1.25}
-.exam-course{display:inline-block;margin-top:6px;padding:3px 7px;border-radius:999px;background:rgba(182,202,255,.10);border:1px solid rgba(203,217,255,.13);font-size:8px;font-weight:700;color:#acc5df}
-
-/* focus */
 .focus-head{display:flex;justify-content:space-between;align-items:end;gap:8px}
 .focus-count{font-size:9px;color:#7f98a8;font-variant-numeric:tabular-nums}
 .focus-list{display:grid;gap:7px;margin-top:11px}
@@ -50,7 +38,7 @@ body{padding:0}
 .focus-input:focus{border-color:rgba(190,220,255,.30);background:rgba(143,178,202,.08)}
 .focus-row.done .focus-input{color:#718796;text-decoration:line-through}
 .focus-foot{font-size:8px;color:#587183;margin-top:9px;text-align:right}
-@media(max-width:330px){.temp{font-size:28px}.countdown{font-size:25px}.card{padding:12px}}
+@media(max-width:330px){.temp{font-size:28px}.card{padding:12px}}
 </style>
 </head>
 <body>
@@ -73,16 +61,6 @@ body{padding:0}
   </section>
 
   <section class="card">
-    <div class="eyebrow">Next exam</div>
-    <div class="exam-line">
-      <div><div class="countdown" id="countdown">--d</div><div class="countdown-label">remaining</div></div>
-      <div class="exam-date" id="examDate"></div>
-    </div>
-    <div class="exam-name" id="examName">Loading…</div>
-    <div class="exam-course" id="examCourse"></div>
-  </section>
-
-  <section class="card">
     <div class="focus-head"><div><div class="eyebrow">Daily focus</div><div class="title">Top 3</div></div><div class="focus-count" id="focusCount">0 / 3</div></div>
     <div class="focus-list" id="focusList"></div>
     <div class="focus-foot">resets each day · saved on this device</div>
@@ -91,74 +69,16 @@ body{padding:0}
 
 <script>
 const TZ='America/Indiana/Indianapolis';
-const pad=n=>String(n).padStart(2,'0');
 function localParts(){const p=new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());return Object.fromEntries(p.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]))}
 function localDateKey(){const p=localParts();return `${p.year}-${p.month}-${p.day}`}
 function fmtTime(){return new Intl.DateTimeFormat('en-US',{timeZone:TZ,hour:'numeric',minute:'2-digit'}).format(new Date())}
-
-// Weather: Open-Meteo, Purdue / West Lafayette coordinates.
 const WEATHER_URL='https://api.open-meteo.com/v1/forecast?latitude=40.4237&longitude=-86.9212&current=temperature_2m,apparent_temperature,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FIndiana%2FIndianapolis&forecast_days=2';
-const WMO={
-  0:['☀️','Clear'],1:['🌤️','Mostly clear'],2:['⛅','Partly cloudy'],3:['☁️','Cloudy'],
-  45:['🌫️','Fog'],48:['🌫️','Fog'],51:['🌦️','Light drizzle'],53:['🌦️','Drizzle'],55:['🌧️','Heavy drizzle'],
-  61:['🌦️','Light rain'],63:['🌧️','Rain'],65:['🌧️','Heavy rain'],66:['🌧️','Freezing rain'],67:['🌧️','Freezing rain'],
-  71:['🌨️','Light snow'],73:['🌨️','Snow'],75:['❄️','Heavy snow'],77:['❄️','Snow grains'],
-  80:['🌦️','Rain showers'],81:['🌧️','Rain showers'],82:['⛈️','Heavy showers'],85:['🌨️','Snow showers'],86:['🌨️','Heavy snow showers'],
-  95:['⛈️','Thunderstorms'],96:['⛈️','Storms + hail'],99:['⛈️','Storms + hail']
-};
-async function loadWeather(){
-  document.getElementById('weatherTime').textContent=fmtTime();
-  try{
-    const r=await fetch(WEATHER_URL,{cache:'no-store'});if(!r.ok)throw new Error('weather');
-    const w=await r.json(),c=w.current||{},d=w.daily||{};
-    const desc=WMO[c.weather_code]||['🌊','Current conditions'];
-    document.getElementById('weatherIcon').textContent=desc[0];
-    document.getElementById('temp').textContent=Math.round(c.temperature_2m)+'°';
-    document.getElementById('condition').textContent=desc[1];
-    document.getElementById('feels').textContent=Math.round(c.apparent_temperature)+'°';
-    document.getElementById('hiLo').textContent=Math.round(d.temperature_2m_max?.[0])+'° / '+Math.round(d.temperature_2m_min?.[0])+'°';
-    document.getElementById('rain').textContent=Math.round(d.precipitation_probability_max?.[0]||0)+'%';
-    document.getElementById('weatherError').hidden=true;
-  }catch(e){document.getElementById('condition').textContent='Forecast unavailable';document.getElementById('weatherError').hidden=false}
-}
+const WMO={0:['☀️','Clear'],1:['🌤️','Mostly clear'],2:['⛅','Partly cloudy'],3:['☁️','Cloudy'],45:['🌫️','Fog'],48:['🌫️','Fog'],51:['🌦️','Light drizzle'],53:['🌦️','Drizzle'],55:['🌧️','Heavy drizzle'],61:['🌦️','Light rain'],63:['🌧️','Rain'],65:['🌧️','Heavy rain'],66:['🌧️','Freezing rain'],67:['🌧️','Freezing rain'],71:['🌨️','Light snow'],73:['🌨️','Snow'],75:['❄️','Heavy snow'],77:['❄️','Snow grains'],80:['🌦️','Rain showers'],81:['🌧️','Rain showers'],82:['⛈️','Heavy showers'],85:['🌨️','Snow showers'],86:['🌨️','Heavy snow showers'],95:['⛈️','Thunderstorms'],96:['⛈️','Storms + hail'],99:['⛈️','Storms + hail']};
+async function loadWeather(){document.getElementById('weatherTime').textContent=fmtTime();try{const r=await fetch(WEATHER_URL,{cache:'no-store'});if(!r.ok)throw new Error('weather');const w=await r.json(),c=w.current||{},d=w.daily||{},desc=WMO[c.weather_code]||['🌊','Current conditions'];document.getElementById('weatherIcon').textContent=desc[0];document.getElementById('temp').textContent=Math.round(c.temperature_2m)+'°';document.getElementById('condition').textContent=desc[1];document.getElementById('feels').textContent=Math.round(c.apparent_temperature)+'°';document.getElementById('hiLo').textContent=Math.round(d.temperature_2m_max?.[0])+'° / '+Math.round(d.temperature_2m_min?.[0])+'°';document.getElementById('rain').textContent=Math.round(d.precipitation_probability_max?.[0]||0)+'%';document.getElementById('weatherError').hidden=true}catch(e){document.getElementById('condition').textContent='Forecast unavailable';document.getElementById('weatherError').hidden=false}}
 loadWeather();setInterval(()=>{document.getElementById('weatherTime').textContent=fmtTime()},60000);setInterval(loadWeather,30*60000);
-
-// Exam list sourced from the current Notion school task data. The widget automatically advances after each exam.
-const EXAMS=[
-  {course:'ENGR 161',name:'Exam #1',at:'2026-09-28T09:30:00-04:00'},
-  {course:'MA 261',name:'Midterm Exam 1',at:'2026-10-05T20:00:00-04:00'},
-  {course:'MFET 163',name:'Exam 1 Due',at:'2026-10-09T23:59:00-04:00'},
-  {course:'CS 159',name:'Midterm Exam 1',at:'2026-10-15T20:00:00-04:00'},
-  {course:'ENGR 161',name:'Exam #2',at:'2026-10-28T09:30:00-04:00'}
-];
-function renderExam(){
-  const now=Date.now();let ex=EXAMS.find(x=>new Date(x.at).getTime()>now);
-  if(!ex){document.getElementById('countdown').textContent='—';document.getElementById('examName').textContent='No upcoming exam loaded';document.getElementById('examCourse').textContent='';document.getElementById('examDate').textContent='';return}
-  const diff=Math.max(0,new Date(ex.at).getTime()-now),days=Math.floor(diff/86400000),hours=Math.floor((diff%86400000)/3600000);
-  document.getElementById('countdown').textContent=days>0?`${days}d ${hours}h`:`${hours}h`;
-  document.getElementById('examName').textContent=ex.name;
-  document.getElementById('examCourse').textContent=ex.course;
-  document.getElementById('examDate').textContent=new Intl.DateTimeFormat('en-US',{timeZone:TZ,month:'short',day:'numeric',weekday:'short',hour:'numeric',minute:'2-digit'}).format(new Date(ex.at));
-}
-renderExam();setInterval(renderExam,60000);
-
-// Daily Top 3; intentionally local-only so it is instant and does not need credentials.
-const focusKey='ocean-daily-focus-v1-'+localDateKey();
-let focus=[{text:'',done:false},{text:'',done:false},{text:'',done:false}];
-try{const x=JSON.parse(localStorage.getItem(focusKey));if(Array.isArray(x)&&x.length===3)focus=x}catch(e){}
+const focusKey='ocean-daily-focus-v1-'+localDateKey();let focus=[{text:'',done:false},{text:'',done:false},{text:'',done:false}];try{const x=JSON.parse(localStorage.getItem(focusKey));if(Array.isArray(x)&&x.length===3)focus=x}catch(e){}
 function saveFocus(){try{localStorage.setItem(focusKey,JSON.stringify(focus))}catch(e){}}
-function renderFocus(){
-  const root=document.getElementById('focusList');root.innerHTML='';
-  focus.forEach((item,i)=>{
-    const row=document.createElement('div');row.className='focus-row'+(item.done?' done':'');
-    const check=document.createElement('button');check.className='check'+(item.done?' on':'');check.setAttribute('aria-label','Complete focus item');
-    check.onclick=()=>{focus[i].done=!focus[i].done;saveFocus();renderFocus()};
-    const input=document.createElement('input');input.className='focus-input';input.value=item.text;input.placeholder=`Focus ${i+1}`;input.maxLength=80;
-    input.addEventListener('input',()=>{focus[i].text=input.value;saveFocus()});
-    row.append(check,input);root.appendChild(row);
-  });
-  document.getElementById('focusCount').textContent=focus.filter(x=>x.done).length+' / 3';
-}
+function renderFocus(){const root=document.getElementById('focusList');root.innerHTML='';focus.forEach((item,i)=>{const row=document.createElement('div');row.className='focus-row'+(item.done?' done':'');const check=document.createElement('button');check.className='check'+(item.done?' on':'');check.setAttribute('aria-label','Complete focus item');check.onclick=()=>{focus[i].done=!focus[i].done;saveFocus();renderFocus()};const input=document.createElement('input');input.className='focus-input';input.value=item.text;input.placeholder=`Focus ${i+1}`;input.maxLength=80;input.addEventListener('input',()=>{focus[i].text=input.value;saveFocus()});row.append(check,input);root.appendChild(row)});document.getElementById('focusCount').textContent=focus.filter(x=>x.done).length+' / 3'}
 renderFocus();
 </script>
 </body>
