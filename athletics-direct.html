@@ -1,23 +1,24 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;min-height:100%;background:#07121f}body{display:grid;place-items:stretch;color:#eef9ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}.loading{min-height:540px;border-radius:22px;background:linear-gradient(155deg,#071522,#05101c);display:grid;place-items:center;color:#8eacbf;font-size:12px;letter-spacing:.08em;text-transform:uppercase}</style></head><body><div class="loading">Loading athletics…</div><script>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#07121f;color:#eef9ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}.loading{min-height:540px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(155deg,#071522,#05101c);color:#8eacbf;font-size:12px;letter-spacing:.08em;text-transform:uppercase}</style></head><body><div class="loading">Loading athletics…</div><script>
 (async()=>{try{
  const [base,wrap]=await Promise.all([
-  fetch('./index.html?direct=6',{cache:'no-store'}).then(r=>r.text()),
-  fetch('./athletics.html?art=6',{cache:'no-store'}).then(r=>r.text())
+   fetch('./index.html?direct=8',{cache:'no-store'}).then(r=>r.text()),
+   fetch('./athletics.html?art=8',{cache:'no-store'}).then(r=>r.text())
  ]);
- const m=wrap.match(/url\(\\?"(data:image\/webp;base64,[A-Za-z0-9+/=]+)\\?"\)/);
- const art=m?m[1]:'';
- const extra=`<style>
+ const start=wrap.indexOf('data:image/webp;base64,');
+ let art='';
+ if(start>=0){let end=wrap.indexOf(')',start);if(end<0)end=wrap.length;art=wrap.slice(start,end).replace(/["'\\]/g,'').trim();}
+ const bg=art?`linear-gradient(180deg,rgba(2,8,17,.22),rgba(2,8,17,.42)),url("${art}") center/cover no-repeat`:`linear-gradient(155deg,#0a2233,#071421)`;
+ const extra=`<style id="direct-art-theme">
  html,body{background:transparent!important}
  body{padding:0!important}
- .card{min-height:100vh;background:${art?`linear-gradient(180deg,rgba(3,9,18,.42),rgba(3,9,18,.56)),url("${art}") center/cover no-repeat`:`linear-gradient(155deg,rgba(7,20,34,.96),rgba(5,13,25,.96))`}!important;border:1px solid rgba(225,241,255,.38)!important;box-shadow:0 16px 38px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08)!important}
- .card:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 16% 8%,rgba(143,224,255,.10),transparent 32%),linear-gradient(180deg,rgba(0,0,0,0),rgba(1,7,14,.08));z-index:0}
- .card>*{position:relative;z-index:1}
- .track{height:16px!important;border:1px solid rgba(235,246,255,.55)!important;background:rgba(3,10,20,.58)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.04)!important}
- .fill{border:1px solid rgba(255,255,255,.38)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 15px rgba(185,224,255,.28)!important}
+ .card{min-height:100vh;isolation:isolate;background:${bg}!important;border:1px solid rgba(225,241,255,.42)!important;box-shadow:0 16px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.10)!important}
+ .card:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 16% 8%,rgba(145,225,255,.09),transparent 30%),linear-gradient(180deg,rgba(0,0,0,0),rgba(1,7,14,.10))}
+ .track{height:16px!important;border:1px solid rgba(236,246,255,.58)!important;background:rgba(2,9,18,.60)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.04)!important}
+ .fill{border:1px solid rgba(255,255,255,.40)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 16px rgba(185,224,255,.30)!important}
  .semester .fill{background:linear-gradient(90deg,#72ddff,#9fd4ff 55%,#baa5ff)!important}.week .fill{background:linear-gradient(90deg,#79e2ad,#95dbc9 55%,#8dccf4)!important}.month .fill{background:linear-gradient(90deg,#f5c669,#efa0c2 55%,#dda0ea)!important}.year .fill{background:linear-gradient(90deg,#968cff,#bc94eb 55%,#df9cda)!important}
- .eyebrow,.clock,.date,.zone,.label,.pct,.quota-title,.quota-count,.quota-name,.simple-name,.simple-count,.foot{text-shadow:0 1px 8px rgba(0,0,0,.78)}
+ .eyebrow,.clock,.date,.zone,.label,.pct,.quota-title,.quota-count,.quota-name,.simple-name,.simple-count,.foot{text-shadow:0 1px 8px rgba(0,0,0,.82)}
  </style>`;
- let html=base.replace('</head>',extra+'</head>').replace('Weekly quota','Athletics');
+ const html=base.replace('</head>',extra+'</head>').replace('Weekly quota','Athletics');
  document.open();document.write(html);document.close();
 }catch(e){document.body.innerHTML='<div class="loading">Could not load widget</div>';console.error(e)}})();
 </script></body></html>
