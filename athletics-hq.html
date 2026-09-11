@@ -1,12 +1,12 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#07121f}.loading{min-height:540px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(155deg,#071522,#05101c);color:#8eacbf;font:12px Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}</style></head><body><div class="loading">Loading athletics…</div><script>(async()=>{try{const base=await fetch('./index.html?hq=3',{cache:'no-store'}).then(r=>r.text());const extra=`<style>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#07121f}.loading{min-height:540px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(155deg,#071522,#05101c);color:#8eacbf;font:12px Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}</style></head><body><div class="loading">Loading athletics…</div><script>(async()=>{try{const base=await fetch('./index.html?hq=4',{cache:'no-store'}).then(r=>r.text());const extra=`<style>
 html,body{background:transparent!important}
 body{padding:0!important}
-.card{min-height:100vh;padding:10px 14px 14px!important;background:linear-gradient(180deg,rgba(2,8,17,.14),rgba(2,8,17,.32)),url("./grand%20reef.png") 50% 48%/cover no-repeat!important;border:1px solid rgba(225,241,255,.42)!important;box-shadow:0 16px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.10)!important}
+.card{min-height:100vh;padding:3px 14px 14px!important;background:linear-gradient(180deg,rgba(2,8,17,.14),rgba(2,8,17,.32)),url("./grand%20reef.png") 50% 48%/cover no-repeat!important;border:1px solid rgba(225,241,255,.42)!important;box-shadow:0 16px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.10)!important}
 .card:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 18% 7%,rgba(145,225,255,.07),transparent 29%),linear-gradient(180deg,rgba(0,0,0,0),rgba(1,7,14,.09))}
 .card>*{position:relative;z-index:1}
 .top{margin-top:0!important;margin-bottom:12px!important;align-items:flex-start!important}
-.eyebrow{margin-top:0!important}
-.clock{margin-top:1px!important}
+.eyebrow{margin-top:0!important;line-height:1!important}
+.clock{margin-top:-1px!important;line-height:.94!important}
 .row{margin-top:11px!important}
 .track{height:16px!important;border:1px solid rgba(236,246,255,.62)!important;background:rgba(2,9,18,.58)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.04)!important}
 .fill{border:1px solid rgba(255,255,255,.42)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 16px rgba(185,224,255,.28)!important}
@@ -35,5 +35,5 @@ body{padding:0!important}
 .simple-circle{width:25px!important;height:25px!important;border-width:1.2px!important}
 .simple-count{font-size:10px!important}
 .eyebrow,.clock,.date,.zone,.label,.pct,.quota-title,.quota-count,.quota-name,.simple-name,.simple-count,.foot{text-shadow:0 1px 5px rgba(0,0,0,.82)}
-@media(max-width:360px){.card{padding:9px 11px 12px!important}.quota-row{gap:5px!important}.quota-name{width:39px!important;flex-basis:39px!important;padding-top:7px!important}.quota-circle{width:29px!important;height:29px!important}.simple-row{grid-template-columns:48px 1fr 28px!important}.simple-circle{width:23px!important;height:23px!important}.simple-circles{gap:5px!important}}
+@media(max-width:360px){.card{padding:2px 11px 12px!important}.quota-row{gap:5px!important}.quota-name{width:39px!important;flex-basis:39px!important;padding-top:7px!important}.quota-circle{width:29px!important;height:29px!important}.simple-row{grid-template-columns:48px 1fr 28px!important}.simple-circle{width:23px!important;height:23px!important}.simple-circles{gap:5px!important}}
 </style>`;const html=base.replace('</head>',extra+'</head>').replace('Weekly quota','Athletics');document.open();document.write(html);document.close()}catch(e){document.body.innerHTML='<div class="loading">Could not load widget</div>';console.error(e)}})();</script></body></html>
