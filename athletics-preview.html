@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}iframe{display:block;width:100%;height:100%;border:0;background:transparent}</style></head><body><iframe id="outer" src="./athletics.html?v=3"></iframe><script>
+const outer=document.getElementById('outer');
+function styleInner(){try{
+ const od=outer.contentDocument;
+ const art=od.querySelector('.art'), shade=od.querySelector('.shade'), dash=od.getElementById('dashboard');
+ if(art){art.style.zIndex='0';art.style.opacity='.72';art.style.mixBlendMode='normal';art.style.filter='saturate(1.18) brightness(.92) contrast(1.08)';}
+ if(shade){shade.style.zIndex='1';shade.style.background='linear-gradient(180deg,rgba(2,8,17,.12),rgba(2,8,17,.28))';}
+ if(dash){dash.style.zIndex='2';dash.style.background='transparent';
+  const apply=()=>{try{const d=dash.contentDocument;if(!d)return;const old=d.getElementById('preview-theme');if(old)old.remove();const s=d.createElement('style');s.id='preview-theme';s.textContent=`
+  html,body{background:transparent!important}
+  .card{background:linear-gradient(180deg,rgba(3,11,23,.50),rgba(3,10,21,.68))!important;border:1px solid rgba(218,238,255,.34)!important;box-shadow:0 16px 38px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08)!important;backdrop-filter:blur(1.5px) saturate(.92)!important}
+  .card,.label,.pct,.clock,.date,.zone,.eyebrow,.quota-title,.quota-count,.quota-name,.simple-name,.simple-count,.foot{ text-shadow:0 1px 7px rgba(0,0,0,.55)}
+  .track{height:16px!important;border:1px solid rgba(230,242,255,.44)!important;background:rgba(3,10,20,.60)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.03)!important}
+  .fill{border:1px solid rgba(255,255,255,.32)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 15px rgba(185,224,255,.28)!important}
+  .semester .fill{background:linear-gradient(90deg,#6fd7ff,#9bcfff 55%,#b8a0ff)!important}.week .fill{background:linear-gradient(90deg,#72dfa8,#91d9c7 55%,#86c9f2)!important}.month .fill{background:linear-gradient(90deg,#f2c05d,#ef98bd 55%,#d99ae8)!important}.year .fill{background:linear-gradient(90deg,#9188ff,#b78ee8 55%,#dc98d7)!important}
+  `;d.head.appendChild(s);const q=d.querySelector('.quota-title');if(q)q.textContent='Athletics';}catch(e){}};
+  dash.addEventListener('load',apply,{once:false});apply();
+ }
+}catch(e){}}
+outer.addEventListener('load',styleInner);setTimeout(styleInner,800);setTimeout(styleInner,1800);
+</script></body></html>
