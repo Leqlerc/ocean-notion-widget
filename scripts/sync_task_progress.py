@@ -95,14 +95,6 @@ def edited_local_date(page):
     return local_date(page.get("last_edited_time"))
 
 
-def edited_age(page, now_utc):
-    raw = page.get("last_edited_time")
-    if not raw:
-        return timedelta.max
-    dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-    return now_utc - dt.astimezone(timezone.utc)
-
-
 def patch_page(page_id, properties):
     api("PATCH", f"/pages/{page_id}", {"properties": properties})
 
@@ -118,19 +110,21 @@ def main():
     pages = query_all()
 
     # Keep completion dates and Focus rollover healthy even between the daily ChatGPT syncs.
+    # A Done task still in the current Today/Focus scope and edited today is safe to stamp
+    # as completed today. This is deliberately not tied to a short edit-age window because
+    # GitHub scheduled workflows can run late.
     for page in pages:
         status = select_name(page, "Status")
         focus = checked(page, "Focus")
+        today_formula = str(formula_value(page, "Today") or "").lower() == "true"
         completed = local_date(date_value(page, "Date Completed"))
         changes = {}
 
-        # A newly marked Done task should receive today's completion date. The edit-age
-        # guard prevents old historical Done rows from being assigned a fabricated date.
         if (
             status == "Done"
             and completed is None
             and edited_local_date(page) == today
-            and edited_age(page, now_utc) <= timedelta(minutes=15)
+            and (today_formula or focus)
         ):
             changes["Date Completed"] = {"date": {"start": today.isoformat()}}
             completed = today
