@@ -15,7 +15,8 @@ OUT = Path("task-progress.json")
 BASE = "https://api.notion.com/v1"
 
 if not TOKEN:
-    raise SystemExit("NOTION_TOKEN is not configured")
+    print("NOTION_TOKEN is not configured; leaving seeded feed unchanged")
+    raise SystemExit(0)
 
 
 def api(method, path, payload=None):
