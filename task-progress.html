@@ -13,7 +13,7 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
 .todayPane{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
 .todayLabel{font-size:11px;font-weight:760;letter-spacing:.08em;text-transform:uppercase;color:#e7f6ff;margin-bottom:8px;text-shadow:0 1px 5px rgba(0,0,0,.82)}
 .ringWrap{position:relative;display:grid;place-items:center}
-.ring{--pct:57.1;width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#78e7ff calc(var(--pct)*1%),#a8d6ff calc(var(--pct)*1%),#c8adff calc(var(--pct)*1%),rgba(214,233,245,.20) 0);box-shadow:0 0 24px rgba(133,218,255,.22),inset 0 0 0 1px rgba(255,255,255,.18);transition:background .35s ease}
+.ring{--pct:71.4;width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#78e7ff calc(var(--pct)*1%),#a8d6ff calc(var(--pct)*1%),#c8adff calc(var(--pct)*1%),rgba(214,233,245,.20) 0);box-shadow:0 0 24px rgba(133,218,255,.22),inset 0 0 0 1px rgba(255,255,255,.18);transition:background .35s ease}
 .ring:before{content:"";width:87px;height:87px;border-radius:50%;background:rgba(4,13,26,.74);border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 0 18px rgba(0,0,0,.36)}
 .ringText{position:absolute;text-align:center;text-shadow:0 1px 5px rgba(0,0,0,.8)}
 .todayPct{font-size:27px;font-weight:820;letter-spacing:-.045em;line-height:1}
@@ -39,8 +39,8 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
     <div class="todayPane">
       <div class="todayLabel">Today</div>
       <div class="ringWrap">
-        <div class="ring" id="todayRing" style="--pct:57.1"></div>
-        <div class="ringText"><div class="todayPct" id="todayPct">57.1%</div><div class="todayCount" id="todayCount">4 / 7 done</div></div>
+        <div class="ring" id="todayRing" style="--pct:71.4"></div>
+        <div class="ringText"><div class="todayPct" id="todayPct">71.4%</div><div class="todayCount" id="todayCount">5 / 7 done</div></div>
       </div>
     </div>
 
@@ -49,13 +49,13 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
       <div class="title">Your to-do list</div>
 
       <div class="row week">
-        <div class="meta"><span class="label">This Week</span><span><span class="detail" id="weekCount">11 / 16 done</span><span class="pct" id="weekPct">68.8%</span></span></div>
-        <div class="track"><div class="fill" id="weekFill" style="width:68.8%"></div></div>
+        <div class="meta"><span class="label">This Week</span><span><span class="detail" id="weekCount">12 / 16 done</span><span class="pct" id="weekPct">75%</span></span></div>
+        <div class="track"><div class="fill" id="weekFill" style="width:75%"></div></div>
       </div>
 
       <div class="row all">
-        <div class="meta"><span class="label">All Tasks</span><span><span class="detail" id="allCount">20 / 80 done</span><span class="pct" id="allPct">25%</span></span></div>
-        <div class="track"><div class="fill" id="allFill" style="width:25%"></div></div>
+        <div class="meta"><span class="label">All Tasks</span><span><span class="detail" id="allCount">21 / 80 done</span><span class="pct" id="allPct">26.2%</span></span></div>
+        <div class="track"><div class="fill" id="allFill" style="width:26.2%"></div></div>
       </div>
 
       <div class="foot" id="syncStatus">Live data · connecting…</div>
@@ -63,6 +63,7 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
   </div>
 </div>
 <script>
+const API_URL='/api/task-progress';
 const RAW_URL='https://raw.githubusercontent.com/Leqlerc/ocean-notion-widget/main/task-progress.json';
 const PAGES_URL='./task-progress.json';
 let lastUpdated=null;
@@ -88,36 +89,47 @@ function updateStatus(){
   if(!lastUpdated)return;
   const s=Math.max(0,Math.floor((Date.now()-lastUpdated.getTime())/1000));
   const age=s<60?`${s}s ago`:s<3600?`${Math.floor(s/60)}m ago`:`${Math.floor(s/3600)}h ago`;
-  const stale=s>120;
+  const stale=s>45;
   $('syncStatus').classList.toggle('stale',stale);
   $('syncStatus').textContent=stale
     ? `SYNC STALE · ${lastSource} · last update ${age}`
     : `Live data · ${lastSource} · updated ${age}`;
 }
-async function fetchJson(url,timeoutMs=4000){
+async function fetchJson(url,timeoutMs=8000){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const sep=url.includes('?')?'&':'?';
     const r=await fetch(url+sep+'t='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});
-    if(!r.ok)throw new Error('HTTP '+r.status);
+    if(!r.ok){
+      let detail='';
+      try{detail=JSON.stringify(await r.json())}catch(_){detail=await r.text()}
+      throw new Error('HTTP '+r.status+' '+detail);
+    }
     return await r.json();
   }finally{clearTimeout(timer)}
 }
 async function refresh(){
   try{
     try{
-      apply(await fetchJson(RAW_URL),'direct');
+      apply(await fetchJson(API_URL),'notion');
+      return;
+    }catch(apiError){
+      console.warn('Vercel API unavailable; using fallback',apiError);
+    }
+    try{
+      apply(await fetchJson(RAW_URL,4000),'fallback');
     }catch(rawError){
-      apply(await fetchJson(PAGES_URL),'pages');
+      apply(await fetchJson(PAGES_URL,4000),'fallback');
     }
   }catch(e){
+    console.error(e);
     $('syncStatus').classList.add('stale');
     $('syncStatus').textContent='SYNC ERROR · retrying…';
   }
 }
 refresh();
-setInterval(refresh,5000);
+setInterval(refresh,10000);
 setInterval(updateStatus,1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 </script>
