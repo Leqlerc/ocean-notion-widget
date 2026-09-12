@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12T16:39:04Z",
+  "updated_at": "2026-09-12T18:29:15Z",
   "today": {
     "done": 5,
     "total": 7,
@@ -7,8 +7,8 @@
   },
   "week": {
     "done": 12,
-    "total": 16,
-    "pct": 75.0
+    "total": 17,
+    "pct": 70.6
   },
   "all": {
     "done": 21,
