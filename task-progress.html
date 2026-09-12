@@ -13,7 +13,7 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
 .todayPane{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
 .todayLabel{font-size:11px;font-weight:760;letter-spacing:.08em;text-transform:uppercase;color:#e7f6ff;margin-bottom:8px;text-shadow:0 1px 5px rgba(0,0,0,.82)}
 .ringWrap{position:relative;display:grid;place-items:center}
-.ring{--pct:0;width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#78e7ff calc(var(--pct)*1%),#a8d6ff calc(var(--pct)*1%),#c8adff calc(var(--pct)*1%),rgba(214,233,245,.20) 0);box-shadow:0 0 24px rgba(133,218,255,.22),inset 0 0 0 1px rgba(255,255,255,.18)}
+.ring{--pct:0;width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#78e7ff calc(var(--pct)*1%),#a8d6ff calc(var(--pct)*1%),#c8adff calc(var(--pct)*1%),rgba(214,233,245,.20) 0);box-shadow:0 0 24px rgba(133,218,255,.22),inset 0 0 0 1px rgba(255,255,255,.18);transition:background .35s ease}
 .ring:before{content:"";width:87px;height:87px;border-radius:50%;background:rgba(4,13,26,.74);border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 0 18px rgba(0,0,0,.36)}
 .ringText{position:absolute;text-align:center;text-shadow:0 1px 5px rgba(0,0,0,.8)}
 .todayPct{font-size:27px;font-weight:820;letter-spacing:-.045em;line-height:1}
@@ -25,9 +25,9 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
 .meta{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px;text-shadow:0 1px 5px rgba(0,0,0,.82)}
 .label{font-size:12px;font-weight:740;color:#eef8ff}.detail{font-size:10px;color:#c0d4df;white-space:nowrap}.pct{font-size:12px;font-weight:800;color:#f5fbff;margin-left:8px}
 .track{height:14px;border-radius:999px;border:1px solid rgba(236,246,255,.62);background:rgba(2,9,18,.58);overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.04)}
-.fill{height:100%;border-radius:999px;border-right:1px solid rgba(255,255,255,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 14px rgba(164,219,255,.24)}
-.week .fill{width:44.4%;background:linear-gradient(90deg,#83e2bd,#8fded8 52%,#99cff5)}
-.all .fill{width:16.7%;background:linear-gradient(90deg,#9a91ff,#bea0ec 55%,#dda6df)}
+.fill{height:100%;width:0;border-radius:999px;border-right:1px solid rgba(255,255,255,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 14px rgba(164,219,255,.24);transition:width .35s ease}
+.week .fill{background:linear-gradient(90deg,#83e2bd,#8fded8 52%,#99cff5)}
+.all .fill{background:linear-gradient(90deg,#9a91ff,#bea0ec 55%,#dda6df)}
 .foot{margin-top:11px;font-size:9px;color:#b7cbd7;text-shadow:0 1px 4px rgba(0,0,0,.82)}
 @media(max-width:620px){.card{padding:14px 15px}.content{grid-template-columns:108px minmax(0,1fr);gap:14px}.ring{width:92px;height:92px}.ring:before{width:68px;height:68px}.todayPct{font-size:22px}.todayCount{font-size:8.5px}.title{font-size:17px}.label{font-size:11px}.detail{font-size:9px}.track{height:13px}}
 </style>
@@ -38,8 +38,8 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
     <div class="todayPane">
       <div class="todayLabel">Today</div>
       <div class="ringWrap">
-        <div class="ring" style="--pct:0"></div>
-        <div class="ringText"><div class="todayPct">0%</div><div class="todayCount">0 / 5 done</div></div>
+        <div class="ring" id="todayRing" style="--pct:0"></div>
+        <div class="ringText"><div class="todayPct" id="todayPct">0%</div><div class="todayCount" id="todayCount">0 / 3 done</div></div>
       </div>
     </div>
 
@@ -48,18 +48,57 @@ html,body{margin:0;background:transparent;font-family:Inter,ui-sans-serif,system
       <div class="title">Your to-do list</div>
 
       <div class="row week">
-        <div class="meta"><span class="label">This Week</span><span><span class="detail">8 / 18 done</span><span class="pct">44.4%</span></span></div>
-        <div class="track"><div class="fill"></div></div>
+        <div class="meta"><span class="label">This Week</span><span><span class="detail" id="weekCount">10 / 16 done</span><span class="pct" id="weekPct">62.5%</span></span></div>
+        <div class="track"><div class="fill" id="weekFill" style="width:62.5%"></div></div>
       </div>
 
       <div class="row all">
-        <div class="meta"><span class="label">All Tasks</span><span><span class="detail">18 / 108 done</span><span class="pct">16.7%</span></span></div>
-        <div class="track"><div class="fill"></div></div>
+        <div class="meta"><span class="label">All Tasks</span><span><span class="detail" id="allCount">20 / 108 done</span><span class="pct" id="allPct">18.5%</span></span></div>
+        <div class="track"><div class="fill" id="allFill" style="width:18.5%"></div></div>
       </div>
 
-      <div class="foot">Synced from your Notion task views</div>
+      <div class="foot" id="syncStatus">Live data · connecting…</div>
     </div>
   </div>
 </div>
+<script>
+const DATA_URL='https://raw.githubusercontent.com/Leqlerc/ocean-notion-widget/main/task-progress.json';
+let lastUpdated=null;
+const $=id=>document.getElementById(id);
+function pctText(v){const n=Number(v)||0;return (Number.isInteger(n)?n:n.toFixed(1))+'%'}
+function apply(data){
+  for(const key of ['today','week','all'])if(!data[key])return;
+  $('todayRing').style.setProperty('--pct',data.today.pct||0);
+  $('todayPct').textContent=pctText(data.today.pct);
+  $('todayCount').textContent=`${data.today.done} / ${data.today.total} done`;
+  $('weekFill').style.width=(data.week.pct||0)+'%';
+  $('weekPct').textContent=pctText(data.week.pct);
+  $('weekCount').textContent=`${data.week.done} / ${data.week.total} done`;
+  $('allFill').style.width=(data.all.pct||0)+'%';
+  $('allPct').textContent=pctText(data.all.pct);
+  $('allCount').textContent=`${data.all.done} / ${data.all.total} done`;
+  lastUpdated=data.updated_at?new Date(data.updated_at):new Date();
+  updateStatus();
+}
+function updateStatus(){
+  if(!lastUpdated)return;
+  const s=Math.max(0,Math.floor((Date.now()-lastUpdated.getTime())/1000));
+  let age=s<60?`${s}s ago`:s<3600?`${Math.floor(s/60)}m ago`:`${Math.floor(s/3600)}h ago`;
+  $('syncStatus').textContent='Live data · updated '+age;
+}
+async function refresh(){
+  try{
+    const r=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    apply(await r.json());
+  }catch(e){
+    $('syncStatus').textContent='Live data · retrying…';
+  }
+}
+refresh();
+setInterval(refresh,15000);
+setInterval(updateStatus,1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+</script>
 </body>
 </html>
