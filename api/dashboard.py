@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlparse
@@ -76,6 +76,19 @@ def date_value(page, name):
     return (prop(page, name).get("date") or {}).get("start")
 
 
+def number_value(page, name):
+    p = prop(page, name)
+    if p.get("number") is not None:
+        return p.get("number") or 0
+    rollup = p.get("rollup") or {}
+    if rollup.get("type") == "number":
+        return rollup.get("number") or 0
+    formula = p.get("formula") or {}
+    if formula.get("type") == "number":
+        return formula.get("number") or 0
+    return 0
+
+
 def local_day(value):
     if not value:
         return None
@@ -143,6 +156,8 @@ def daily_rows():
                 "type": select_name(p, "Workout Type") or "",
                 "quality": select_name(p, "Workout Quality") or "",
                 "set_count": relation_count(p, "Training sets"),
+                "working_sets": number_value(p, "Working sets"),
+                "volume": number_value(p, "Training volume"),
             },
         }
     return out
