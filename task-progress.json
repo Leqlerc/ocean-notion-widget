@@ -1,18 +1,18 @@
 {
-  "updated_at": "2026-09-12T16:04:15Z",
+  "updated_at": "2026-09-12T16:21:22Z",
   "today": {
-    "done": 4,
+    "done": 5,
     "total": 7,
-    "pct": 57.1
+    "pct": 71.4
   },
   "week": {
-    "done": 11,
+    "done": 12,
     "total": 16,
-    "pct": 68.8
+    "pct": 75.0
   },
   "all": {
-    "done": 20,
+    "done": 21,
     "total": 80,
-    "pct": 25.0
+    "pct": 26.2
   }
 }
