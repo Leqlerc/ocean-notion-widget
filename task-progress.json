@@ -1,0 +1,6 @@
+{
+  "updated_at": "2026-09-12T14:33:00Z",
+  "today": {"done": 0, "total": 3, "pct": 0.0},
+  "week": {"done": 10, "total": 16, "pct": 62.5},
+  "all": {"done": 20, "total": 108, "pct": 18.5}
+}
