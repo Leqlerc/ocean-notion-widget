@@ -12,6 +12,10 @@ COURTS = ('Earhart', 'Ford', 'Hillenbrand', 'Wiley', 'Windsor')
 _CACHE = {}
 EXCLUDE = re.compile(r'\b(sauce|dressing|ketchup|mustard|mayonnaise|syrup|gravy|cookie|cake|brownie|dessert|ice cream|ice|juice|soda|coffee|tea|lemonade|sugar|condiment|muffin|donut|doughnut|pastry|beverage|butter|bun|bread|topping|shredded cheese)\b', re.I)
 PROTEIN = re.compile(r'\b(chicken|turkey|beef|pork|steak|fish|salmon|tuna|tilapia|cod|shrimp|tofu|tempeh|seitan|egg|eggs|omelet|omelette|burger|lentil|lentils|beans|edamame|yogurt|cottage cheese|ham|sausage|meatball|meatballs|brisket|falafel)\b', re.I)
+# Permanent/repetitive items are intentionally deprioritized so the card tells the user
+# what is unusually worth eating in the current meal, not the same staple every day.
+STAPLE = re.compile(r'\b(grilled chicken breast|hamburger|cheeseburger|hot dog|pizza|deli turkey|deli ham|scrambled eggs|hard[- ]boiled eggs|waffle|french fries|tater tots)\b', re.I)
+HARD_EXCLUDE = re.compile(r'\bgarlic chicken strips?\b', re.I)
 
 
 def fetch(path, ttl=300):
@@ -47,20 +51,29 @@ def nutrition(item):
 
 
 def rank_macro_picks(items, limit=1):
-    """Protein first; within each 5g protein band prefer less fat, then sodium.
+    """Prefer rotating, high-protein foods with the best protein-to-fat efficiency.
 
-    Scores are per HFS serving. Unknown macros sort after measured choices.
-    A minimum 10g protein removes trivial sides; unmeasured protein entrees
-    may fill remaining slots, explicitly marked as nutrition unavailable.
+    Measured foods need at least 15g protein. Non-staples rank before common staples;
+    within that group the dominant sort is protein / max(fat, 1), followed by absolute
+    protein and lower sodium. Garlic Chicken Strips are explicitly excluded. Items with
+    incomplete nutrition can only fill after measured protein choices.
     """
-    eligible = [i for i in items if not EXCLUDE.search(i['name']) and
-                ((i['protein'] is not None and i['protein'] >= 10) or
-                 (i['protein'] is None and PROTEIN.search(i['name'])))]
+    eligible = [
+        i for i in items
+        if not EXCLUDE.search(i['name'])
+        and not HARD_EXCLUDE.search(i['name'])
+        and ((i['protein'] is not None and i['protein'] >= 15)
+             or (i['protein'] is None and PROTEIN.search(i['name'])))
+    ]
+
     def score(i):
-        if i['protein'] is None:
-            return (1, 0, float('inf'), float('inf'), i['name'])
-        return (0, -(i['protein'] // 5), i['fat'] if i['fat'] is not None else float('inf'),
-                i['sodium'] if i['sodium'] is not None else float('inf'), i['name'])
+        staple = 1 if STAPLE.search(i['name']) else 0
+        if i['protein'] is None or i['fat'] is None:
+            return (staple, 1, 0, 0, float('inf'), i['name'])
+        ratio = i['protein'] / max(i['fat'], 1)
+        sodium = i['sodium'] if i['sodium'] is not None else float('inf')
+        return (staple, 0, -ratio, -i['protein'], sodium, i['name'])
+
     return sorted(eligible, key=score)[:limit]
 
 
@@ -116,7 +129,6 @@ def load_dining():
     with ThreadPoolExecutor(max_workers=5) as pool:
         results = list(pool.map(safe_court, COURTS))
     unique = {i['ID']: i for _, items in results for i in items}
-    # Fetch each unique item once, even if several courts serve it.
     with ThreadPoolExecutor(max_workers=12) as pool:
         values = list(pool.map(nutrition, unique.values()))
     nutrients = dict(zip(unique, values))
@@ -128,4 +140,4 @@ def load_dining():
             court['message'] = 'No qualifying protein picks in this menu'
         courts.append(court)
     return {'courts': courts, 'updatedAt': now.isoformat(), 'source': 'Purdue HFS',
-            'ranking': 'Protein first; similar-protein choices ranked by fat, then sodium. Per listed serving.'}
+            'ranking': 'Rotating-menu foods first; then highest protein-to-fat ratio, higher protein, lower sodium. Per listed serving.'}
