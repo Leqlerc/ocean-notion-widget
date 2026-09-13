@@ -891,3 +891,9 @@ dialog::backdrop {
 }
 
 }
+
+/* Six complete calendar weeks at laptop height. */
+.day { line-height:12px; }
+.calendar-grid { row-gap:0; }
+.month-nav button { line-height:16px; }
+.archive-button { margin-right:auto; color:var(--muted); }

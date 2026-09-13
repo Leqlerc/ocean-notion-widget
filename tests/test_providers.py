@@ -52,6 +52,14 @@ class Tasks(unittest.TestCase):
             with self.assertRaises(ValueError): NotionTaskStore().update({'id':page()['id'], 'focus':False})
             self.assertEqual(api.call_count, 1)
 
+    def test_archive_is_recoverable_and_scoped(self):
+        with patch('lib.notion.request', return_value=page()) as api:
+            self.assertTrue(NotionTaskStore().archive({'id':page()['id']})['archived'])
+            self.assertEqual(api.call_args.args[2], {'in_trash':True})
+        with patch('lib.notion.request', return_value=page(source='other')) as api:
+            with self.assertRaises(ValueError): NotionTaskStore().archive({'id':page()['id']})
+            self.assertEqual(api.call_count, 1)
+
     def test_invalid_inputs(self):
         for data in [{'name':' '}, {'focus':'false'}, {'status':'DELETE'}, {'due':'bad'}, {'name':4}, {'foo':'bar'}]:
             with self.subTest(data=data), self.assertRaises(ValueError): validate(data)

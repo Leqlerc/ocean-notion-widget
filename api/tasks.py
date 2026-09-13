@@ -25,3 +25,11 @@ class handler(JsonHandler):
 
     def do_PATCH(self):
         self.write_task(False)
+
+    def do_DELETE(self):
+        try:
+            self.send_json(200, NotionTaskStore().archive(self.read_json()))
+        except ValueError as exc:
+            self.send_json(400, {'error': str(exc)})
+        except Exception:
+            self.send_json(502, {'error': 'Could not confirm the archive. Refresh before retrying.'})

@@ -4,7 +4,7 @@ Vanilla HTML/CSS/JS with Python Vercel functions. Production remains the reposit
 
 ## Provider boundaries
 
-- `api/tasks.py` → `lib/tasks.py`: normalized TaskStore, backed by Tasks master. GET lists tasks and editing options; POST creates; PATCH updates a task. Notion transport and server IDs live in `lib/notion.py`. The single `Project` rich-text property groups tasks into projects. Completion stamps Date Completed; reopening clears it.
+- `api/tasks.py` → `lib/tasks.py`: normalized TaskStore, backed by Tasks master. GET lists tasks and editing options; POST creates; PATCH updates a task; DELETE moves it to recoverable Notion Trash. Notion transport and server IDs live in `lib/notion.py`. The single `Project` rich-text property groups tasks into projects. Completion stamps Date Completed; reopening clears it.
 - `api/events.py` → `lib/calendar.py`: events only. Existing Notion events are the fallback, visibly labeled as a potentially delayed sync. The original `api/calendar-data.py` and old widgets remain available.
 - `api/dining.py` → `lib/dining.py`: official Purdue HFS v2 location/date menus and item nutrition. `rank_macro_picks` is the single ranking function. It ranks protein in 5g bands, then fat, then sodium, per published serving. Missing macros remain null. Nutrition is cached in warm instances for a day; menus for five minutes. Cold starts can take roughly 45 seconds; subsequent cached calls are much faster. Menu times are evaluated in Indianapolis time; closed courts show their next published meal (today or tomorrow).
 - `api/recwell.py` retains the existing occupancy source and response fields. `lib/rec_hours.py` reads the official EMS schedule used by the RecWell website. CoRec occupancy is the existing fitness-area counter, not an estimate for the whole building. No aquatic occupancy is invented when no counter exists.
@@ -32,3 +32,5 @@ python -m compileall -q api lib
 Tests use mocked provider calls and do not change live tasks. Backend checks cover completion/reopen semantics, timed-deadline preservation, project text, validation, cross-store write rejection, and dining ranking. Frontend checks cover project next-action priority, Today/done filters, exclusive all-day event ends, escaping, and optimistic rollback.
 
 Desktop uses a bounded viewport grid with internally scrolling lists; below 1100px the page scrolls normally. CSS variables at the top of `nocean.css` control surfaces and typography.
+
+Live verification: Vercel build succeeded; all provider endpoints returned real data. Browser quick-add, project grouping, and basic editing were verified. `tests/layout.html` embeds the dashboard at the two acceptance dimensions for repeatable viewport checks.

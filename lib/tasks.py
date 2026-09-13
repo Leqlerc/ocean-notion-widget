@@ -84,8 +84,7 @@ class NotionTaskStore:
             'properties': self.properties(data)})
         return normalize(page)
 
-    def update(self, data):
-        data = validate(data)
+    def owned_page(self, data):
         try:
             task_id = str(UUID(str(data.get('id', ''))))
         except (ValueError, TypeError):
@@ -96,5 +95,17 @@ class NotionTaskStore:
             raise ValueError('This task is not in the task store.')
         if page.get('archived') or page.get('in_trash'):
             raise ValueError('This task has been archived.')
-        return normalize(notion.request('PATCH', '/pages/' + task_id,
+        return page
+
+    def update(self, data):
+        data = validate(data)
+        page = self.owned_page(data)
+        return normalize(notion.request('PATCH', '/pages/' + page['id'],
                          {'properties': self.properties(data, page)}))
+
+    def archive(self, data):
+        if set(data) != {'id'}:
+            raise ValueError('Expected a task ID.')
+        page = self.owned_page(data)
+        notion.request('PATCH', '/pages/' + page['id'], {'in_trash': True})
+        return {'id': page['id'], 'archived': True}

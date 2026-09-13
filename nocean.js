@@ -31,6 +31,7 @@ async function request(url, options = {}) {
 const TaskStore = {
   list: () => request('/api/tasks'),
   create: task => request('/api/tasks', {method:'POST', body:JSON.stringify(task)}),
+  archive: id => request('/api/tasks', {method:'DELETE', body:JSON.stringify({id})}),
   update: task => request('/api/tasks', {method:'PATCH', body:JSON.stringify(task)})
 };
 const CalendarProvider = {load: () => request('/api/events')};
@@ -252,6 +253,22 @@ document.addEventListener('click', event => {
 });
 $('taskList').addEventListener('change', event => { if(event.target.dataset.complete) updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'}); });
 $('showDone').addEventListener('change', event => { state.showDone=event.target.checked;renderTasks(); });
+$('archiveTask').addEventListener('click', async () => {
+  const id = $('editId').value;
+  if (state.pending.has(id)) return;
+  const original = state.tasks.find(t => t.id === id);
+  state.pending.add(id); state.revision++;
+  $('archiveTask').disabled = true; $('saveEdit').disabled = true;
+  state.tasks = state.tasks.filter(t => t.id !== id); renderTasks();
+  try {
+    await TaskStore.archive(id); $('editDialog').close(); toast('Task archived. It can be restored from Trash.');
+  } catch (error) {
+    state.tasks.push(original); $('editError').textContent = error.message;
+  } finally {
+    state.pending.delete(id); state.revision++; renderTasks();
+    $('archiveTask').disabled = false; $('saveEdit').disabled = false;
+  }
+});
 $('editTask').addEventListener('submit', async event => {
   event.preventDefault(); const id=$('editId').value, original=state.tasks.find(t=>t.id===id);
   $('saveEdit').disabled=true;
