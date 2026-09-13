@@ -100,7 +100,6 @@ def aggregate(rows):
     count = sum(r["count"] for r in rows)
     capacity = sum(r["capacity"] for r in rows)
     percent = round(count / capacity * 100) if capacity > 0 else None
-    # A grouped space is considered closed only when every matching counter is closed.
     closed = all(r["closed"] for r in rows)
     updated = max((r["updated"] for r in rows), default="")
     return {
@@ -114,15 +113,25 @@ def aggregate(rows):
 
 
 def pick_spaces(rows):
-    # CoRec: user only wants the bottom/lower-floor fitness area, not whole-building load.
-    fitness = [r for r in rows if "fitness" in text(r)]
-    lower = [
-        r for r in fitness
-        if any(k in text(r) for k in ("lower", "1st", "first", "level 1", "floor 1", "main"))
+    # The user wants the live Black & Gold Gym counter at the CoRec, not a generic
+    # fitness-floor proxy. Match common public-counter spellings conservatively.
+    bg = [
+        r for r in rows
+        if any(k in text(r) for k in (
+            "black & gold", "black and gold", "black/gold", "black gold",
+            "gold & black", "gold and black", "gold/black", "gold black",
+            "b&g gym", "b & g gym", "b/g gym",
+        ))
     ]
-    if not lower and fitness:
-        # Keep this conservative: use one fitness counter rather than summing every CoRec floor.
-        lower = [sorted(fitness, key=lambda r: r["name"])[0]]
+    # If Purdue exposes separate Black and Gold counters under a CoRec facility,
+    # combine those counters rather than silently falling back to another workout area.
+    if not bg:
+        bg = [
+            r for r in rows
+            if ("gym" in text(r) or "court" in text(r))
+            and ("black" in text(r) or "gold" in text(r))
+            and any(k in text(r) for k in ("corec", "cordova", "recreation"))
+        ]
 
     aquatic = [
         r for r in rows
@@ -135,7 +144,8 @@ def pick_spaces(rows):
     trec = [r for r in rows if any(k in text(r) for k in ("trec", "turf recreation"))]
 
     return {
-        "corec_lower": aggregate(lower),
+        # Keep the response key stable so the existing frontend keeps working.
+        "corec_lower": aggregate(bg),
         "trec": aggregate(trec),
         "aquatic": aggregate(aquatic),
     }
@@ -170,7 +180,6 @@ def hours_from_tables(html, weekday):
         if not any(is_aquatic_label(cell) for cell in row):
             continue
 
-        # Common layout: header row = Facility, Monday, Tuesday, ...
         for j in range(max(0, i - 5), i):
             header = rows[j]
             for idx, cell in enumerate(header):
@@ -179,14 +188,12 @@ def hours_from_tables(html, weekday):
                     if parsed:
                         return parsed
 
-        # Alternate layout: cells contain labels such as "Sunday 10 AM - 6 PM".
         for cell in row:
             if weekday.lower() in cell.lower():
                 parsed = normalize_hours(cell)
                 if parsed:
                     return parsed
 
-        # A daily card rendered as a table may only include today's hours.
         for cell in row[1:]:
             parsed = normalize_hours(cell)
             if parsed:
@@ -195,12 +202,9 @@ def hours_from_tables(html, weekday):
 
 
 def hours_from_text(html, weekday):
-    # Remove style/script noise for visible-text fallback, but keep a second raw pass below
-    # because some CMS components embed their hour strings inside JSON/script attributes.
     visible = re.sub(r"<(script|style)\b[^>]*>.*?</\1>", " ", html, flags=re.I | re.S)
     visible = clean_text(re.sub(r"<[^>]+>", " ", visible))
 
-    # Prefer the official Facilities and Hours section to avoid matching the generic aquatics blurb.
     lower = visible.lower()
     section_pos = lower.find("facilities and hours")
     scoped = visible[section_pos:section_pos + 12000] if section_pos >= 0 else visible
@@ -210,7 +214,6 @@ def hours_from_text(html, weekday):
         starts = [m.start() for m in re.finditer(r"aquatic center|morgan j\.? burke|competition pool", low)]
         for pos in starts:
             window = source[max(0, pos - 250):pos + 1800]
-            # Best case: today's weekday is explicitly present near the facility.
             day_match = re.search(
                 rf"\b{re.escape(weekday)}\b.{{0,180}}?(closed|{TIME_RANGE.pattern})",
                 window,
@@ -220,7 +223,6 @@ def hours_from_text(html, weekday):
                 parsed = normalize_hours(day_match.group(0))
                 if parsed:
                     return parsed
-            # Daily card: first nearby hours range after the Aquatic Center label.
             after = window[window.lower().find("aquatic") + 7:]
             parsed = normalize_hours(after[:500])
             if parsed:
@@ -260,7 +262,6 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        # Hours and occupancy are independent; one unavailable source must not hide the other.
         with ThreadPoolExecutor(max_workers=3) as pool:
             counts = pool.submit(fetch_counts)
             aquatic = pool.submit(load_hours, 'aquatic')
