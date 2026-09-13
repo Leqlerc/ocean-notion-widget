@@ -1,5 +1,7 @@
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
+from lib.rec_hours import load_hours
 from datetime import datetime, timezone
 from html import unescape
 from html.parser import HTMLParser
@@ -258,22 +260,27 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        try:
-            raw = fetch_counts()
-            rows = [normalize(r) for r in (raw or [])]
-            spaces = pick_spaces(rows)
-            aquatic_hours = fetch_aquatic_hours()
-            if spaces.get("aquatic") is not None:
-                spaces["aquatic"]["hours"] = aquatic_hours.get("hours")
-                spaces["aquatic"]["hours_date"] = aquatic_hours.get("date")
-                spaces["aquatic"]["hours_source"] = aquatic_hours.get("source")
-            self.send_json(200, {
-                "updated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-                "source": "Purdue RecWell public Connect2 / GoBoard facility counters",
-                "hours_url": RECWELL_URL,
-                "aquatic_hours": aquatic_hours,
-                "spaces": spaces,
-                "rows": rows,
-            })
-        except Exception as exc:
-            self.send_json(502, {"error": str(exc), "hours_url": RECWELL_URL})
+        # Hours and occupancy are independent; one unavailable source must not hide the other.
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            counts = pool.submit(fetch_counts)
+            aquatic = pool.submit(load_hours, 'aquatic')
+            corec = pool.submit(load_hours, 'corec')
+            try:
+                rows = [normalize(r) for r in (counts.result() or [])]
+                spaces = pick_spaces(rows)
+            except Exception:
+                rows, spaces = [], {'corec_lower': None, 'aquatic': None, 'trec': None}
+            aquatic_hours, corec_hours = aquatic.result(), corec.result()
+        if spaces.get('aquatic') is not None:
+            spaces['aquatic']['hours'] = aquatic_hours.get('hours')
+            spaces['aquatic']['hours_date'] = aquatic_hours.get('date')
+            spaces['aquatic']['hours_source'] = aquatic_hours.get('source')
+        self.send_json(200, {
+            'updated_at': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z'),
+            'source': 'Purdue RecWell public facility counters and EMS schedule',
+            'hours_url': RECWELL_URL,
+            'aquatic_hours': aquatic_hours,
+            'corec_hours': corec_hours,
+            'spaces': spaces,
+            'rows': rows,
+        })

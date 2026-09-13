@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/dining.py": { "maxDuration": 60 },
+    "api/tasks.py": { "maxDuration": 60 },
+    "api/events.py": { "maxDuration": 60 }
+  }
+}

@@ -1,99 +1,69 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#050a12">
-<title>NOcean</title>
-<link rel="stylesheet" href="/nocean.css?v=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#141719">
+  <title>NOcean · Today</title>
+  <link rel="stylesheet" href="/nocean.css?v=2">
+  <script src="/nocean.js?v=2" defer></script>
 </head>
 <body>
-<div class="shell">
+<div class="app">
   <header class="topbar">
-    <div class="brand"><div class="logo">◌</div><div><strong>NOcean</strong><small>Purdue command center</small></div></div>
-    <nav class="nav"><a href="#home">Home</a><a href="#today">Today</a><a href="#semester">Semester</a><a href="#habits">Habits</a><a href="#training">Training</a><a href="#calendar">Calendar</a></nav>
-    <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncText">connecting…</span></div>
-    <a class="notion-link" data-notion target="_blank" rel="noopener">Open Notion ↗</a>
+    <h1>NOcean<span class="brand-dot">.</span></h1>
+    <div id="clock" class="clock"></div>
+    <div class="sync"><span id="syncStatus" role="status">Connecting…</span><button id="refresh" class="quiet">Refresh</button></div>
   </header>
-
-  <main>
-    <section class="hero" id="home">
-      <div class="hero-grid">
-        <div>
-          <div class="clock-row">
-            <div><div class="eyebrow">West Lafayette · Fall 2026</div><div class="place">NOcean command center</div></div>
-            <div class="clock"><div class="time" id="clock">--:--:--</div><div class="date" id="dateLine">Loading date…</div></div>
-          </div>
-          <div class="weather-now"><div class="weather-icon" id="weatherIcon">◌</div><div><div class="weather-temp" id="weatherTemp">--°</div><div class="weather-cond" id="weatherCond">Loading weather…</div></div></div>
-          <div class="metrics"><div class="metric"><div class="metric-label">Feels like</div><div class="metric-value" id="feels">--°</div></div><div class="metric"><div class="metric-label">High / low</div><div class="metric-value" id="hilo">-- / --</div></div><div class="metric"><div class="metric-label">Humidity</div><div class="metric-value" id="humidity">--%</div></div><div class="metric"><div class="metric-label">6h rain max</div><div class="metric-value" id="rainMax">--%</div></div></div>
-          <div class="forecast-title"><div class="eyebrow">Next 6 hours</div><span>condition · temperature · precipitation</span></div>
-          <div class="forecast" id="forecast"><div class="empty">Loading forecast…</div></div>
-          <div class="progress-stack">
-            <div class="progress-row"><div class="progress-name">Purdue Fall Break</div><div class="progress-meta" id="breakMeta">—</div><div class="track"><div class="fill break" id="breakFill"></div></div></div>
-            <div class="progress-row"><div class="progress-name">Fall 2026 semester</div><div class="progress-meta" id="semMeta">—</div><div class="track"><div class="fill sem" id="semFill"></div></div></div>
-            <div class="progress-row"><div class="progress-name">College · 4-year horizon</div><div class="progress-meta" id="collegeMeta">—</div><div class="track"><div class="fill college" id="collegeFill"></div></div></div>
-          </div>
-        </div>
-        <div class="next-grid">
-          <div class="next-card"><div class="eyebrow">Next events</div><div class="next-list" id="nextEvents"><div class="empty">Loading…</div></div></div>
-          <div class="next-card"><div class="eyebrow">Next exams</div><div class="next-list" id="nextExams"><div class="empty">Loading…</div></div></div>
-        </div>
-      </div>
+  <main class="dashboard">
+    <section class="card tasks-card" aria-labelledby="tasksTitle">
+      <div class="card-head"><div><p class="eyebrow">Make room for what matters</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>
+      <form id="quickAdd" class="quick-add">
+        <label class="sr-only" for="taskName">Task name</label>
+        <input id="taskName" name="name" required maxlength="500" placeholder="What’s the next thing to do?" autocomplete="off">
+        <button type="submit" class="primary" id="addButton">+ Add task</button>
+        <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Due<input id="taskDue" name="due" type="date"></label></div>
+      </form>
+      <nav class="tabs" aria-label="Task lists"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="all" aria-pressed="false">All</button><label class="done-toggle"><input id="showDone" type="checkbox"> Show done</label></nav>
+      <div id="taskMessage" class="panel-message" role="status"></div>
+      <div id="taskList" class="scroll task-list"><p class="empty">Loading your tasks…</p></div>
+      <div class="card-foot"><span id="taskHint">Focus tasks and anything due today or overdue.</span><span id="doneCount"></span></div>
     </section>
-
-    <section class="section" id="today">
-      <div class="section-head"><h2>Today</h2><span>live from Tasks master</span></div>
-      <div class="two">
-        <div class="panel pad progress-card">
-          <div class="ring" id="todayRing" style="--p:0"><div class="ring-inner"><div class="ring-pct" id="todayPct">0%</div><div class="ring-label" id="todayCount">0 / 0 done</div></div></div>
-          <div>
-            <div class="eyebrow">Task progress</div>
-            <div class="bar-stat"><div class="bar-stat-top"><span>This week</span><span id="weekStatValue">—</span></div><div class="track"><div class="fill" id="weekStatFill"></div></div></div>
-            <div class="bar-stat"><div class="bar-stat-top"><span>All tasks</span><span id="allStatValue">—</span></div><div class="track"><div class="fill" id="allStatFill"></div></div></div>
-            <div style="margin-top:10px"><a class="notion-link" data-notion target="_blank" rel="noopener">Manage tasks in Notion ↗</a></div>
-          </div>
-        </div>
-        <div class="panel pad"><div class="heat-head"><div><div class="eyebrow">Deadline radar</div><div class="heat-title">What is coming up</div></div><div class="heat-sub">opens the source item</div></div><div class="deadline-list" id="deadlineRadar"><div class="empty">Loading…</div></div></div>
-      </div>
+    <section class="card projects-card" aria-labelledby="projectsTitle">
+      <div class="card-head"><h2 id="projectsTitle">Projects</h2><span class="muted">One next action at a time</span></div>
+      <div id="projects" class="scroll projects-grid"><p class="empty">Loading projects…</p></div>
     </section>
-
-    <section class="section" id="semester">
-      <div class="section-head"><h2>Semester</h2><span>workload, not decoration</span></div>
-      <div class="two">
-        <div class="panel pad"><div class="heat-head"><div><div class="eyebrow">Assignments</div><div class="heat-title">Fall 2026 workload</div></div><div class="heat-sub">lighter → heavier</div></div><div class="heat-wrap"><div class="heat-grid-wrap"><div class="day-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="heat-grid" id="assignmentHeat"></div></div></div></div>
-        <div class="panel pad"><div class="heat-head"><div><div class="eyebrow">Events</div><div class="heat-title">Academic event load</div></div><div class="heat-sub">classes/breaks excluded</div></div><div class="heat-wrap"><div class="heat-grid-wrap"><div class="day-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="heat-grid" id="eventHeat"></div></div></div></div>
-      </div>
+    <section class="card campus-card" aria-labelledby="campusTitle">
+      <div class="card-head"><h2 id="campusTitle">Campus now</h2><span class="muted">West Lafayette</span></div>
+      <div class="campus-grid"><div id="weather" class="weather"><p class="empty">Loading weather…</p></div><div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div></div>
     </section>
-
-    <section class="section" id="habits">
-      <div class="section-head"><h2>Habits & productivity</h2><span>click cells to write back to Notion</span></div>
-      <div class="two">
-        <div class="panel pad"><div class="heat-head"><div><div class="eyebrow">Habit tracker</div><div class="heat-title">This week</div></div><div class="save-state">Notion live</div></div><div class="week-editor" id="habitMatrix"></div><div style="height:12px"></div><div class="heat-head"><div class="heat-title">Semester consistency</div><div class="heat-sub">0–5 habits/day</div></div><div class="heat-wrap"><div class="heat-grid-wrap"><div class="day-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="heat-grid" id="habitHeat"></div></div></div></div>
-        <div class="panel pad"><div class="heat-head"><div><div class="eyebrow">Productivity</div><div class="heat-title">Weekly rating</div></div><div class="save-state">Notion live</div></div><div class="week-editor" id="productivityWeek"></div><div style="height:12px"></div><div class="heat-head"><div class="heat-title">Semester map</div><div class="heat-sub">yellow · green · purple</div></div><div class="heat-wrap"><div class="heat-grid-wrap"><div class="day-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="heat-grid" id="productivityHeat"></div></div></div></div>
-      </div>
+    <section class="card dining-card" aria-labelledby="diningTitle">
+      <div class="card-head"><h2 id="diningTitle">Where to eat</h2><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">Full menus ↗</a></div>
+      <p class="section-note" title="Highest protein bands first, then lower fat, then lower sodium, per HFS serving.">Protein first · less fat · less sodium</p>
+      <div id="dining" class="scroll dining-list"><p class="empty">Finding protein picks at five dining courts…</p></div>
     </section>
-
-    <section class="section" id="training">
-      <div class="section-head"><h2>Training</h2><span>Daily log + Set log</span></div>
-      <div class="panel pad">
-        <div class="training-stats"><div class="training-stat"><small>Sessions</small><strong id="trainSessions">0 / 6</strong></div><div class="training-stat"><small>Working sets</small><strong id="trainSets">0</strong></div><div class="training-stat"><small>Volume</small><strong id="trainVolume">0 lb</strong></div><div class="training-stat"><small>Latest</small><strong id="trainLatest">—</strong><span id="trainLatestSub" style="font-size:8px;color:var(--muted)">no session</span></div></div>
-        <div class="heat-head"><div><div class="eyebrow">Weekly rhythm</div><div class="heat-title">Workouts + rehab work</div></div><div class="save-state">Notion live</div></div>
-        <div class="week-editor" id="trainingMatrix"></div>
+    <section class="card events-card" aria-labelledby="eventsTitle">
+      <div class="card-head"><h2 id="eventsTitle">Coming up</h2><a href="https://calendar.google.com/" target="_blank" rel="noopener" aria-label="Open Google Calendar">Calendar ↗</a></div>
+      <div class="events-layout"><div class="event-stack"><div id="eventList" class="scroll"><p class="empty">Loading events…</p></div></div>
+        <div class="mini-calendar"><div class="month-nav"><button id="prevMonth" class="quiet" aria-label="Previous month">‹</button><button id="monthTitle" class="quiet" title="Return to this month"></button><button id="nextMonth" class="quiet" aria-label="Next month">›</button></div><div id="calendarGrid" class="calendar-grid"></div><button id="clearDay" class="quiet clear-day" hidden>Show upcoming events</button></div>
       </div>
-    </section>
-
-    <section class="section" id="calendar">
-      <div class="section-head"><h2>Calendar</h2><span>Tasks + Notion events + Google Calendar sync</span></div>
-      <div class="panel pad">
-        <div class="calendar-toolbar"><div class="calendar-nav"><button class="tiny-btn" id="prevMonth">←</button><button class="tiny-btn" id="todayMonth">Today</button><button class="tiny-btn" id="nextMonth">→</button></div><div class="month-title" id="monthTitle">Month</div><div class="filters"><button class="tiny-btn active" data-filter="both">Both</button><button class="tiny-btn" data-filter="assignments">Assignments</button><button class="tiny-btn" data-filter="events">Events</button></div></div>
-        <div class="calendar" id="calendarGrid"></div>
-        <div class="calendar-details"><div class="details-title" id="detailsTitle">Selected day</div><div id="calendarDetailsList"></div></div>
-      </div>
+      <div id="calendarSource" class="card-foot">Checking event source…</div>
     </section>
   </main>
-
-  <footer class="footer">NOcean · Notion is the source of truth · Vercel is the live interface</footer>
 </div>
-<script src="/nocean.js?v=1"></script>
+<datalist id="projectOptions"></datalist>
+<dialog id="editDialog">
+  <form id="editTask">
+    <div class="card-head"><h2>Edit task</h2><button type="button" id="closeEdit" class="quiet" aria-label="Close editor">✕</button></div>
+    <input id="editId" type="hidden">
+    <label>Task<input id="editName" required maxlength="500"></label>
+    <label>Project<input id="editProject" list="projectOptions" maxlength="100" placeholder="Type or choose a project"></label>
+    <div class="form-pair"><label>Due date<input id="editDue" type="date"></label><label>Course<select id="editCourse"><option value="">None</option></select></label></div>
+    <div class="form-pair"><label>Status<select id="editStatus"></select></label><label class="check-label"><input id="editFocus" type="checkbox"> Focus today</label></div>
+    <p id="editError" class="panel-message" role="alert"></p>
+    <div class="dialog-actions"><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save changes</button></div>
+  </form>
+</dialog>
+<div id="toast" role="status" class="toast" hidden></div>
 </body>
 </html>
