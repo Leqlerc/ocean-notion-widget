@@ -1,33 +1,7 @@
 'use strict';
-const CONFIG = {
-  timezone: 'America/Indiana/Indianapolis',
-  calendarRefresh: 45000, taskRefresh: 90000, campusRefresh: 300000,
-  weather: 'https://api.open-meteo.com/v1/forecast?latitude=40.4237&longitude=-86.9212&current=temperature_2m,weather_code&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=America%2FIndiana%2FIndianapolis&forecast_days=2'
-};
-const $ = id => document.getElementById(id);
-const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const safeURL = value => { try { const u = new URL(value); return ['https:', 'http:'].includes(u.protocol) ? u.href : ''; } catch { return ''; } };
-const dayKey = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {timeZone:CONFIG.timezone, year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
-const dateDay = value => !value ? '' : value.length === 10 ? value : dayKey(new Date(value));
-const dateObject = value => new Date(value.length === 10 ? value + 'T12:00:00-04:00' : value);
-const shortDate = value => new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,month:'short',day:'numeric'}).format(dateObject(value));
-const timeLabel = value => new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,hour:'numeric',minute:'2-digit'}).format(new Date(value));
-const empty = text => `<p class="empty">${esc(text)}</p>`;
+const {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities} = NOcean;
 const state = {tasks:[], courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
 
-async function request(url, options = {}) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 65000);
-  try {
-    const response = await fetch(url, {...options, signal:controller.signal, cache:'no-store', headers:{...(options.body ? {'Content-Type':'application/json'} : {}), ...options.headers}});
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Connection failed. Please try again.');
-    return data;
-  } catch (error) {
-    if (error.name === 'AbortError') throw new Error('Request timed out. Refresh before retrying.');
-    throw error;
-  } finally { clearTimeout(timer); }
-}
 const TaskStore = {
   list: () => request('/api/tasks'),
   create: task => request('/api/tasks', {method:'POST', body:JSON.stringify(task)}),
@@ -151,15 +125,7 @@ function renderWeather(data) {
   const fmt = v => Number.isFinite(v) ? Math.round(v) + '°' : '—';
   $('weather').innerHTML = `<div class="weather-temp">${fmt(temp)}<span class="muted"> F</span></div><div class="weather-condition">${esc(conditions[code] || 'Current weather')}</div><div class="weather-detail">H ${fmt(data.daily?.temperature_2m_max?.[0])} · L ${fmt(data.daily?.temperature_2m_min?.[0])}<br>${rain.length ? Math.max(...rain) + '% rain · next 6h' : 'Rain forecast unavailable'}</div>`;
 }
-function facility(name, counter, hours) {
-  const percent = counter?.percent, label = percent == null ? 'Occupancy unavailable' : `${percent}% · ${percent < 30 ? 'Quiet' : percent < 60 ? 'Moderate' : 'Busy'}`;
-  const closed = hours?.closed ?? counter?.closed;
-  const status = closed == null ? 'Status unavailable' : closed ? 'Closed' : 'Open';
-  return `<div><div class="facility-title"><a href="https://www.purdue.edu/recwell/" target="_blank" rel="noopener">${name}</a><span class="badge ${closed === false ? 'open' : ''}" title="${esc(counter?.updated ? 'Latest count: '+counter.updated : 'No occupancy counter available')}">${status}${percent == null ? '' : ' · '+esc(label)}</span></div><div class="facility-meta">${esc(hours?.hours || 'Hours unavailable')} · ${name === 'CoRec' && counter ? 'fitness-area count' : percent == null ? 'occupancy unavailable' : 'pool count'}</div></div>`;
-}
-function renderRec(data) {
-  $('recreation').innerHTML = facility('CoRec', data.spaces?.corec_lower, data.corec_hours) + facility('Aquatic', data.spaces?.aquatic, data.aquatic_hours);
-}
+function renderRec(data) { $('recreation').innerHTML = renderFacilities(data); }
 function renderDining(data) {
   $('dining').innerHTML = data.courts.map(court => {
     const status = court.open === null ? 'Unavailable' : court.open ? 'Open' : 'Closed';
@@ -167,8 +133,8 @@ function renderDining(data) {
     return `<article class="dining-court"><div class="court-top"><div class="court-heading">${esc(court.name)} <span class="badge ${court.open ? 'open' : ''}">${status}</span></div><div class="court-meta">${esc(meal)}${court.start ? ` · ${esc(timeLabel(court.start))}–${esc(timeLabel(court.end))}` : ''}</div></div><div>${court.picks.map(p => `<div class="pick"><span>${esc(p.name)}</span><div class="macros" title="${esc(p.serving || 'Serving size unavailable')}">${p.protein == null ? 'Nutrition unavailable' : `<span class="protein">${p.protein}g P</span> · ${p.fat == null ? 'Fat unavailable' : p.fat+'g F'} · ${p.sodium == null ? 'Sodium unavailable' : p.sodium+'mg Na'}`}${p.serving ? ' · '+esc(p.serving.replace(/ Serving$/i,'')) : ''}</div></div>`).join('') || empty(court.message || 'No protein picks published.')}</div></article>`;
   }).join('');
 }
-const importantEvent = event => /exam|quiz|\bcfu\b|demonstration|practical|presentation|roundtable|meetup|break/i.test(`${event.name} ${event.type}`);
-const routineEvent = event => !importantEvent(event) && (event.type === 'Class' || /\b(lecture|recitation|class meeting)\b/i.test(event.name));
+const importantEvent = event => CalendarSemantics.classify(event).key !== 'class';
+const routineEvent = event => CalendarSemantics.classify(event).key === 'class';
 function eventOnDay(event, day) {
   const start = dateDay(event.at), end = dateDay(event.end || event.at);
   return start <= day && (event.exclusiveEnd && event.end?.length === 10 ? day < end : day <= end);
@@ -184,7 +150,7 @@ function eventLabel(event) {
 }
 function renderEvents() {
   const relevant = state.events.filter(e => state.selectedDay ? eventOnDay(e, state.selectedDay) : eventIsFuture(e) && !routineEvent(e)).sort((a,b) => a.at.localeCompare(b.at));
-  $('eventList').innerHTML = (state.selectedDay ? `<p class="section-note">${esc(shortDate(state.selectedDay))}</p>` : '') + (relevant.slice(0,30).map(e => `<div class="event-row"><small>${esc(eventLabel(e))}</small>${safeURL(e.url) ? `<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>` : `<span class="event-name">${esc(e.name)}</span>`}</div>`).join('') || empty(state.selectedDay ? 'No events this day.' : 'No upcoming events beyond routine classes.'));
+  $('eventList').innerHTML = (state.selectedDay ? `<p class="section-note">${esc(shortDate(state.selectedDay))}</p>` : '') + (relevant.slice(0,30).map(e => `<div class="event-row event-${CalendarSemantics.classify(e).key}"><small>${esc(eventLabel(e))} · ${esc(CalendarSemantics.classify(e).short || CalendarSemantics.classify(e).label)}</small>${safeURL(e.url) ? `<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>` : `<span class="event-name">${esc(e.name)}</span>`}</div>`).join('') || empty(state.selectedDay ? 'No events this day.' : 'No upcoming events beyond routine classes.'));
   $('clearDay').hidden = !state.selectedDay;
   renderCalendar();
 }
@@ -196,8 +162,9 @@ function renderCalendar() {
   for (let n=0;n<42;n++) {
     const date = new Date(start); date.setUTCDate(start.getUTCDate()+n);
     const day = date.toISOString().slice(0,10), events = state.events.filter(e => eventOnDay(e,day));
-    const classes = ['day',day.slice(0,7)!==state.month?'other':'',day===dayKey()?'today':'',day===state.selectedDay?'selected':'',events.length?'has-events':'',events.some(importantEvent)?'important':''].join(' ');
-    html += `<button class="${classes}" data-day="${day}" aria-label="${day}, ${events.length} events" aria-pressed="${day===state.selectedDay}" title="${esc(events.map(e=>e.name).join('\n') || 'No events')}">${date.getUTCDate()}</button>`;
+    const semantic = CalendarSemantics.highest(events);
+    const classes = ['day', semantic ? 'event-'+semantic.key : '',day.slice(0,7)!==state.month?'other':'',day===dayKey()?'today':'',day===state.selectedDay?'selected':'',events.length?'has-events':'',events.some(importantEvent)?'important':''].join(' ');
+    html += `<button class="${classes}" data-day="${day}" aria-label="${day}, ${events.length} events${events.length ? ': '+esc(events.map(e=>e.name).join('; ')) : ''}" aria-pressed="${day===state.selectedDay}" title="${esc(events.map(e=>e.name).join('\n') || 'No events')}">${date.getUTCDate()}${semantic && semantic.key !== 'class' ? `<span class="day-type">${esc(semantic.short || semantic.label)}</span>` : ''}</button>`;
   }
   $('calendarGrid').innerHTML = html;
 }
@@ -205,7 +172,10 @@ async function loadCalendar() {
   return loadPanel('Calendar', async () => {
     try {
       const data = await CalendarProvider.load(); state.events = data.events.filter(e => e.at && Number.isFinite(dateObject(e.at).getTime()));
-      $('calendarSource').textContent = `${data.source} · Checked ${timeLabel(data.updatedAt)}`; renderEvents();
+      $('calendarSource').textContent = `${data.source} · Checked ${timeLabel(data.updatedAt)}`;
+      $('calendarSource').dataset.provider = data.direct ? 'google' : 'fallback';
+      $('calendarSource').title = data.direct ? 'Reading Google directly; refreshes every 45 seconds while visible.' : 'Waiting for a direct Google connection. Synced events remain usable.';
+      renderEvents();
     } catch (error) {
       $('calendarSource').textContent = state.loaded.Calendar ? 'Refresh failed · showing previously loaded events' : error.message;
       if (!state.loaded.Calendar) $('eventList').innerHTML = empty('Calendar unavailable. Use the Calendar link above.');

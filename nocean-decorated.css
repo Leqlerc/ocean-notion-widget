@@ -1,0 +1,19 @@
+/* Theme only: no duplicated markup, no provider logic, no layout changes. */
+body.decorated {
+  --bg:#131b18; --surface:#1a2520; --raised:#26382d; --line:#3a4a40;
+  --accent:#b6d6b5; --text:#edf2eb; --muted:#aebcb0;
+  --event-exam-bg:#48252e; --event-exam:#e19aa6;
+  color:var(--text);
+  background:radial-gradient(ellipse at 10% 0%,#29372c80,transparent 55%),#131b18;
+}
+.decorated .card {
+  background:linear-gradient(145deg,#22302666,transparent 55%),var(--surface);
+  box-shadow:0 10px 28px #060b0838,inset 0 1px #d7e8cb08;
+  border-color:#405447;
+}
+.decorated .topbar {border-bottom:1px solid #3a4a4055;}
+.decorated .brand-dot {color:#c18c97;}
+.decorated .task-row:hover,.decorated .project:hover {background:#9bc5a106;}
+.decorated .overdue {color:#e1a0ab;}
+.decorated .primary {background:#b9d9b9; border-color:#b9d9b9;}
+.decorated .page-nav a[aria-current] {box-shadow:inset 0 -2px #a9c9a6;}

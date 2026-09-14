@@ -1,0 +1,52 @@
+'use strict';
+// Same controls and same theme preference on every page. No data fetching here.
+const NOceanUI = (() => {
+  const THEME_KEY = 'nocean.decorated';
+  function setTheme(decorated, persist = true) {
+    document.body.classList.toggle('decorated', decorated);
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+      toggle.setAttribute('aria-pressed', String(decorated));
+      toggle.textContent = decorated ? 'Decorated' : 'Minimal';
+    }
+    if (persist) try { localStorage.setItem(THEME_KEY, String(decorated)); } catch { /* Private storage must not block the app. */ }
+  }
+  function shortcutAction(event, dialogOpen) {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing || event.repeat) return null;
+    if (event.key === 'Escape' && dialogOpen) return 'close';
+    if (dialogOpen || event.target?.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]')) return null;
+    if (event.shiftKey && event.key !== '?') return null;
+    return {n:'new', '/':'new', '1':'today','2':'upcoming','3':'all',r:'refresh','?':'help'}[event.key.toLowerCase()] || null;
+  }
+  function setup() {
+    const root = document.querySelector('[data-app-controls]');
+    if (!root) return;
+    const home = document.body.dataset.page === 'home';
+    root.innerHTML = `<nav class="page-nav" aria-label="Main navigation"><a href="/" ${home ? 'aria-current="page"' : ''}>Home</a><a href="/athletics.html" ${!home ? 'aria-current="page"' : ''}>Athletics</a></nav><button id="themeToggle" class="quiet" aria-label="Toggle decorated mode" aria-pressed="false">Minimal</button><button id="shortcutHelp" class="quiet shortcut-hint" aria-label="Keyboard shortcuts">${home ? 'N to add · ' : ''}? Shortcuts</button>`;
+    const help = document.createElement('dialog');
+    help.id = 'shortcutDialog'; help.setAttribute('aria-labelledby','shortcutTitle');
+    help.innerHTML = '<div class="card-head"><h2 id="shortcutTitle">Keyboard shortcuts</h2><button class="quiet" id="closeShortcuts" aria-label="Close shortcuts">✕</button></div><dl class="shortcut-list"><dt><kbd>N</kbd> / <kbd>/</kbd></dt><dd>New task (Home)</dd><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Today / Upcoming / All (Home)</dd><dt><kbd>R</kbd></dt><dd>Refresh this page’s data</dd><dt><kbd>Esc</kbd></dt><dd>Close an open dialog</dd><dt><kbd>?</kbd></dt><dd>Show this help</dd></dl><p class="section-note">Shortcuts pause while you type or use an editor.</p>';
+    document.body.append(help);
+    let decorated = false;
+    try { decorated = localStorage.getItem(THEME_KEY) === 'true'; } catch {}
+    setTheme(decorated, false);
+    document.getElementById('themeToggle').addEventListener('click', () => setTheme(!document.body.classList.contains('decorated')));
+    document.getElementById('shortcutHelp').addEventListener('click', () => help.showModal());
+    document.getElementById('closeShortcuts').addEventListener('click', () => help.close());
+    window.addEventListener('storage', event => { if (event.key === THEME_KEY) setTheme(event.newValue === 'true', false); });
+    document.addEventListener('keydown', event => {
+      const open = document.querySelector('dialog[open]');
+      const action = shortcutAction(event, Boolean(open));
+      if (!action) return;
+      if (action === 'close') { event.preventDefault(); open.close(); return; }
+      if (action === 'help') { event.preventDefault(); help.showModal(); return; }
+      if (action === 'refresh') { event.preventDefault(); document.getElementById('refresh')?.click(); return; }
+      if (!home) return;
+      event.preventDefault();
+      if (action === 'new') document.getElementById('taskName')?.focus();
+      else document.querySelector(`[data-tab="${action}"]`)?.click();
+    });
+  }
+  document.addEventListener('DOMContentLoaded', setup, {once:true});
+  return {shortcutAction, setTheme};
+})();
