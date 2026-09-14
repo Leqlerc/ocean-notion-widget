@@ -2,7 +2,7 @@
 body.decorated {
   background-color:#0b1211;
   background-image:
-    linear-gradient(180deg,rgba(4,8,10,.20) 0%,rgba(5,9,10,.31) 46%,rgba(4,7,8,.48) 100%),
+    linear-gradient(180deg,rgba(4,8,10,.12) 0%,rgba(5,9,10,.20) 45%,rgba(4,7,8,.30) 100%),
     var(--decorated-bg-image,radial-gradient(ellipse at 10% 0%,#29372c80,transparent 55%));
   background-size:cover;
   background-position:center center;
@@ -10,18 +10,24 @@ body.decorated {
   background-attachment:fixed;
 }
 
+/* A deliberate scenic strip lets the current biome read as part of the page. */
+body.decorated .dashboard,
+body.decorated .athletics-dashboard {
+  margin-top:150px;
+}
+
 body.decorated .card {
-  background:linear-gradient(145deg,rgba(38,56,45,.18),rgba(11,18,17,.10) 55%),rgba(16,24,22,.72);
-  border-color:rgba(154,188,162,.32);
-  box-shadow:0 12px 34px rgba(2,7,6,.30),inset 0 1px rgba(226,244,229,.045);
-  -webkit-backdrop-filter:blur(7px) saturate(.96);
-  backdrop-filter:blur(7px) saturate(.96);
+  background:linear-gradient(145deg,rgba(31,48,39,.14),rgba(8,15,14,.08) 55%),rgba(15,24,21,.66);
+  border-color:rgba(166,200,175,.36);
+  box-shadow:0 12px 34px rgba(2,7,6,.28),inset 0 1px rgba(226,244,229,.05);
+  -webkit-backdrop-filter:blur(5px) saturate(.98);
+  backdrop-filter:blur(5px) saturate(.98);
 }
 
 body.decorated .topbar {
-  background:linear-gradient(180deg,rgba(7,12,11,.70),rgba(7,12,11,.34));
-  -webkit-backdrop-filter:blur(7px);
-  backdrop-filter:blur(7px);
+  background:linear-gradient(180deg,rgba(7,12,11,.54),rgba(7,12,11,.18));
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
 }
 
 body.decorated dialog,
@@ -32,5 +38,11 @@ body.decorated button {
 }
 
 @media (max-width:700px) {
-  body.decorated { background-attachment:scroll; }
+  body.decorated {
+    background-attachment:scroll;
+  }
+  body.decorated .dashboard,
+  body.decorated .athletics-dashboard {
+    margin-top:96px;
+  }
 }
