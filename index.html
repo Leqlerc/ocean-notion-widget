@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/nocean-tweaks.css?v=3">
   <link rel="stylesheet" href="/nocean-decorated.css?v=1">
   <link rel="stylesheet" href="/nocean-backgrounds.css?v=1">
-  <link rel="stylesheet" href="/nocean-hierarchy.css?v=1">
+  <link rel="stylesheet" href="/nocean-hierarchy.css?v=2">
   <script src="/nocean-shared.js?v=1" defer></script>
   <script src="/nocean-ui.js?v=1" defer></script>
   <script src="/time-backgrounds.js?v=1" defer></script>
@@ -33,7 +33,7 @@
         <label class="sr-only" for="taskName">Task name</label>
         <input id="taskName" name="name" required maxlength="500" placeholder="What’s the next thing to do?" autocomplete="off">
         <button type="submit" class="primary" id="addButton">+ Add task</button>
-        <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Due<input id="taskDue" name="due" type="date"></label></div>
+        <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Deadline<input id="taskDue" name="due" type="datetime-local" step="60"></label></div>
       </form>
       <nav class="tabs" aria-label="Task lists"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="all" aria-pressed="false">All</button><label class="done-toggle"><input id="showDone" type="checkbox"> Show done</label></nav>
       <div id="taskMessage" class="panel-message" role="status"></div>
