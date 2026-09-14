@@ -17,18 +17,25 @@ class Calendar(unittest.TestCase):
         with patch.dict('os.environ',{},clear=True), patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[],'direct':False}), patch.object(DirectGoogleCalendarProvider,'load') as direct:
             result=load_calendar();self.assertFalse(result['direct']);self.assertEqual(len(result['configurationMissing']),3);direct.assert_not_called()
 
-    def test_direct_never_queries_notion(self):
+    def test_direct_and_notion_are_independent(self):
         env={k:'configured' for k in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN']}
-        with patch.dict('os.environ',env),patch.object(DirectGoogleCalendarProvider,'load',return_value={'events':[],'direct':True}),patch('lib.notion.query') as query:
-            self.assertTrue(load_calendar()['direct']);query.assert_not_called()
-        with patch.dict('os.environ',env),patch.object(DirectGoogleCalendarProvider,'load',side_effect=RuntimeError('Google unavailable')),patch('lib.notion.query') as query:
-            with self.assertRaises(RuntimeError):load_calendar()
-            query.assert_not_called()
+        with patch.dict('os.environ',env),patch.object(DirectGoogleCalendarProvider,'load',return_value={'events':[]}),patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[]}) as notion:
+            result=load_calendar();self.assertTrue(result['direct']);notion.assert_called_once();self.assertTrue(result['providers']['notion']['available'])
+        with patch.dict('os.environ',env),patch.object(DirectGoogleCalendarProvider,'load',side_effect=RuntimeError('Google unavailable')),patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[]}):
+            result=load_calendar();self.assertFalse(result['direct']);self.assertIn('Google events unavailable',result['warnings'])
 
     def test_google_pagination_and_cancelled_events(self):
         responses=[{'items':[{'id':'a','summary':'MA 261 Lecture','recurringEventId':'series','start':{'date':'2026-09-14'},'end':{'date':'2026-09-15'}},{'id':'b','status':'cancelled'},{'id':'c'}],'nextPageToken':'next'}, {'items':[{'id':'d','summary':'MA 261 Quiz','recurringEventId':'series','start':{'dateTime':'2026-09-15T10:00:00-04:00'}}]}]
         with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':' primary, primary, '}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps(r).encode()) for r in responses]) as http:
             result=DirectGoogleCalendarProvider().load();self.assertEqual(len(result['events']),2);self.assertEqual(result['events'][0]['type'],'Class');self.assertEqual(result['events'][1]['type'],'Other');self.assertIn('pageToken=next',http.call_args.args[0].full_url)
+
+    def test_both_calendars_and_exact_rfc3339(self):
+        event={'id':'a','summary':'Class','recurringEventId':'series','start':{'dateTime':'2026-09-18T15:30:17-04:00'},'end':{'dateTime':'2026-09-18T16:20:17-04:00'}}
+        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary,classes@group.calendar.google.com'}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps({'items':[event]}).encode()) for _ in range(2)]) as http:
+            result=DirectGoogleCalendarProvider().load()['events'];self.assertEqual(len(result),2)
+            self.assertEqual(result[0]['at'],event['start']['dateTime']);self.assertEqual(result[0]['end'],event['end']['dateTime'])
+            for call in http.call_args_list:self.assertIn('singleEvents=true',call.args[0].full_url)
+            self.assertTrue(result[1]['id'].startswith('classes@group.calendar.google.com:'))
 
     def test_token_cache(self):
         env={k:'configured' for k in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN']}

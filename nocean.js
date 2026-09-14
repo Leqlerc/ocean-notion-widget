@@ -1,6 +1,6 @@
 'use strict';
 const {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities} = NOcean;
-const state = {tasks:[], courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
+const state = {tasks:[], projects:[], projectPending:new Set(), projectRevision:0, removalTimers:new Map(), showInactiveProjects:false, lingering:new Set(), rowPositions:new Map(), courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
 
 const TaskStore = {
   list: () => request('/api/tasks'),
@@ -8,12 +8,17 @@ const TaskStore = {
   archive: id => request('/api/tasks', {method:'DELETE', body:JSON.stringify({id})}),
   update: task => request('/api/tasks', {method:'PATCH', body:JSON.stringify(task)})
 };
+const ProjectStore = {load:()=>request('/api/projects'),create:name=>request('/api/projects',{method:'POST',body:JSON.stringify({name})}),update:(id,status)=>request('/api/projects',{method:'PATCH',body:JSON.stringify({id,status})})};
 const CalendarProvider = {load: () => request('/api/events')};
 const DiningProvider = {load: () => request('/api/dining')};
 const RecProvider = {load: () => request('/api/recwell')};
 const WeatherProvider = {load: () => request(CONFIG.weather)};
 let toastTimer;
-function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 5000); }
+function toast(message,undo) {
+  $('toast').replaceChildren(document.createTextNode(message));
+  if(undo){const button=document.createElement('button');button.textContent='Undo';button.className='quiet';button.addEventListener('click',()=>{button.disabled=true;undo();$('toast').hidden=true;},{once:true});$('toast').append(button);}
+  $('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,6000);
+}
 function syncStatus() {
   const failed = Object.entries(state.health).filter(([, ok]) => !ok).map(([name]) => name);
   $('syncStatus').textContent = failed.length ? `${failed.join(', ')} unavailable` : state.loading.size ? 'Refreshing…' : 'Up to date';
@@ -27,49 +32,66 @@ async function loadPanel(name, fn) {
 }
 function dueLabel(task) {
   if (!task.due) return '';
-  const day = dateDay(task.due), today = dayKey();
-  const label = day === today ? 'Due today' : day < today ? `Overdue · ${shortDate(task.due)}` : `Due ${shortDate(task.due)}`;
-  return `<span class="${day < today && task.status !== 'done' ? 'overdue' : ''}">${esc(label)}${task.due.length > 10 ? ' · ' + esc(timeLabel(task.due)) : ''}</span>`;
+  const day=Deadlines.fields(task.due).date,today=Deadlines.fields(new Date().toISOString()).date;
+  const date=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(new Date(day+'T12:00:00'));
+  const label=day===today?'Due today':day<today?`Overdue · ${date}`:`Due ${date}`;
+  const time=task.due.length>10?new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(task.due)):'';
+  return `<span class="${day<today&&task.status!=='done'?'overdue':''}">${esc(label)}${time?' · '+esc(time):''}</span>`;
 }
 function isToday(task) {
-  const today = dayKey();
-  return task.focus || task.status === 'doing' || (task.due && dateDay(task.due) <= today) || (task.scheduledFor && dateDay(task.scheduledFor) <= today);
+  const today = Deadlines.fields(new Date().toISOString()).date;
+  return task.focus || task.status === 'doing' || (task.due && Deadlines.fields(task.due).date <= today) || (task.scheduledFor && dateDay(task.scheduledFor) <= today);
 }
 const dueSort = (a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.name.localeCompare(b.name);
 function visibleTasks() {
-  return state.tasks.filter(task => {
+  const result=state.tasks.filter(task => {
+    if (state.lingering.has(task.id)) return true;
     if (task.status === 'done') return state.showDone && (state.tab === 'all' || (state.tab === 'today' && dateDay(task.completedOn) === dayKey()));
-    return state.tab === 'all' || (state.tab === 'today' ? isToday(task) : task.due && dateDay(task.due) > dayKey());
+    return state.tab === 'all' || (state.tab === 'today' ? isToday(task) : task.due && Deadlines.fields(task.due).date > Deadlines.fields(new Date().toISOString()).date);
   }).sort((a,b) => Number(a.status === 'done') - Number(b.status === 'done') || Number(b.status === 'doing') - Number(a.status === 'doing') || Number(b.focus) - Number(a.focus) || dueSort(a,b));
+  for(const id of state.lingering){const at=result.findIndex(t=>t.id===id);if(at>=0){const [task]=result.splice(at,1);result.splice(Math.min(state.rowPositions.get(id)??at,result.length),0,task);}}
+  return result;
 }
 function taskRow(task) {
   const pending = state.pending.has(task.id), done = task.status === 'done';
-  return `<div class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${esc(task.name)}</button><div class="task-meta">${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
+  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${esc(task.name)}</button><div class="task-meta">${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
 }
 function renderTasks() {
   const tasks = visibleTasks();
   $('tasksTitle').textContent = {today:'Today', upcoming:'Upcoming tasks', all:'All tasks'}[state.tab];
-  $('taskList').innerHTML = tasks.map(taskRow).join('') || empty(state.tab === 'today' ? 'A clear slate. Add a task or choose a Focus task from All.' : 'No tasks in this view.');
+  TaskMotion.render($('taskList'),tasks,taskRow,empty(state.tab === 'today' ? 'A clear slate. Add a task or choose a Focus task from All.' : 'No tasks in this view.'));
   $('taskCount').textContent = `${tasks.filter(t => t.status !== 'done').length} to do`;
   const done = state.tasks.filter(t => t.status === 'done' && dateDay(t.completedOn) === dayKey()).length;
   $('doneCount').textContent = `${done} done today`;
   $('taskHint').textContent = {today:'Focus, Doing, and tasks scheduled or due by today.', upcoming:'Future deadlines, ordered by what’s next.', all:'All your tasks. Click a task name to edit.'}[state.tab];
-  $('projectOptions').innerHTML = [...new Set(state.tasks.map(t => t.project).filter(Boolean))].sort().map(p => `<option value="${esc(p)}"></option>`).join('');
+  $('projectOptions').innerHTML = [...new Set(state.projects.filter(p=>p.status==='Active').map(p=>p.name))].sort().map(p => `<option value="${esc(p)}"></option>`).join('');
   renderProjects();
 }
-function deriveProjects(tasks) {
-  const groups = new Map();
-  for (const task of tasks) if (task.project && task.status !== 'done') {
-    if (!groups.has(task.project)) groups.set(task.project, []);
-    groups.get(task.project).push(task);
-  }
-  return [...groups].map(([name, unfinished]) => ({name, count:unfinished.length,
-    next:[...unfinished].sort((a,b) => Number(b.status === 'doing') - Number(a.status === 'doing') || Number(b.focus) - Number(a.focus) || dueSort(a,b))[0],
-    due:[...unfinished].filter(t => t.due).sort(dueSort)[0]?.due
-  })).sort((a,b) => (a.due || '9999').localeCompare(b.due || '9999') || a.name.localeCompare(b.name));
+function deriveProjects(tasks,projects=state.projects) {
+  return projects.filter(p=>state.showInactiveProjects || p.status==='Active').map(project=>{
+    const related=tasks.filter(t=>(t.projectIds || []).includes(project.id) || (!(t.projectIds || []).length && t.project===project.name));
+    const unfinished=related.filter(t=>t.status!=='done');
+    const done=related.length-unfinished.length;
+    return {...project,total:related.length,done,count:unfinished.length,percent:related.length?Math.round(done/related.length*100):0,
+      next:[...unfinished].sort((a,b)=>Number(b.status==='doing')-Number(a.status==='doing')||Number(b.focus)-Number(a.focus)||dueSort(a,b))[0],
+      due:[...unfinished].filter(t=>t.due).sort(dueSort)[0]?.due};
+  }).sort((a,b)=>(a.due || '9999').localeCompare(b.due || '9999')||a.name.localeCompare(b.name));
 }
 function renderProjects() {
-  $('projects').innerHTML = deriveProjects(state.tasks).map(project => `<article class="project"><h3>${esc(project.name)}</h3><button class="project-next" data-edit="${esc(project.next.id)}"><small>Next → </small>${esc(project.next.name)}</button><div class="project-footer"><small>${project.count} unfinished${project.due ? ' · ' + esc(shortDate(project.due)) : ''}</small><button class="quiet" data-project="${esc(project.name)}" aria-label="Add task to ${esc(project.name)}">+ Task</button></div></article>`).join('') || empty('Give a task a project name to keep a larger outcome moving.');
+  const scroll=$('projects').scrollLeft;
+  $('projects').innerHTML=deriveProjects(state.tasks).map(p=>`<article class="project" data-project-id="${esc(p.id)}"><div class="project-heading"><h3>${esc(p.name)}</h3><select aria-label="Status of ${esc(p.name)}" data-project-status="${esc(p.id)}" ${state.projectPending.has(p.id)?'disabled':''}>${['Active','Completed','Archived'].map(status=>`<option ${status===p.status?'selected':''}>${status}</option>`).join('')}</select></div><div class="project-progress"><progress max="100" value="${p.percent}" aria-label="${esc(p.name)} progress"></progress><small>${p.done}/${p.total} · ${p.percent}%</small></div>${p.next?`<button class="project-next" data-edit="${esc(p.next.id)}"><small>Next → </small>${esc(p.next.name)}</button>`:`<p class="section-note">${p.total?'All tasks complete · project still active':'No tasks yet'}</p>`}<div class="project-footer"><small>${p.count} unfinished</small><button class="quiet" data-project="${esc(p.name)}" aria-label="Add task to ${esc(p.name)}">+ Task</button></div></article>`).join('') || empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
+  $('projects').scrollLeft=scroll;
+}
+async function loadProjects() {
+  if(state.projectPending.size)return;
+  return loadPanel('Projects',async()=>{const revision=state.projectRevision;try{const data=await ProjectStore.load();if(state.projectPending.size || revision!==state.projectRevision)return;state.projects=data.projects;state.loaded.Projects=true;$('projectMessage').textContent='';renderProjects();}catch(e){$('projectMessage').textContent=e.message;throw e;}});
+}
+async function setProjectStatus(id,status) {
+  if(state.projectPending.has(id))return;
+  state.projectPending.add(id);state.projectRevision++;renderProjects();
+  try{const result=await ProjectStore.update(id,status);state.projects=state.projects.map(p=>p.id===id?result.project:p);toast('Project '+status.toLowerCase()+'.');}
+  catch(e){$('projectMessage').textContent=e.message;}
+  finally{state.projectPending.delete(id);state.projectRevision++;renderProjects();}
 }
 async function loadTasks() {
   if (state.pending.size || state.creating) return;
@@ -82,7 +104,7 @@ async function loadTasks() {
       $('taskMessage').textContent = ''; renderTasks();
     } catch (error) {
       $('taskMessage').textContent = state.loaded.Tasks ? 'Refresh failed; showing your last loaded tasks.' : error.message;
-      if (!state.loaded.Tasks) { $('taskList').innerHTML = empty('Use Refresh to reconnect to your tasks.'); $('projects').innerHTML = empty('Projects will appear when tasks reconnect.'); }
+      if (!state.loaded.Tasks) { $('taskList').innerHTML = empty('Use Refresh to reconnect to your tasks.'); }
       throw error;
     }
   });
@@ -91,6 +113,10 @@ async function updateTask(id, changes) {
   if (state.pending.has(id)) return false;
   const original = state.tasks.find(t => t.id === id);
   if (!original) return false;
+  clearTimeout(state.removalTimers.get(id));
+  const completing=changes.status==='done' && original.status!=='done';
+  const unfocusing=changes.focus===false && original.focus;
+  if(completing || unfocusing){state.rowPositions.set(id,visibleTasks().findIndex(t=>t.id===id));state.lingering.add(id);}
   state.pending.add(id); state.revision++;
   const optimistic = {...original, ...changes};
   if (changes.status) optimistic.completedOn = changes.status === 'done' ? dayKey() : null;
@@ -98,8 +124,14 @@ async function updateTask(id, changes) {
   try {
     const data = await TaskStore.update({id, ...changes});
     state.tasks = state.tasks.map(t => t.id === id ? data.task : t);
-    $('taskMessage').textContent = ''; return true;
+    $('taskMessage').textContent = '';
+    if(completing || unfocusing){
+      toast(completing?'Task completed':'Removed from Focus',()=>updateTask(id,completing?{status:original.status}:{focus:original.focus}));
+      state.removalTimers.set(id,setTimeout(()=>{state.lingering.delete(id);state.rowPositions.delete(id);state.removalTimers.delete(id);renderTasks();},300));
+    } else state.lingering.delete(id);
+    return true;
   } catch (error) {
+    state.lingering.delete(id);
     state.tasks = state.tasks.map(t => t.id === id ? original : t);
     $('taskMessage').textContent = error.message;
     $('editError').textContent = error.message; toast('Save failed. The task was restored.'); return false;
@@ -109,7 +141,7 @@ function openEditor(id) {
   const task = state.tasks.find(t => t.id === id);
   if (!task || state.pending.has(id)) return;
   $('editId').value = id; $('editName').value = task.name; $('editProject').value = task.project;
-  $('editDue').value = dateDay(task.due); $('editFocus').checked = task.focus;
+  const deadline=Deadlines.fields(task.due); $('editDue').value=deadline.date; $('editTime').value=deadline.time; $('editDue').dataset.original=deadline.date; $('editTime').dataset.original=deadline.time; $('editFocus').checked = task.focus;
   $('editCourse').innerHTML = ['',[...new Set([...state.courses, task.course].filter(Boolean))]].flat().map(c => `<option value="${esc(c)}">${esc(c || 'None')}</option>`).join('');
   $('editCourse').value = task.course;
   $('editStatus').innerHTML = state.statuses.map(s => `<option value="${esc(s)}">${esc(s[0].toUpperCase()+s.slice(1))}</option>`).join('');
@@ -149,7 +181,7 @@ function eventLabel(event) {
   return prefix + (event.at.length > 10 ? ' · '+timeLabel(event.at) : ' · All day');
 }
 function renderEvents() {
-  const relevant = state.events.filter(e => state.selectedDay ? eventOnDay(e, state.selectedDay) : eventIsFuture(e) && !routineEvent(e)).sort((a,b) => a.at.localeCompare(b.at));
+  const relevant = state.events.filter(e => state.selectedDay ? eventOnDay(e, state.selectedDay) : eventIsFuture(e) && !routineEvent(e)).sort((a,b) => dateObject(a.at).getTime()-dateObject(b.at).getTime());
   $('eventList').innerHTML = (state.selectedDay ? `<p class="section-note">${esc(shortDate(state.selectedDay))}</p>` : '') + (relevant.slice(0,30).map(e => `<div class="event-row event-${CalendarSemantics.classify(e).key}"><small>${esc(eventLabel(e))} · ${esc(CalendarSemantics.classify(e).short || CalendarSemantics.classify(e).label)}</small>${safeURL(e.url) ? `<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>` : `<span class="event-name">${esc(e.name)}</span>`}</div>`).join('') || empty(state.selectedDay ? 'No events this day.' : 'No upcoming events beyond routine classes.'));
   $('clearDay').hidden = !state.selectedDay;
   renderCalendar();
@@ -173,8 +205,8 @@ async function loadCalendar() {
     try {
       const data = await CalendarProvider.load(); state.events = data.events.filter(e => e.at && Number.isFinite(dateObject(e.at).getTime()));
       $('calendarSource').textContent = `${data.source} · Checked ${timeLabel(data.updatedAt)}`;
-      $('calendarSource').dataset.provider = data.direct ? 'google' : 'fallback';
-      $('calendarSource').title = data.direct ? 'Reading Google directly; refreshes every 45 seconds while visible.' : 'Waiting for a direct Google connection. Synced events remain usable.';
+      $('calendarSource').dataset.provider = data.direct ? 'google' : 'notion';
+      $('calendarSource').title = (data.warnings || []).join(' · ') || 'Google and Notion checked independently every 45 seconds while visible.';
       renderEvents();
     } catch (error) {
       $('calendarSource').textContent = state.loaded.Calendar ? 'Refresh failed · showing previously loaded events' : error.message;
@@ -194,17 +226,16 @@ async function loadCampus() {
 function clock() {
   $('clock').textContent = new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date());
 }
-function refreshAll() { return Promise.allSettled([loadTasks(),loadCalendar(),loadCampus()]); }
+function refreshAll() { return Promise.allSettled([loadTasks(),loadProjects(),loadCalendar(),loadCampus()]); }
 $('quickAdd').addEventListener('submit', async event => {
   event.preventDefault(); if (state.creating) return;
-  const task = {name:$('taskName').value.trim(),project:$('taskProject').value.trim(),due:$('taskDue').value || null,focus:true};
+  const task = {name:$('taskName').value.trim(),project:$('taskProject').value.trim(),due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true};
   if (!task.name) return;
   state.creating = true; state.revision++; $('addButton').disabled = true; $('taskMessage').textContent = '';
   try {
     const data = await TaskStore.create(task); state.tasks.unshift(data.task);
     // Preserve anything typed while the request was in flight.
-    if ($('taskName').value.trim() === task.name) { $('taskName').value = ''; $('taskDue').value = ''; }
-    setTab('today'); $('taskName').focus(); toast('Task added to Today.');
+    if ($('taskName').value.trim() === task.name) { $('taskName').value = ''; $('taskDue').value = ''; $('taskTime').value=''; } loadProjects(); setTab('today'); $('taskName').focus(); toast('Task added to Today.');
   } catch (error) { $('taskMessage').textContent = error.message; }
   finally { state.creating = false; state.revision++; $('addButton').disabled = false; }
 });
@@ -242,11 +273,12 @@ $('archiveTask').addEventListener('click', async () => {
 $('editTask').addEventListener('submit', async event => {
   event.preventDefault(); const id=$('editId').value, original=state.tasks.find(t=>t.id===id);
   $('saveEdit').disabled=true;
-  const changes={name:$('editName').value.trim(),project:$('editProject').value.trim(),course:$('editCourse').value,status:$('editStatus').value,focus:$('editFocus').checked};
+  const changes={name:$('editName').value.trim(),course:$('editCourse').value,status:$('editStatus').value,focus:$('editFocus').checked};
   // Editing another field must not discard an imported deadline's time or offset.
-  if ($('editDue').value !== dateDay(original.due)) changes.due=$('editDue').value || null;
+  if($('editProject').value.trim()!==original.project)changes.project=$('editProject').value.trim();
+  if($('editDue').value!==$('editDue').dataset.original || $('editTime').value!==$('editTime').dataset.original) changes.due=Deadlines.serialize($('editDue').value,$('editTime').value);
   const saved=await updateTask(id,changes); $('saveEdit').disabled=false;
-  if(saved) $('editDialog').close();
+  if(saved){$('editDialog').close();loadProjects();}
 });
 for(const id of ['closeEdit','cancelEdit']) $(id).addEventListener('click',()=>$('editDialog').close());
 function changeMonth(delta) { const [y,m]=state.month.split('-').map(Number);state.month=new Date(Date.UTC(y,m-1+delta,1)).toISOString().slice(0,7);state.selectedDay=null;renderEvents(); }
@@ -258,8 +290,18 @@ $('refresh').addEventListener('click',refreshAll);
 window.addEventListener('focus',()=>{if(!document.hidden) Promise.allSettled([loadTasks(),loadCalendar()]);});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden) refreshAll();});
 setInterval(()=>{if(!document.hidden) loadCalendar();},CONFIG.calendarRefresh);
-setInterval(()=>{if(!document.hidden) loadTasks();},CONFIG.taskRefresh);
+setInterval(()=>{if(!document.hidden){loadTasks();loadProjects();}},CONFIG.taskRefresh);
 setInterval(()=>{if(!document.hidden) loadCampus();},CONFIG.campusRefresh);
 let currentDay=dayKey();
 setInterval(()=>{clock();if(dayKey()!==currentDay){currentDay=dayKey();renderTasks();renderEvents();refreshAll();}},30000);
 clock();renderCalendar();refreshAll();
+
+$('newProject').addEventListener('click',()=>{$('projectDialog').showModal();$('projectName').focus();});
+$('closeProject').addEventListener('click',()=>$('projectDialog').close());
+$('projectForm').addEventListener('submit',async e=>{
+  e.preventDefault();if($('saveProject').disabled)return;state.projectRevision++;$('saveProject').disabled=true;$('projectError').textContent='';
+  try{const result=await ProjectStore.create($('projectName').value.trim());state.projects=state.projects.filter(p=>p.id!==result.project.id).concat(result.project);$('projectDialog').close();$('projectName').value='';renderProjects();}
+  catch(error){$('projectError').textContent=error.message;}finally{state.projectRevision++;$('saveProject').disabled=false;}
+});
+$('projects').addEventListener('change',e=>{if(e.target.dataset.projectStatus)setProjectStatus(e.target.dataset.projectStatus,e.target.value);});
+$('showInactiveProjects').addEventListener('change',e=>{state.showInactiveProjects=e.target.checked;renderProjects();});

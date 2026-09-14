@@ -1,8 +1,10 @@
-"""CalendarProvider boundary. Google is preferred only when server credentials exist."""
+"""CalendarProvider boundary. Google and Notion contribute independently."""
 import json
 import os
 import re
 import time
+import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode, quote
 from urllib.request import Request, urlopen
@@ -74,11 +76,82 @@ class DirectGoogleCalendarProvider:
         return {'events': events, 'source': 'Direct Google Calendar', 'direct': True}
 
 
+def event_instant(value):
+    """Sort date-only events at campus midnight; retain original strings in output."""
+    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    return (dt if dt.tzinfo else dt.replace(tzinfo=notion.TZ)).timestamp()
+
+
+def title_key(value):
+    return ' '.join(unicodedata.normalize('NFKC', value).casefold().split())
+
+
+def same_event(a, b):
+    # Never collapse two events within one provider or conflate date-only with timed events.
+    if b['source'] in a.get('sources',[a['source']]) or title_key(a['name']) != title_key(b['name']):
+        return False
+    if (len(a['at']) == 10) != (len(b['at']) == 10) or event_instant(a['at']) != event_instant(b['at']):
+        return False
+    if a.get('end') and b.get('end'):
+        def end_instant(e):
+            end = event_instant(e['end'])
+            # Notion date ranges include the last day; Google all-day ends are exclusive.
+            if len(e['end']) == 10 and not e.get('exclusiveEnd'):
+                end = event_instant((datetime.fromisoformat(e['end']) + timedelta(days=1)).date().isoformat())
+            return end
+        if end_instant(a) != end_instant(b):
+            return False
+    return True
+
+
+def merge_events(batches):
+    merged = []
+    for source in ('google', 'notion'):
+        for item in batches.get(source, []):
+            try:
+                event_instant(item['at'])
+            except (KeyError, ValueError, TypeError):
+                continue
+            event = {**item, 'source':source, 'sources':[source], 'sourceIds':{source:item['id']}}
+            duplicate = next((e for e in merged if same_event(e,event)), None)
+            if duplicate:
+                duplicate['sources'].append(source)
+                duplicate['sourceIds'][source] = item['id']
+                if duplicate.get('type') in ('Other','Class','') and item.get('type') not in ('Other','Class','',None):
+                    duplicate['type'] = item['type']
+                duplicate['course'] = duplicate.get('course') or item.get('course','')
+            else:
+                merged.append(event)
+    return sorted(merged, key=lambda e:(event_instant(e['at']),title_key(e['name']),e['id']))
+
+
 def load_calendar():
     required = ('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN')
     missing = [key for key in required if not os.getenv(key, '').strip()]
-    provider = DirectGoogleCalendarProvider() if not missing else NotionCalendarProvider()
-    result = provider.load()
-    result['configurationMissing'] = missing
-    result['updatedAt'] = datetime.now(timezone.utc).isoformat()
-    return result
+    providers = {'notion':NotionCalendarProvider()}
+    if not missing:
+        providers['google'] = DirectGoogleCalendarProvider()
+    batches, status = {}, {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        jobs = {key:pool.submit(provider.load) for key,provider in providers.items()}
+        for key,job in jobs.items():
+            try:
+                batches[key] = job.result()['events']
+                status[key] = {'available':True,'count':len(batches[key])}
+            except Exception:
+                status[key] = {'available':False,'count':0,'error':key.title()+' events unavailable'}
+    if not batches:
+        raise RuntimeError('All calendar sources unavailable.')
+    direct = 'google' in batches
+    source = 'Direct Google Calendar + Notion events' if direct and 'notion' in batches else 'Direct Google Calendar' if direct else 'Notion events'
+    warnings = [v['error'] for v in status.values() if not v['available']]
+    if missing:
+        status['google'] = {'available':False,'count':0,'error':'Direct Google is not configured'}
+        source += ' · Google not configured'
+    elif not direct:
+        source += ' · Google unavailable'
+    elif 'notion' not in batches:
+        source += ' · Notion unavailable'
+    return {'events':merge_events(batches), 'source':source, 'direct':direct,
+            'providers':status, 'warnings':warnings, 'configurationMissing':missing,
+            'updatedAt':datetime.now(timezone.utc).isoformat()}

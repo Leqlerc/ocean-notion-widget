@@ -25,9 +25,10 @@ class Tasks(unittest.TestCase):
         self.assertNotIn('properties', result)
 
     def test_create_defaults(self):
-        with patch('lib.notion.request', return_value=page()) as api:
+        with patch('lib.notion.request', return_value=page()) as api, patch('lib.projects.NotionProjectStore.resolve',return_value={'id':'22222222-2222-4222-8222-222222222222','name':'Exam prep'}):
             NotionTaskStore().create({'name': 'Prepare notes', 'project': 'Exam prep'})
             props = api.call_args.args[2]['properties']
+            self.assertEqual(props['Projects']['relation'][0]['id'],'22222222-2222-4222-8222-222222222222')
             self.assertTrue(props['Focus']['checkbox'])
             self.assertEqual(props['Status']['select']['name'], 'Next')
             self.assertEqual(props['Project']['rich_text'][0]['text']['content'], 'Exam prep')

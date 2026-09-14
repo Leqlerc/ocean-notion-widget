@@ -11,6 +11,9 @@
     },
     "api/athletics.py": {
       "maxDuration": 60
+    },
+    "api/projects.py": {
+      "maxDuration": 60
     }
   }
 }

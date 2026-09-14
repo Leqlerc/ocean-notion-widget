@@ -2,6 +2,13 @@
 // Same controls and same theme preference on every page. No data fetching here.
 const NOceanUI = (() => {
   const THEME_KEY = 'nocean.decorated';
+  const PRESET_KEY = 'nocean.preset';
+  function setPreset(value,persist=true){
+    const preset=['default','card-art','experimental'].includes(value)?value:'default';
+    document.body.dataset.preset=preset;
+    const select=document.getElementById('themePreset');if(select)select.value=preset;
+    if(persist)try{localStorage.setItem(PRESET_KEY,preset);}catch{}
+  }
   function setTheme(decorated, persist = true) {
     document.body.classList.toggle('decorated', decorated);
     const toggle = document.getElementById('themeToggle');
@@ -22,7 +29,7 @@ const NOceanUI = (() => {
     const root = document.querySelector('[data-app-controls]');
     if (!root) return;
     const home = document.body.dataset.page === 'home';
-    root.innerHTML = `<nav class="page-nav" aria-label="Main navigation"><a href="/" ${home ? 'aria-current="page"' : ''}>Home</a><a href="/athletics.html" ${!home ? 'aria-current="page"' : ''}>Athletics</a></nav><button id="themeToggle" class="quiet" aria-label="Toggle decorated mode" aria-pressed="false">Minimal</button><button id="shortcutHelp" class="quiet shortcut-hint" aria-label="Keyboard shortcuts">${home ? 'N to add · ' : ''}? Shortcuts</button>`;
+    root.innerHTML = `<nav class="page-nav" aria-label="Main navigation"><a href="/" ${home ? 'aria-current="page"' : ''}>Home</a><a href="/athletics.html" ${!home ? 'aria-current="page"' : ''}>Athletics</a></nav><button id="themeToggle" class="quiet" aria-label="Toggle decorated mode" aria-pressed="false">Minimal</button><button id="shortcutHelp" class="quiet shortcut-hint" aria-label="Keyboard shortcuts">${home ? 'N to add · ' : ''}? Shortcuts</button>${home ? '<select id="themePreset" aria-label="Visual preset"><option value="default">Default</option><option value="card-art">Card Art</option><option value="experimental">Experimental</option></select>' : ''}`;
     const help = document.createElement('dialog');
     help.id = 'shortcutDialog'; help.setAttribute('aria-labelledby','shortcutTitle');
     help.innerHTML = '<div class="card-head"><h2 id="shortcutTitle">Keyboard shortcuts</h2><button class="quiet" id="closeShortcuts" aria-label="Close shortcuts">✕</button></div><dl class="shortcut-list"><dt><kbd>N</kbd> / <kbd>/</kbd></dt><dd>New task (Home)</dd><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Today / Upcoming / All (Home)</dd><dt><kbd>R</kbd></dt><dd>Refresh this page’s data</dd><dt><kbd>Esc</kbd></dt><dd>Close an open dialog</dd><dt><kbd>?</kbd></dt><dd>Show this help</dd></dl><p class="section-note">Shortcuts pause while you type or use an editor.</p>';
@@ -30,10 +37,12 @@ const NOceanUI = (() => {
     let decorated = false;
     try { decorated = localStorage.getItem(THEME_KEY) === 'true'; } catch {}
     setTheme(decorated, false);
+    let preset='default';try{preset=localStorage.getItem(PRESET_KEY)||'default';}catch{}
+    if(home){setPreset(preset,false);document.getElementById('themePreset').addEventListener('change',e=>setPreset(e.target.value));}
     document.getElementById('themeToggle').addEventListener('click', () => setTheme(!document.body.classList.contains('decorated')));
     document.getElementById('shortcutHelp').addEventListener('click', () => help.showModal());
     document.getElementById('closeShortcuts').addEventListener('click', () => help.close());
-    window.addEventListener('storage', event => { if (event.key === THEME_KEY) setTheme(event.newValue === 'true', false); });
+    window.addEventListener('storage', event => { if (event.key === THEME_KEY) setTheme(event.newValue === 'true', false); if(home && event.key===PRESET_KEY)setPreset(event.newValue,false); });
     document.addEventListener('keydown', event => {
       const open = document.querySelector('dialog[open]');
       const action = shortcutAction(event, Boolean(open));
@@ -48,5 +57,5 @@ const NOceanUI = (() => {
     });
   }
   document.addEventListener('DOMContentLoaded', setup, {once:true});
-  return {shortcutAction, setTheme};
+  return {shortcutAction, setTheme, setPreset};
 })();
