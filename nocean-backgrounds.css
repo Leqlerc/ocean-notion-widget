@@ -1,0 +1,36 @@
+/* Time-of-day imagery is presentation only. Minimal mode is untouched. */
+body.decorated {
+  background-color:#0b1211;
+  background-image:
+    linear-gradient(180deg,rgba(5,10,12,.46) 0%,rgba(7,12,13,.62) 46%,rgba(5,9,10,.78) 100%),
+    var(--decorated-bg-image,radial-gradient(ellipse at 10% 0%,#29372c80,transparent 55%));
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+
+body.decorated .card {
+  background:linear-gradient(145deg,rgba(38,56,45,.28),rgba(11,18,17,.18) 55%),rgba(19,28,25,.82);
+  border-color:rgba(134,166,143,.30);
+  box-shadow:0 12px 34px rgba(2,7,6,.34),inset 0 1px rgba(226,244,229,.035);
+  -webkit-backdrop-filter:blur(12px) saturate(.92);
+  backdrop-filter:blur(12px) saturate(.92);
+}
+
+body.decorated .topbar {
+  background:linear-gradient(180deg,rgba(8,14,13,.82),rgba(8,14,13,.48));
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+
+body.decorated dialog,
+body.decorated input,
+body.decorated select,
+body.decorated button {
+  --bg:#101816;
+}
+
+@media (max-width:700px) {
+  body.decorated { background-attachment:scroll; }
+}
