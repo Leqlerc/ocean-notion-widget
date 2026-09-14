@@ -1,5 +1,8 @@
 /* Visual hierarchy experiment: fewer equal-sized tiles, more breathing room, same functionality. */
 
+/* Exact task deadlines need enough room for both date and time controls. */
+body[data-page="home"] #taskDue { width:210px; }
+
 @media (min-width:761px) {
   body[data-page="home"] .dashboard {
     width:100%;
@@ -145,6 +148,7 @@
 }
 
 @media (max-width:760px) {
+  body[data-page="home"] #taskDue { width:min(210px,100%); }
   body[data-page="home"] .projects-grid {
     display:grid;
     grid-template-columns:1fr;
