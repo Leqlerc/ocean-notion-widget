@@ -1,0 +1,172 @@
+/* Visual hierarchy experiment: fewer equal-sized tiles, more breathing room, same functionality. */
+
+@media (min-width:761px) {
+  body[data-page="home"] .dashboard {
+    width:100%;
+    max-width:1740px;
+    margin-inline:auto;
+    column-gap:24px;
+    row-gap:24px;
+    grid-template-columns:minmax(0,1.55fr) minmax(320px,.82fr);
+    grid-template-rows:170px 310px 154px auto;
+    grid-template-areas:
+      "tasks campus"
+      "tasks dining"
+      "projects projects"
+      "events events";
+  }
+
+  body[data-page="home"] .tasks-card { grid-area:tasks; padding:22px 24px; }
+  body[data-page="home"] .campus-card { grid-area:campus; padding:16px 18px; }
+  body[data-page="home"] .dining-card { grid-area:dining; padding:16px 18px; }
+  body[data-page="home"] .projects-card { grid-area:projects; padding:14px 16px; }
+  body[data-page="home"] .events-card { grid-area:events; }
+
+  body[data-page="home"] .tasks-card h2 {
+    font-size:25px;
+    letter-spacing:-.45px;
+  }
+
+  body[data-page="home"] .tasks-card .eyebrow {
+    letter-spacing:.02em;
+  }
+
+  /* Projects become a quick horizontal checkpoint instead of another large panel. */
+  body[data-page="home"] .projects-card .card-head {
+    margin-bottom:9px;
+  }
+  body[data-page="home"] .projects-grid {
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    align-items:stretch;
+    padding-bottom:2px;
+  }
+  body[data-page="home"] .project {
+    flex:1 0 235px;
+    min-width:235px;
+    padding:11px 12px;
+    gap:7px;
+  }
+
+  /* Keep the secondary right rail compact and glanceable. */
+  body[data-page="home"] .campus-card .card-head,
+  body[data-page="home"] .dining-card .card-head {
+    margin-bottom:9px;
+  }
+  body[data-page="home"] .dining-court {
+    padding:8px 0;
+  }
+
+  /* Planning gets a deliberate, calmer zone below the action-oriented area. */
+  body[data-page="home"] .events-card {
+    margin-top:4px;
+    border-radius:18px;
+  }
+}
+
+/* Decorated mode: expose the biome in intentional negative space instead of through muddy cards. */
+@media (min-width:761px) {
+  body.decorated[data-page="home"] .dashboard {
+    margin-top:238px;
+  }
+
+  body.decorated[data-page="home"] .app {
+    position:relative;
+    z-index:1;
+  }
+
+  body.decorated[data-page="home"]::after {
+    content:attr(data-biome-name);
+    position:absolute;
+    top:142px;
+    left:clamp(28px,3.4vw,66px);
+    z-index:0;
+    pointer-events:none;
+    color:rgba(241,248,244,.88);
+    font-size:13px;
+    font-weight:650;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    text-shadow:0 2px 14px rgba(0,0,0,.7);
+  }
+
+  body.decorated[data-page="home"] .topbar {
+    background:transparent;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+    border-bottom-color:transparent;
+    text-shadow:0 2px 12px rgba(0,0,0,.55);
+  }
+
+  body.decorated[data-page="home"] .page-nav a,
+  body.decorated[data-page="home"] .app-controls button,
+  body.decorated[data-page="home"] .sync button {
+    background:rgba(10,18,16,.30);
+    border-color:rgba(201,224,207,.10);
+    -webkit-backdrop-filter:blur(3px);
+    backdrop-filter:blur(3px);
+  }
+
+  /* The main action card is crisp; supporting cards recede slightly. */
+  body.decorated[data-page="home"] .tasks-card {
+    background:linear-gradient(145deg,rgba(34,51,42,.16),rgba(9,16,14,.08) 55%),rgba(13,22,19,.74);
+    -webkit-backdrop-filter:blur(3px) saturate(.98);
+    backdrop-filter:blur(3px) saturate(.98);
+    border-color:rgba(181,213,190,.42);
+    box-shadow:0 18px 48px rgba(1,6,5,.30),inset 0 1px rgba(236,248,238,.06);
+  }
+
+  body.decorated[data-page="home"] .campus-card,
+  body.decorated[data-page="home"] .dining-card,
+  body.decorated[data-page="home"] .projects-card {
+    background:linear-gradient(145deg,rgba(31,48,39,.10),rgba(8,15,14,.05) 55%),rgba(13,22,19,.50);
+    -webkit-backdrop-filter:blur(2px) saturate(.98);
+    backdrop-filter:blur(2px) saturate(.98);
+  }
+
+  body.decorated[data-page="home"] .events-card {
+    background:linear-gradient(145deg,rgba(31,48,39,.11),rgba(8,15,14,.06) 55%),rgba(13,22,19,.62);
+    -webkit-backdrop-filter:blur(2px) saturate(.98);
+    backdrop-filter:blur(2px) saturate(.98);
+  }
+}
+
+@media (min-width:761px) and (max-width:1099px) {
+  body[data-page="home"] .dashboard {
+    grid-template-columns:minmax(0,1.28fr) minmax(300px,.82fr);
+    grid-template-rows:180px 330px 160px auto;
+    column-gap:18px;
+    row-gap:18px;
+  }
+  body.decorated[data-page="home"] .dashboard { margin-top:190px; }
+  body.decorated[data-page="home"]::after { top:125px; }
+}
+
+@media (max-width:760px) {
+  body[data-page="home"] .projects-grid {
+    display:grid;
+    grid-template-columns:1fr;
+    overflow:auto;
+  }
+  body[data-page="home"] .project {
+    min-width:0;
+  }
+  body.decorated[data-page="home"] .dashboard {
+    margin-top:118px;
+  }
+  body.decorated[data-page="home"]::after {
+    content:attr(data-biome-name);
+    position:absolute;
+    top:104px;
+    left:22px;
+    pointer-events:none;
+    color:rgba(241,248,244,.82);
+    font-size:11px;
+    font-weight:650;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    text-shadow:0 2px 12px rgba(0,0,0,.7);
+  }
+}
