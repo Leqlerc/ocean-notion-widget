@@ -64,7 +64,6 @@ function renderTasks() {
   const done = state.tasks.filter(t => t.status === 'done' && dateDay(t.completedOn) === dayKey()).length;
   $('doneCount').textContent = `${done} done today`;
   $('taskHint').textContent = {today:'Focus, Doing, and tasks scheduled or due by today.', upcoming:'Future deadlines, ordered by what’s next.', all:'All your tasks. Click a task name to edit.'}[state.tab];
-  $('projectOptions').innerHTML = [...new Set(state.projects.filter(p=>p.status==='Active').map(p=>p.name))].sort().map(p => `<option value="${esc(p)}"></option>`).join('');
   renderProjects();
 }
 function deriveProjects(tasks,projects=state.projects) {
@@ -78,8 +77,9 @@ function deriveProjects(tasks,projects=state.projects) {
   }).sort((a,b)=>(a.due || '9999').localeCompare(b.due || '9999')||a.name.localeCompare(b.name));
 }
 function renderProjects() {
+  $('projectOptions').innerHTML = [...new Set(state.projects.filter(p=>p.status==='Active').map(p=>p.name))].sort().map(p => `<option value="${esc(p)}"></option>`).join('');
   const scroll=$('projects').scrollLeft;
-  $('projects').innerHTML=deriveProjects(state.tasks).map(p=>`<article class="project" data-project-id="${esc(p.id)}"><div class="project-heading"><h3>${esc(p.name)}</h3><select aria-label="Status of ${esc(p.name)}" data-project-status="${esc(p.id)}" ${state.projectPending.has(p.id)?'disabled':''}>${['Active','Completed','Archived'].map(status=>`<option ${status===p.status?'selected':''}>${status}</option>`).join('')}</select></div><div class="project-progress"><progress max="100" value="${p.percent}" aria-label="${esc(p.name)} progress"></progress><small>${p.done}/${p.total} · ${p.percent}%</small></div>${p.next?`<button class="project-next" data-edit="${esc(p.next.id)}"><small>Next → </small>${esc(p.next.name)}</button>`:`<p class="section-note">${p.total?'All tasks complete · project still active':'No tasks yet'}</p>`}<div class="project-footer"><small>${p.count} unfinished</small><button class="quiet" data-project="${esc(p.name)}" aria-label="Add task to ${esc(p.name)}">+ Task</button></div></article>`).join('') || empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
+  $('projects').innerHTML=deriveProjects(state.tasks).map(p=>`<article class="project" data-project-id="${esc(p.id)}"><div class="project-heading"><h3>${esc(p.name)}</h3><select aria-label="Status of ${esc(p.name)}" data-project-status="${esc(p.id)}" ${state.projectPending.has(p.id)?'disabled':''}>${['Active','Completed','Archived'].map(status=>`<option ${status===p.status?'selected':''}>${status}</option>`).join('')}</select></div><div class="project-progress"><progress max="100" value="${p.percent}" aria-label="${esc(p.name)} progress"></progress><small>${p.done}/${p.total} · ${p.percent}%</small></div>${p.next?`<button class="project-next" data-edit="${esc(p.next.id)}"><small>Next → </small>${esc(p.next.name)}</button>`:`<p class="section-note">${p.total?'All tasks complete · project '+p.status.toLowerCase():'No tasks yet'}</p>`}<div class="project-footer"><small>${p.count} unfinished</small><button class="quiet" data-project="${esc(p.name)}" aria-label="Add task to ${esc(p.name)}">+ Task</button></div></article>`).join('') || empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
   $('projects').scrollLeft=scroll;
 }
 async function loadProjects() {
