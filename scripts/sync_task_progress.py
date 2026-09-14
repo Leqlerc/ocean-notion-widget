@@ -148,7 +148,6 @@ def main():
 
     for page in pages:
         status = select_name(page, "Status")
-        category = select_name(page, "Category")
         focus = checked(page, "Focus")
         today_formula = str(formula_value(page, "Today") or "").lower() == "true"
         urgency = str(formula_value(page, "Urgency") or "").upper()
@@ -158,11 +157,12 @@ def main():
         if status == "Done":
             all_done += 1
 
-        if category == "School":
-            if status == "Done" and completed == today:
-                today_done += 1
-            elif status != "Done" and (today_formula or focus):
-                today_unfinished += 1
+        # Today progress is intentionally category-agnostic: school, athletics,
+        # errands, optimization, and clubs/work all count toward the same ring.
+        if status == "Done" and completed == today:
+            today_done += 1
+        elif status != "Done" and (today_formula or focus):
+            today_unfinished += 1
 
         if status != "Done" and urgency in {"OVERDUE", "TODAY", "NEXT 7 DAYS"}:
             week_unfinished += 1
