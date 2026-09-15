@@ -18,8 +18,10 @@
   <script src="/calendar-semantics.js?v=2" defer></script>
   <script src="/nocean-deadlines.js?v=1" defer></script>
   <script src="/nocean-motion.js?v=1" defer></script>
-  <script src="/nocean.js?v=4" defer></script>
+  <script src="/nocean-filters.js?v=1" defer></script>
+  <script src="/nocean.js?v=5" defer></script>
   <script src="/calendar-labels.js?v=1" defer></script>
+<link rel="stylesheet" href="/nocean-controls.css?v=1">
 </head>
 <body data-page="home">
 <div class="app">
@@ -36,9 +38,10 @@
         <label class="sr-only" for="taskName">Task name</label>
         <input id="taskName" name="name" required maxlength="500" placeholder="What’s the next thing to do?" autocomplete="off">
         <button type="submit" class="primary" id="addButton">+ Add task</button>
-        <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Due date<input id="taskDue" name="due" type="date"></label><label>Time · optional<input id="taskTime" type="time" aria-describedby="dueDefault"></label><small id="dueDefault">No time selected → 11:59 PM local</small></div>
+        <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Due date<input id="taskDue" name="due" type="date"></label><label>Time · optional<input id="taskTime" type="time" aria-describedby="dueDefault"></label><label>Difficulty<select id="taskDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><small id="dueDefault">No time selected → 11:59 PM local</small></div>
       </form>
       <nav class="tabs" aria-label="Task lists"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="all" aria-pressed="false">All</button><label class="done-toggle"><input id="showDone" type="checkbox"> Show done</label></nav>
+      <details class="task-filters" id="taskFilters"><summary>Filters <span id="filterCount"></span></summary><div class="filter-strip"><label>Due<select id="filterDue"><option value="all">Any due date</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="tomorrow">Tomorrow</option><option value="week">This week</option><option value="later">Later</option><option value="none">No due date</option></select></label><label>Project<select id="filterProject"><option value="all">All projects</option><option value="none">No project</option></select></label><label>Difficulty<select id="filterDifficulty"><option value="all">Any difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unrated</option></select></label><button id="clearFilters" class="quiet" type="button">Clear filters</button></div><small>Filters refine the selected view. Use All to search every task. This week = Monday–Sunday.</small></details>
       <div id="taskMessage" class="panel-message" role="status"></div>
       <div id="taskList" class="scroll task-list"><p class="empty">Loading your tasks…</p></div>
       <div class="card-foot"><span id="taskHint">Focus tasks and anything due today or overdue.</span><span id="doneCount"></span></div>
@@ -75,7 +78,7 @@
     <label>Task<input id="editName" required maxlength="500"></label>
     <label>Project<input id="editProject" list="projectOptions" maxlength="100" placeholder="Type or choose a project"></label>
     <div class="form-pair"><label>Due date<input id="editDue" type="date"></label><label>Time · optional<input id="editTime" type="time"></label></div><p class="section-note">Without a time, due at 11:59 PM local.</p><div class="form-pair"><label>Course<select id="editCourse"><option value="">None</option></select></label></div>
-    <div class="form-pair"><label>Status<select id="editStatus"></select></label><label class="check-label"><input id="editFocus" type="checkbox"> Focus today</label></div>
+    <div class="form-pair"><label>Difficulty<select id="editDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><label>Status<select id="editStatus"></select></label><label class="check-label"><input id="editFocus" type="checkbox"> Focus today</label></div>
     <p id="editError" class="panel-message" role="alert"></p>
     <div class="dialog-actions"><button type="button" id="archiveTask" class="quiet archive-button">Archive task</button><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save changes</button></div>
   </form>

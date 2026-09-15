@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c=vm.createContext({Date,Number,String,Math});vm.runInContext(fs.readFileSync('nocean-deadlines.js','utf8')+'\n'+fs.readFileSync('nocean-filters.js','utf8'),c);const run=s=>vm.runInContext(s,c);
+run(`const now=new Date('2026-09-15T12:00:00');const p={id:'p',name:'Project A'};const t={due:'2026-09-15',difficulty:'Hard',projectIds:['p']};`);
+for(const filter of ['today','week'])assert.equal(run(`TaskFilters.matches(t,{due:'${filter}',difficulty:'Hard',project:'p'},[p],now)`),true);
+for(const filter of ['overdue','tomorrow','later','none'])assert.equal(run(`TaskFilters.dueMatch(t.due,'${filter}',now)`),false);
+assert.equal(run(`TaskFilters.matches({...t,difficulty:null},{difficulty:'Unrated'},[p],now)`),true);
+assert.equal(run(`TaskFilters.dueMatch('2026-09-16','tomorrow',now)`),true);
+assert.equal(run(`TaskFilters.dueMatch('2026-09-21','later',now)`),true);
+assert.equal(run(`TaskFilters.dueMatch(null,'none',now)`),true);
+assert.equal(run(`TaskFilters.matches(t,{project:'none'},[p],now)`),false);
+console.log('Combinable project, difficulty, and local week/date filters passed.');

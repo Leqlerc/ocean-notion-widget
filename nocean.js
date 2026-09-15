@@ -1,6 +1,6 @@
 'use strict';
 const {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities} = NOcean;
-const state = {tasks:[], projects:[], projectPending:new Set(), projectRevision:0, removalTimers:new Map(), showInactiveProjects:false, lingering:new Set(), rowPositions:new Map(), courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
+const state = {tasks:[], filters:{due:'all',project:'all',difficulty:'all'}, projects:[], projectPending:new Set(), projectRevision:0, removalTimers:new Map(), showInactiveProjects:false, lingering:new Set(), rowPositions:new Map(), courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
 
 const TaskStore = {
   list: () => request('/api/tasks'),
@@ -46,6 +46,7 @@ const dueSort = (a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.
 function visibleTasks() {
   const result=state.tasks.filter(task => {
     if (state.lingering.has(task.id)) return true;
+    if(!TaskFilters.matches(task,state.filters,state.projects))return false;
     if (task.status === 'done') return state.showDone && (state.tab === 'all' || (state.tab === 'today' && dateDay(task.completedOn) === dayKey()));
     return state.tab === 'all' || (state.tab === 'today' ? isToday(task) : task.due && Deadlines.fields(task.due).date > Deadlines.fields(new Date().toISOString()).date);
   }).sort((a,b) => Number(a.status === 'done') - Number(b.status === 'done') || Number(b.status === 'doing') - Number(a.status === 'doing') || Number(b.focus) - Number(a.focus) || dueSort(a,b));
@@ -54,9 +55,10 @@ function visibleTasks() {
 }
 function taskRow(task) {
   const pending = state.pending.has(task.id), done = task.status === 'done';
-  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${esc(task.name)}</button><div class="task-meta">${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
+  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${esc(task.name)}</button><div class="task-meta"><span class="difficulty">${esc(task.difficulty||'Unrated')}</span>${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
 }
 function renderTasks() {
+  $('filterCount').textContent=Object.values(state.filters).filter(v=>v!=='all').length||'';
   const tasks = visibleTasks();
   $('tasksTitle').textContent = {today:'Today', upcoming:'Upcoming tasks', all:'All tasks'}[state.tab];
   TaskMotion.render($('taskList'),tasks,taskRow,empty(state.tab === 'today' ? 'A clear slate. Add a task or choose a Focus task from All.' : 'No tasks in this view.'));
@@ -77,6 +79,7 @@ function deriveProjects(tasks,projects=state.projects) {
   }).sort((a,b)=>(a.due || '9999').localeCompare(b.due || '9999')||a.name.localeCompare(b.name));
 }
 function renderProjects() {
+  const filterValue=state.filters.project;$('filterProject').innerHTML='<option value="all">All projects</option><option value="none">No project</option>'+state.projects.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');$('filterProject').value=filterValue;
   $('projectOptions').innerHTML = [...new Set(state.projects.filter(p=>p.status==='Active').map(p=>p.name))].sort().map(p => `<option value="${esc(p)}"></option>`).join('');
   const scroll=$('projects').scrollLeft;
   $('projects').innerHTML=deriveProjects(state.tasks).map(p=>`<article class="project" data-project-id="${esc(p.id)}"><div class="project-heading"><h3>${esc(p.name)}</h3><select aria-label="Status of ${esc(p.name)}" data-project-status="${esc(p.id)}" ${state.projectPending.has(p.id)?'disabled':''}>${['Active','Completed','Archived'].map(status=>`<option ${status===p.status?'selected':''}>${status}</option>`).join('')}</select></div><div class="project-progress"><progress max="100" value="${p.percent}" aria-label="${esc(p.name)} progress"></progress><small>${p.done}/${p.total} · ${p.percent}%</small></div>${p.next?`<button class="project-next" data-edit="${esc(p.next.id)}"><small>Next → </small>${esc(p.next.name)}</button>`:`<p class="section-note">${p.total?'All tasks complete · project '+p.status.toLowerCase():'No tasks yet'}</p>`}<div class="project-footer"><small>${p.count} unfinished</small><button class="quiet" data-project="${esc(p.name)}" aria-label="Add task to ${esc(p.name)}">+ Task</button></div></article>`).join('') || empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
@@ -140,6 +143,7 @@ async function updateTask(id, changes) {
 function openEditor(id) {
   const task = state.tasks.find(t => t.id === id);
   if (!task || state.pending.has(id)) return;
+  $('editDifficulty').value=task.difficulty||'Unrated';
   $('editId').value = id; $('editName').value = task.name; $('editProject').value = task.project;
   const deadline=Deadlines.fields(task.due); $('editDue').value=deadline.date; $('editTime').value=deadline.time; $('editDue').dataset.original=deadline.date; $('editTime').dataset.original=deadline.time; $('editFocus').checked = task.focus;
   $('editCourse').innerHTML = ['',[...new Set([...state.courses, task.course].filter(Boolean))]].flat().map(c => `<option value="${esc(c)}">${esc(c || 'None')}</option>`).join('');
@@ -229,7 +233,7 @@ function clock() {
 function refreshAll() { return Promise.allSettled([loadTasks(),loadProjects(),loadCalendar(),loadCampus()]); }
 $('quickAdd').addEventListener('submit', async event => {
   event.preventDefault(); if (state.creating) return;
-  const task = {name:$('taskName').value.trim(),project:$('taskProject').value.trim(),due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true};
+  const task = {difficulty:$('taskDifficulty').value,name:$('taskName').value.trim(),project:$('taskProject').value.trim(),due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true};
   if (!task.name) return;
   state.creating = true; state.revision++; $('addButton').disabled = true; $('taskMessage').textContent = '';
   try {
@@ -273,7 +277,7 @@ $('archiveTask').addEventListener('click', async () => {
 $('editTask').addEventListener('submit', async event => {
   event.preventDefault(); const id=$('editId').value, original=state.tasks.find(t=>t.id===id);
   $('saveEdit').disabled=true;
-  const changes={name:$('editName').value.trim(),course:$('editCourse').value,status:$('editStatus').value,focus:$('editFocus').checked};
+  const changes={difficulty:$('editDifficulty').value,name:$('editName').value.trim(),course:$('editCourse').value,status:$('editStatus').value,focus:$('editFocus').checked};
   // Editing another field must not discard an imported deadline's time or offset.
   if($('editProject').value.trim()!==original.project)changes.project=$('editProject').value.trim();
   if($('editDue').value!==$('editDue').dataset.original || $('editTime').value!==$('editTime').dataset.original) changes.due=Deadlines.serialize($('editDue').value,$('editTime').value);
@@ -305,3 +309,6 @@ $('projectForm').addEventListener('submit',async e=>{
 });
 $('projects').addEventListener('change',e=>{if(e.target.dataset.projectStatus)setProjectStatus(e.target.dataset.projectStatus,e.target.value);});
 $('showInactiveProjects').addEventListener('change',e=>{state.showInactiveProjects=e.target.checked;renderProjects();});
+
+for(const [id,key] of [['filterDue','due'],['filterProject','project'],['filterDifficulty','difficulty']])$(id).addEventListener('change',e=>{state.filters[key]=e.target.value;renderTasks();});
+$('clearFilters').addEventListener('click',()=>{state.filters={due:'all',project:'all',difficulty:'all'};for(const id of ['filterDue','filterProject','filterDifficulty'])$(id).value='all';renderTasks();});

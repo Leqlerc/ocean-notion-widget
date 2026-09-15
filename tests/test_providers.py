@@ -24,6 +24,13 @@ class Tasks(unittest.TestCase):
         self.assertEqual(result['due'], '2026-09-15T20:30:00-04:00')
         self.assertNotIn('properties', result)
 
+    def test_difficulty(self):
+        self.assertEqual(normalize(page())['difficulty'],'Unrated')
+        for level in ('Easy','Medium','Hard'):
+            self.assertEqual(NotionTaskStore().properties(validate({'difficulty':level}))['Difficulty']['select']['name'],level)
+        self.assertIsNone(NotionTaskStore().properties({'difficulty':'Unrated'})['Difficulty']['select'])
+        with self.assertRaises(ValueError):validate({'difficulty':'Impossible'})
+
     def test_create_defaults(self):
         with patch('lib.notion.request', return_value=page()) as api, patch('lib.projects.NotionProjectStore.resolve',return_value={'id':'22222222-2222-4222-8222-222222222222','name':'Exam prep'}):
             NotionTaskStore().create({'name': 'Prepare notes', 'project': 'Exam prep'})

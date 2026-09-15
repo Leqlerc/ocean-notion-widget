@@ -4,14 +4,14 @@ from uuid import UUID
 from lib import notion
 
 STATUSES = {'inbox': 'Inbox', 'next': 'Next', 'doing': 'Doing', 'waiting': 'Waiting', 'done': 'Done'}
-FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due'}
+FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty'}
 
 
 def normalize(page):
     get = lambda name: notion.value(page, name)
     return {'id': page['id'], 'name': get('Task') or 'Untitled task',
             'status': (get('Status') or 'Inbox').lower(), 'focus': bool(get('Focus')),
-            'course': get('Course') or '', 'project': get('Project') or '',
+            'difficulty': get('Difficulty') or 'Unrated', 'course': get('Course') or '', 'project': get('Project') or '',
             'projectIds':[r['id'] for r in get('Projects') or []],
             'due': get('Deadline'), 'scheduledFor': get('Do date'),
             'completedOn': get('Date Completed'), 'url': page.get('url', '')}
@@ -29,6 +29,8 @@ def validate(data, creating=False):
             data[key] = data[key].strip()
             if key == 'name' and not data[key]:
                 raise ValueError('A task name is required.')
+    if 'difficulty' in data and data['difficulty'] not in ('Unrated','Easy','Medium','Hard'):
+        raise ValueError('Invalid difficulty.')
     if 'status' in data and data['status'] not in STATUSES:
         raise ValueError('Invalid task status.')
     if 'focus' in data and type(data['focus']) is not bool:
@@ -61,6 +63,8 @@ class NotionTaskStore:
         for field, name, kind in [('name', 'Task', 'title'), ('project', 'Project', 'rich_text')]:
             if field in data:
                 props[name] = {kind: [{'text': {'content': data[field]}}] if data[field] else []}
+        if 'difficulty' in data:
+            props['Difficulty']={'select':{'name':data['difficulty']} if data['difficulty']!='Unrated' else None}
         if 'course' in data:
             props['Course'] = {'select': {'name': data['course']} if data['course'] else None}
         if 'focus' in data:
