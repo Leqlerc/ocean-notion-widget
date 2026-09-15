@@ -11,3 +11,9 @@ body[data-page="home"] .dining-card>.card-head,body[data-page="home"] .dining-ca
 body[data-page="home"] #dining{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:auto;padding-right:8px;}
 .dining-court .court-top{display:flex;flex-direction:column;align-items:flex-start;gap:3px;}.dining-court .court-meta{margin:5px 0 7px;}.dining-court .crowd-badge{padding:3px 6px;}.meal-controls{min-height:40px;}
 @media(max-width:760px){body[data-page="home"] .dining-card{height:700px;min-height:0;max-height:none;}.meal-controls{flex-wrap:nowrap;}.meal-controls small{font-size:10px;}}
+/* Stable cards in a native horizontal track, including on touch screens. */
+body[data-page="home"] .projects-card{min-width:0;overflow:hidden;}
+body[data-page="home"] #projects,body[data-page="home"] #projects.many-projects{display:flex;flex-wrap:nowrap;gap:14px;align-items:stretch;max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior:auto;padding:0 0 10px;scroll-snap-type:x proximity;}
+body[data-page="home"] #projects .project{flex:0 0 calc((100% - 28px)/3);min-width:310px;max-width:390px;scroll-snap-align:start;display:flex;flex-direction:column;}
+.project-summary{min-height:174px;}.project-work{flex:1;min-height:160px;}.project-task-list{max-height:300px;}
+@media(max-width:760px){body[data-page="home"] #projects .project{flex-basis:calc(100% - 16px);min-width:0;max-width:none;}.project-summary{min-height:165px;}.project-summary-controls{gap:8px;}}
