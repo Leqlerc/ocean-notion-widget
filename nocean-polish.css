@@ -5,7 +5,7 @@ body[data-page="home"] .welcome{position:relative;display:flex;align-items:cente
 
 /* Both primary cards share one desktop row; only results scroll. */
 :root{--primary-card-height:780px;}
-@media(min-width:761px){body[data-page="home"] .dashboard{grid-template-areas:"tasks dining" "campus campus" "projects projects" "events events";grid-template-rows:var(--primary-card-height) auto auto auto;}body[data-page="home"] .tasks-card,body[data-page="home"] .dining-card{height:var(--primary-card-height);min-height:0;max-height:none;}body[data-page="home"] .campus-grid{grid-template-columns:1fr 2fr;}body[data-page="home"] .recreation{display:grid;grid-template-columns:1fr 1fr;gap:14px;}}
+@media(min-width:761px){body[data-page="home"] .dashboard{grid-template-columns:minmax(0,1fr);grid-template-areas:"tasks" "projects" "campus" "dining" "events";grid-template-rows:var(--primary-card-height) auto auto var(--primary-card-height) auto;}body[data-page="home"] .tasks-card,body[data-page="home"] .dining-card{height:var(--primary-card-height);min-height:0;max-height:none;}body[data-page="home"] .campus-grid{grid-template-columns:1fr 2fr;}body[data-page="home"] .recreation{display:grid;grid-template-columns:1fr 1fr;gap:14px;}}
 body[data-page="home"] .dining-card{display:flex;flex-direction:column;overflow:hidden;}
 body[data-page="home"] .dining-card>.card-head,body[data-page="home"] .dining-card>.meal-controls,body[data-page="home"] .dining-card>.section-note{flex-shrink:0;}
 body[data-page="home"] #dining{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:auto;padding-right:8px;}
@@ -18,3 +18,7 @@ body[data-page="home"] #projects .project{flex:0 0 calc((100% - 28px)/3);min-wid
 .project-summary{min-height:174px;}.project-work{flex:1;min-height:160px;}.project-task-list{max-height:300px;}
 @media(max-width:760px){body[data-page="home"] #projects .project{flex-basis:calc(100% - 16px);min-width:0;max-width:none;}.project-summary{min-height:165px;}.project-summary-controls{gap:8px;}}
 .dining-court .court-meta{text-align:left;max-width:none;}.dining-court .court-top{margin-bottom:0;}
+
+/* Food names and nutrition share a first row; badges stay below the name. */
+.dining-court .pick{display:grid;grid-template-columns:minmax(0,1fr) minmax(125px,190px);align-items:start;gap:12px;}.dining-court .pick>span{min-width:0;line-height:1.5;}.dining-court .macros{padding-top:0;}.dining-court .rotating{margin-top:2px;line-height:1.3;}
+@media(max-width:760px){.dining-court .pick{grid-template-columns:minmax(0,1fr) 112px;gap:8px;}}
