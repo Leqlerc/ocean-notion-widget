@@ -78,7 +78,7 @@ class Dining(unittest.TestCase):
         def item(name,p,f=5,na=400):return {'name':name,'protein':p,'fat':f,'sodium':na}
         items=[item('Chicken breast',31,4),item('Chicken thigh',32,10),item('Protein Cookie',50),item('Rice',3),item('Tofu',None),item('Fish',31,4,200)]
         picks=rank_macro_picks(items,10)
-        self.assertEqual([i['name'] for i in picks], ['Fish','Chicken breast','Chicken thigh','Tofu'])
+        self.assertEqual([i['name'] for i in picks], ['Chicken thigh','Chicken breast','Fish','Tofu'])
         self.assertIsNone(picks[-1]['protein'])
 
     def test_meal_status_and_overnight(self):

@@ -11,6 +11,7 @@ const TaskStore = {
 const ProjectStore = {load:()=>request('/api/projects'),create:(name,due)=>request('/api/projects',{method:'POST',body:JSON.stringify({name,due})}),update:(id,changes)=>request('/api/projects',{method:'PATCH',body:JSON.stringify({id,...changes})})};
 const CalendarProvider = {load: () => request('/api/events')};
 const DiningProvider = {load: () => request('/api/dining')};
+let diningData=null,diningMeal=new Date().getHours()<15?'Lunch':'Dinner';try{const saved=localStorage.getItem('nocean.meal');if(['Lunch','Dinner'].includes(saved))diningMeal=saved;}catch{}
 const RecProvider = {load: () => request('/api/recwell')};
 const WeatherProvider = {load: () => request(CONFIG.weather)};
 let toastTimer;
@@ -182,10 +183,14 @@ function renderWeather(data) {
 }
 function renderRec(data) { $('recreation').innerHTML = renderFacilities(data); }
 function renderDining(data) {
-  $('dining').innerHTML = data.courts.map(court => {
-    const status = court.open === null ? 'Unavailable' : court.open ? 'Open' : 'Closed';
-    const meal = court.meal ? `${court.open ? '' : 'Next: '}${court.date > dayKey() ? 'tomorrow ' : ''}${court.meal}` : '';
-    return `<article class="dining-court"><div class="court-top"><div class="court-heading">${esc(court.name)} <span class="badge ${court.open ? 'open' : ''}">${status}</span></div><div class="court-meta">${esc(meal)}${court.start ? ` · ${esc(timeLabel(court.start))}–${esc(timeLabel(court.end))}` : ''}</div></div><div>${court.picks.map(p => `<div class="pick"><span>${esc(p.name)}</span><div class="macros" title="${esc(p.serving || 'Serving size unavailable')}">${p.protein == null ? 'Nutrition unavailable' : `<span class="protein">${p.protein}g P</span> · ${p.fat == null ? 'Fat unavailable' : p.fat+'g F'} · ${p.sodium == null ? 'Sodium unavailable' : p.sodium+'mg Na'}`}${p.serving ? ' · '+esc(p.serving.replace(/ Serving$/i,'')) : ''}</div></div>`).join('') || empty(court.message || 'No protein picks published.')}</div></article>`;
+  diningData=data;
+  document.querySelectorAll('[data-meal]').forEach(b=>{b.classList.toggle('active',b.dataset.meal===diningMeal);b.setAttribute('aria-pressed',b.dataset.meal===diningMeal);});
+  $('diningDate').textContent=data.date===dayKey()?'Today · '+diningMeal:(data.date||'')+' · '+diningMeal;
+  $('dining').innerHTML=(data.meals?.[diningMeal]||[]).map(court=>{
+    const crowd=court.crowd||{},current=new Date(),checked=new Date(crowd.checkedAt),fresh=Number.isFinite(+checked)&&current-checked<10*60*1000;
+    const level=fresh?crowd.level:'unknown',label=fresh?crowd.label:'Crowd status stale';
+    const status=court.open===null?'Menu unavailable':court.open?'Serving now':court.start&&new Date(court.start)>current?'Opens '+timeLabel(court.start):'Service ended / closed';
+    return `<article class="dining-court"><div class="court-top"><h3>${esc(court.name)}</h3><span class="crowd-badge crowd-${esc(level||'unknown')}" title="${esc(crowd.source||'No current crowd report')} · checked ${esc(timeLabel(crowd.checkedAt))}">● ${esc(label||'Crowd unavailable')}${fresh&&crowd.percent!=null?' · '+crowd.percent+'%':''}</span></div><div class="court-meta">${esc(status)}${court.start?' · '+esc(timeLabel(court.start))+'–'+esc(timeLabel(court.end)):''}${court.service&&court.service!==diningMeal?' · '+esc(court.service):''}</div>${fresh&&crowd.estimate?`<small class="wait-estimate">Estimated wait ${esc(crowd.estimate)} · Purdue · ${esc(timeLabel(crowd.waitUpdatedAt))}</small>`:''}<div>${court.picks.map((p,i)=>`<div class="pick"><span>${i===0&&p.rotating?'<small class="rotating">Rotating pick</small>':''}${esc(p.name)}</span><span class="macros" title="${esc(p.serving||'Serving size unavailable')} · ${esc(p.station||'')}">${p.protein==null?'Nutrition unavailable':p.protein+'g protein'+(p.fat!=null?' · '+p.fat+'g fat':'')}</span></div>`).join('')||empty(court.message||'No protein picks published.')}</div></article>`;
   }).join('');
 }
 const importantEvent = event => CalendarSemantics.classify(event).key !== 'class';
@@ -331,3 +336,6 @@ $('showInactiveProjects').addEventListener('change',e=>{state.showInactiveProjec
 
 for(const [id,key] of [['filterDue','due'],['filterProject','project'],['filterDifficulty','difficulty']])$(id).addEventListener('change',e=>{state.filters[key]=e.target.value;renderTasks();});
 $('clearFilters').addEventListener('click',()=>{state.filters={due:'all',project:'all',difficulty:'all'};for(const id of ['filterDue','filterProject','filterDifficulty'])$(id).value='all';renderTasks();});
+
+for(const button of document.querySelectorAll('[data-meal]'))button.addEventListener('click',()=>{diningMeal=button.dataset.meal;try{localStorage.setItem('nocean.meal',diningMeal);}catch{}if(diningData)renderDining(diningData);});
+setInterval(()=>{if(diningData&&!document.hidden)renderDining(diningData);},60000);
