@@ -54,11 +54,20 @@ def rank_macro_picks(items, limit=3):
     """Measured rotating entrees first, then protein per serving and protein/fat."""
     eligible=[i for i in items if not EXCLUDE.search(i['name']) and not HARD_EXCLUDE.search(i['name'])
               and PROTEIN.search(i['name']) and (i['protein'] is None or i['protein']>=15)]
-    def score(i):
-        rotating=i.get('rotating',not bool(STAPLE.search(i['name'])))
-        protein=i['protein'];fat=i['fat']
-        return (protein is None,not rotating,-(protein or 0),-(protein/max(fat,1) if protein is not None and fat is not None else 0),i['name'])
-    return sorted(eligible,key=score)[:limit]
+    return sorted(eligible,key=protein_score)[:limit]
+
+
+def protein_score(i):
+    rotating=i.get('rotating',not bool(STAPLE.search(i['name'])))
+    protein=i['protein'];fat=i['fat']
+    return (protein is None,not rotating,-(protein or 0),-(protein/max(fat,1) if protein is not None and fat is not None else 0),i['name'])
+
+
+def hall_score(court):
+    # No recommendations belong last; stable hall name breaks equal food scores.
+    picks=court.get('picks') or []
+    return (not bool(picks), protein_score(picks[0])[:-1] if picks else (), court['name'])
+
 
 
 def meal_window(meal, day):
@@ -170,6 +179,7 @@ def load_dining():
             court['picks']=rank_macro_picks(normalized);court['crowd']=crowds[court['name']]
             if not court['picks'] and not court.get('message'):court['message']='No qualifying protein entrees published'
             meals[group].append(court)
+    for courts in meals.values():courts.sort(key=hall_score)
     return {'meals':meals,'courts':meals['Lunch' if now.hour<15 else 'Dinner'],'date':now.date().isoformat(),'updatedAt':now.isoformat(),
             'source':'Purdue Mobile Menus','crowdSource':'Waitz; Purdue Mobile Menus wait estimates when fresh',
             'ranking':'Rotating entrees first; higher protein, then protein-to-fat efficiency per serving. Rotating inferred from station and staple exclusions.'}

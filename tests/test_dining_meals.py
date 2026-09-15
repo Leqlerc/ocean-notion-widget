@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from datetime import datetime,timedelta
-from lib.dining import court_menu,meal_group,wait_report,load_crowds,TZ,rank_macro_picks
+from lib.dining import court_menu,meal_group,wait_report,load_crowds,TZ,rank_macro_picks,hall_score
 class Meals(unittest.TestCase):
  def test_breakfast_excluded_late_lunch_separate(self):
   def meal(name,start,end,item):return {'Name':name,'Type':name,'Status':'Open','Hours':{'StartTime':start,'EndTime':end},'Stations':[{'Name':'Rotating Grill','Items':[{'ID':item,'Name':'Chicken '+item}]}]}
@@ -20,3 +20,7 @@ class Meals(unittest.TestCase):
   def item(name,p,f,rotating):return {'name':name,'protein':p,'fat':f,'rotating':rotating}
   picks=rank_macro_picks([item('Grilled Chicken Breast',50,1,False),item('Turkey Meatballs',30,10,True),item('Fish',20,1,True)])
   self.assertEqual([p['name'] for p in picks],['Turkey Meatballs','Fish','Grilled Chicken Breast'])
+
+ def test_hall_order_uses_food_not_crowds(self):
+  courts=[{'name':'Alpha','picks':[{'name':'Fish','protein':20,'fat':1,'rotating':True}],'crowd':{'level':'low'}},{'name':'Zulu','picks':[{'name':'Chicken','protein':35,'fat':10,'rotating':True}],'crowd':{'level':'very-busy'}},{'name':'Empty','picks':[]}]
+  self.assertEqual([c['name'] for c in sorted(courts,key=hall_score)],['Zulu','Alpha','Empty'])
