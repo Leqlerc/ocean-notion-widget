@@ -3,14 +3,37 @@ body[data-page="home"] .welcome{position:relative;display:flex;align-items:cente
 .welcome h2{font-size:clamp(22px,2.3vw,29px);margin:0 0 8px;}.welcome p{font-size:14px;color:#e0ebf4;max-width:45ch;}.welcome-clock{display:flex;flex-direction:column;gap:5px;text-align:right;flex-shrink:0;}.welcome-clock time{font-size:clamp(23px,2.3vw,30px);font-variant-numeric:tabular-nums;min-width:9ch;letter-spacing:.02em;}.welcome-clock small{font-size:12px;color:#d9e7f1;}.welcome>.cosmetic-gear{position:absolute;right:10px;top:10px;background:#0919258c;}.welcome+.dashboard,body.decorated[data-page="home"] .welcome+.dashboard{margin-top:0;}body.decorated[data-page="home"]::after{display:none;}body[data-page="home"] #clock{display:none;}
 @media(max-width:760px){body[data-page="home"] .welcome{min-height:175px;align-items:start;flex-direction:column;gap:15px;padding:20px 35px 20px 18px;}.welcome-clock{text-align:left;gap:3px;}.welcome p{font-size:12px;}.welcome h2{font-size:22px;}.welcome-clock time{font-size:23px;}}
 
-/* Both primary cards share one desktop row; only results scroll. */
-:root{--primary-card-height:780px;}
-@media(min-width:761px){body[data-page="home"] .dashboard{grid-template-columns:minmax(0,1fr);grid-template-areas:"tasks" "projects" "campus" "dining" "events";grid-template-rows:var(--primary-card-height) auto auto var(--primary-card-height) auto;}body[data-page="home"] .tasks-card,body[data-page="home"] .dining-card{height:var(--primary-card-height);min-height:0;max-height:none;}body[data-page="home"] .campus-grid{grid-template-columns:1fr 2fr;}body[data-page="home"] .recreation{display:grid;grid-template-columns:1fr 1fr;gap:14px;}}
+/* Desktop main row: Tasks dominate the left; Campus + Dining share the right. */
+:root{--primary-stack-height:720px;--campus-stack-height:220px;}
+@media(min-width:980px){
+  body[data-page="home"] .dashboard{
+    grid-template-columns:minmax(0,1.65fr) minmax(330px,1fr);
+    grid-template-areas:
+      "tasks campus"
+      "tasks dining"
+      "projects projects"
+      "events events";
+    grid-template-rows:var(--campus-stack-height) calc(var(--primary-stack-height) - var(--campus-stack-height) - 16px) auto auto;
+    align-items:stretch;
+  }
+  body[data-page="home"] .tasks-card{grid-area:tasks;height:var(--primary-stack-height);min-height:0;max-height:none;}
+  body[data-page="home"] .campus-card{grid-area:campus;height:auto;min-height:0;}
+  body[data-page="home"] .dining-card{grid-area:dining;height:auto;min-height:0;max-height:none;}
+  body[data-page="home"] .projects-card{grid-area:projects;}
+  body[data-page="home"] .events-card{grid-area:events;}
+  body[data-page="home"] .campus-grid{grid-template-columns:1fr 2fr;}
+  body[data-page="home"] .recreation{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+}
+@media(min-width:761px) and (max-width:979px){
+  body[data-page="home"] .dashboard{grid-template-columns:minmax(0,1fr);grid-template-areas:"tasks" "campus" "dining" "projects" "events";grid-template-rows:auto auto auto auto auto;}
+  body[data-page="home"] .tasks-card,body[data-page="home"] .dining-card{height:auto;min-height:560px;max-height:none;}
+}
 body[data-page="home"] .dining-card{display:flex;flex-direction:column;overflow:hidden;}
 body[data-page="home"] .dining-card>.card-head,body[data-page="home"] .dining-card>.meal-controls,body[data-page="home"] .dining-card>.section-note{flex-shrink:0;}
 body[data-page="home"] #dining{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:auto;padding-right:8px;}
 .dining-court .court-top{display:flex;flex-direction:column;align-items:flex-start;gap:3px;}.dining-court .court-meta{margin:5px 0 7px;}.dining-court .crowd-badge{padding:3px 6px;}.meal-controls{min-height:40px;}
 @media(max-width:760px){body[data-page="home"] .dining-card{height:700px;min-height:0;max-height:none;}.meal-controls{flex-wrap:nowrap;}.meal-controls small{font-size:10px;}}
+
 /* Stable cards in a native horizontal track, including on touch screens. */
 body[data-page="home"] .projects-card{min-width:0;overflow:hidden;}
 body[data-page="home"] #projects,body[data-page="home"] #projects.many-projects{display:flex;flex-wrap:nowrap;gap:14px;align-items:stretch;max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior:auto;padding:0 0 10px;scroll-snap-type:x proximity;}
