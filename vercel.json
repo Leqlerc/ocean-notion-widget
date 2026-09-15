@@ -1,19 +1,9 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/dining.py": {
-      "maxDuration": 60
-    },
-    "api/tasks.py": {
-      "maxDuration": 60
-    },
-    "api/events.py": {
-      "maxDuration": 60
-    },
-    "api/athletics.py": {
-      "maxDuration": 60
-    },
-    "api/projects.py": {
-      "maxDuration": 60
+    "api/**/*.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{tests/**,assets/**,*.png,**/*.png}"
     }
   }
 }
