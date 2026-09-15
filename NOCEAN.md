@@ -58,3 +58,13 @@ Additional checks: `node tests/test_ui.cjs`, `node --check athletics.js`. Mocked
 `nocean-ui.js` stores Default, Card Art, or Experimental in `nocean.preset`. `nocean-presets.css` supplies presentation-only overrides. Default retains the existing global biome system; Card Art uses a dark canvas and selective imagery; Experimental uses a restrained alternate palette. Presets do not invoke providers or modify data, and the existing decorated-mode preference remains separate.
 
 Additional checks: `node tests/test_deadlines.cjs` validates date-only/explicit local dates across four time zones and DST boundaries. Python merge/project tests cover independent source failures, source-preserving deduplication, instant-based ordering, zero-task projects, lifecycle-only writes, and date defaults. Frontend checks cover zero/partial/full progress and lifecycle filtering.
+
+## September dashboard polish
+
+`nocean-welcome.js` runs a browser-local, one-second clock and selects an original process-focused message by local day. The shallow full-width banner uses the shared local appearance editor in every preset. No Dragonair asset existed; image generation was rejected, so Safe Shallows is the explicit temporary default.
+
+`nocean-polish.css` aligns Tasks and Dining to `--primary-card-height:780px` on desktop; mobile Dining is 700px. Only dining results scroll, with native boundary chaining. `protein_score` now drives both dish ranking and each hall's best-pick score; empty recommendations sort last and hall names break ties. Lunch and Dinner keep identical geometry. Projects use a non-wrapping native horizontal track with stable widths and separate art headers/task surfaces.
+
+`calendar-labels.js` now preserves the full month heading after asynchronous renders. `nocean-status.css` shares badge/border colors between Dining and Home/Athletics facilities. Occupancy thresholds are <30 quiet, <60 moderate, <85 busy, otherwise very busy; closed/unavailable is muted. Open facilities without occupancy are labeled only Open and occupancy unavailable.
+
+Verification: 36 Python tests; frontend, UI, filters, appearance, deadline/DST and polish Node contracts. Production checked in 1440×900, 1536×864 and 390×844 iframe viewports: equal desktop card heights, native overflow, full month, moving seconds, and no page horizontal overflow. Desktop/mobile meal heights remain 780/700px. Safe Shallows remains the welcome artwork limitation.

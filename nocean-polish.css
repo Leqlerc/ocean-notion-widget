@@ -17,3 +17,4 @@ body[data-page="home"] #projects,body[data-page="home"] #projects.many-projects{
 body[data-page="home"] #projects .project{flex:0 0 calc((100% - 28px)/3);min-width:310px;max-width:390px;scroll-snap-align:start;display:flex;flex-direction:column;}
 .project-summary{min-height:174px;}.project-work{flex:1;min-height:160px;}.project-task-list{max-height:300px;}
 @media(max-width:760px){body[data-page="home"] #projects .project{flex-basis:calc(100% - 16px);min-width:0;max-width:none;}.project-summary{min-height:165px;}.project-summary-controls{gap:8px;}}
+.dining-court .court-meta{text-align:left;max-width:none;}.dining-court .court-top{margin-bottom:0;}
