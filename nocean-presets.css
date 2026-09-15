@@ -3,10 +3,12 @@
 body[data-page="home"][data-preset="card-art"],body[data-page="home"][data-preset="experimental"]{background:#080c0f;color:#edf1f3;}
 body[data-page="home"][data-preset="card-art"] .dashboard,body[data-page="home"][data-preset="experimental"] .dashboard{margin-top:0;}
 body[data-page="home"][data-preset="card-art"]::after,body[data-page="home"][data-preset="experimental"]::after{display:none;}
-body[data-page="home"][data-preset="card-art"] .card{background:#121b20;border-color:#344750;backdrop-filter:none;-webkit-backdrop-filter:none;}
-body[data-page="home"][data-preset="card-art"] .campus-card{background:linear-gradient(90deg,#08131bf0,#08131bd9),url('/assets/backgrounds/safe-shallows.webp') center/cover;}
-body[data-page="home"][data-preset="card-art"] .events-card{background:linear-gradient(120deg,#08121be8,#08121bf2),url('/assets/backgrounds/tree-cove.webp') center/cover;}
-body[data-page="home"][data-preset="card-art"] .project{background:linear-gradient(110deg,#0a1b24ed,#0a1b24df),url('/assets/backgrounds/grand-reef.webp') center/cover;}
+body[data-page="home"][data-preset="card-art"] .card{background:#121b20;border-color:#425d69;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 10px 28px #0005;}
+/* Card Art should make the biome imagery obvious, while keeping enough local contrast for text. */
+body[data-page="home"][data-preset="card-art"] .campus-card{background:linear-gradient(90deg,rgba(8,19,27,.62),rgba(8,19,27,.38)),url('/assets/backgrounds/safe-shallows.webp') center/cover;}
+body[data-page="home"][data-preset="card-art"] .events-card{background:linear-gradient(120deg,rgba(8,18,27,.54),rgba(8,18,27,.64)),url('/assets/backgrounds/tree-cove.webp') center/cover;}
+body[data-page="home"][data-preset="card-art"] .project{background:linear-gradient(110deg,rgba(10,27,36,.50),rgba(10,27,36,.34)),url('/assets/backgrounds/grand-reef.webp') center/cover;border-color:#4e7180;}
+body[data-page="home"][data-preset="card-art"] .campus-card,body[data-page="home"][data-preset="card-art"] .events-card,body[data-page="home"][data-preset="card-art"] .project{text-shadow:0 1px 2px #000c;}
 body[data-page="home"][data-preset="experimental"]{--accent:#a8d6ed;--raised:#202e39;--surface:#16212b;--line:#3a4e60;--text:#edf1f3;--muted:#b3c1cd;}
 body[data-page="home"][data-preset="experimental"] .card{background:linear-gradient(135deg,#192b36,#131b25);border-color:#3a4e60;border-radius:8px;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 10px 28px #0004;}
 body[data-page="home"][data-preset="experimental"] .primary{background:#a8d6ed;border-color:#a8d6ed;color:#102532;}
