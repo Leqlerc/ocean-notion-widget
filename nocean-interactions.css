@@ -4,9 +4,16 @@
   body[data-page="home"] .tasks-card{min-height:674px;}
   body[data-page="home"] .projects-grid{padding-bottom:5px;}
 }
+/* The document remains the primary vertical scroll surface. Nested lists may scroll,
+   but reaching their edge must hand wheel/trackpad motion back to the page. */
+body[data-page="home"]{overflow-y:auto;overscroll-behavior-y:auto;}
+body[data-page="home"] .app{height:auto;min-height:100dvh;overflow:visible;}
+body[data-page="home"] .dashboard{overflow:visible;}
+body[data-page="home"] .scroll{overscroll-behavior:auto;scroll-behavior:auto;}
 body[data-page="home"] .tasks-card{backdrop-filter:none;-webkit-backdrop-filter:none;}
 body.decorated[data-page="home"] .tasks-card{background:rgba(13,22,19,.94);}
 #taskList{overflow-y:auto;overflow-x:hidden;scroll-behavior:auto;overscroll-behavior-y:auto;scrollbar-gutter:stable;overflow-anchor:none;touch-action:pan-y;}
+#projects,#dining,#eventList{overscroll-behavior-y:auto;scroll-behavior:auto;}
 .task-row{overflow:hidden;transition:background-color 150ms ease;}
 .task-row.done .task-name{color:var(--muted);}
 .task-row.leaving{min-height:0!important;}
@@ -25,5 +32,5 @@ body[data-page="home"] .project{flex-basis:300px;min-width:280px;gap:10px;}
 #toast[hidden]{display:none;}#toast button{padding:4px 10px;}
 dialog[open]{animation:dialog-enter 150ms ease-out;}
 @keyframes dialog-enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:760px){body[data-page="home"] .tasks-card{min-height:620px;max-height:85dvh;}body[data-page="home"] .projects-card{min-height:260px;max-height:460px;}body[data-page="home"] .project{min-width:0;}.capture-options label{flex:1 1 120px;}.capture-options input{width:100%!important;}.project-tools{gap:5px;}}
+@media(max-width:760px){body[data-page="home"] .tasks-card{min-height:620px;max-height:none;}body[data-page="home"] .projects-card{min-height:260px;max-height:none;}body[data-page="home"] .dining-card{max-height:none;}body[data-page="home"] .project{min-width:0;}.capture-options label{flex:1 1 120px;}.capture-options input{width:100%!important;}.project-tools{gap:5px;}}
 @media(prefers-reduced-motion:reduce){dialog[open],.task-row,.quick-add input{animation:none;transition:none;}}
