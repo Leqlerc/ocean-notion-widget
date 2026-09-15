@@ -24,6 +24,8 @@
 <link rel="stylesheet" href="/nocean-controls.css?v=1">
 <link rel="stylesheet" href="/nocean-appearance.css?v=1">
 <script src="/nocean-appearance.js?v=1" defer></script>
+<link rel="stylesheet" href="/nocean-polish.css?v=1">
+<script src="/nocean-welcome.js?v=1" defer></script>
 </head>
 <body data-page="home">
 <div class="app">
@@ -33,7 +35,7 @@
     <div id="clock" class="clock"></div>
     <div class="sync"><span id="syncStatus" role="status">Connecting…</span><button id="refresh" class="quiet">Refresh</button></div>
   </header>
-  <div class="welcome"><h2>Welcome back, Will.</h2><p id="welcomeLine">Pick the next useful thing.</p></div>
+  <div class="welcome" data-cosmetic="welcome" data-default-art="safe-shallows" data-cosmetic-always="true"><div><h2>Welcome back, Will.</h2><p id="welcomeLine">Trust the process. Own the inputs.</p></div><div class="welcome-clock"><time id="welcomeTime" aria-label="Current local time"></time><small id="welcomeDate"></small></div></div>
   <main class="dashboard">
     <section class="card tasks-card" data-cosmetic="today" data-default-art="kelp-forest" aria-labelledby="tasksTitle">
       <div class="card-head"><div><p class="eyebrow">Make room for what matters</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>

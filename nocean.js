@@ -252,7 +252,6 @@ async function loadCampus() {
   })));
 }
 function clock() {
-  $('welcomeLine').textContent=['Pick the next useful thing.','Small wins compound.','Make today lighter than yesterday.'][new Date().getDate()%3];
   $('clock').textContent = new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date());
 }
 function refreshAll() { return Promise.allSettled([loadTasks(),loadProjects(),loadCalendar(),loadCampus()]); }
