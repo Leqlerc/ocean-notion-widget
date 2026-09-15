@@ -1,6 +1,6 @@
 'use strict';
 const {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities} = NOcean;
-const state = {tasks:[], filters:{due:'all',project:'all',difficulty:'all'}, projects:[], projectPending:new Set(), projectRevision:0, removalTimers:new Map(), showInactiveProjects:false, lingering:new Set(), rowPositions:new Map(), courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
+const state = {tasks:[], filters:{due:'all',project:'all',difficulty:'all'}, projects:[], projectFilters:new Map(), projectPending:new Set(), projectRevision:0, removalTimers:new Map(), showInactiveProjects:false, lingering:new Set(), rowPositions:new Map(), courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
 
 const TaskStore = {
   list: () => request('/api/tasks'),
@@ -8,7 +8,7 @@ const TaskStore = {
   archive: id => request('/api/tasks', {method:'DELETE', body:JSON.stringify({id})}),
   update: task => request('/api/tasks', {method:'PATCH', body:JSON.stringify(task)})
 };
-const ProjectStore = {load:()=>request('/api/projects'),create:name=>request('/api/projects',{method:'POST',body:JSON.stringify({name})}),update:(id,status)=>request('/api/projects',{method:'PATCH',body:JSON.stringify({id,status})})};
+const ProjectStore = {load:()=>request('/api/projects'),create:(name,due)=>request('/api/projects',{method:'POST',body:JSON.stringify({name,due})}),update:(id,changes)=>request('/api/projects',{method:'PATCH',body:JSON.stringify({id,...changes})})};
 const CalendarProvider = {load: () => request('/api/events')};
 const DiningProvider = {load: () => request('/api/dining')};
 const RecProvider = {load: () => request('/api/recwell')};
@@ -70,29 +70,48 @@ function renderTasks() {
 }
 function deriveProjects(tasks,projects=state.projects) {
   return projects.filter(p=>state.showInactiveProjects || p.status==='Active').map(project=>{
-    const related=tasks.filter(t=>(t.projectIds || []).includes(project.id) || (!(t.projectIds || []).length && t.project===project.name));
+    const related=tasks.filter(t=>TaskFilters.belongs(t,project));
     const unfinished=related.filter(t=>t.status!=='done');
     const done=related.length-unfinished.length;
-    return {...project,total:related.length,done,count:unfinished.length,percent:related.length?Math.round(done/related.length*100):0,
+    return {...project,tasks:related,total:related.length,done,count:unfinished.length,percent:related.length?Math.round(done/related.length*100):0,
       next:[...unfinished].sort((a,b)=>Number(b.status==='doing')-Number(a.status==='doing')||Number(b.focus)-Number(a.focus)||dueSort(a,b))[0],
-      due:[...unfinished].filter(t=>t.due).sort(dueSort)[0]?.due};
+      nextTaskDue:[...unfinished].filter(t=>t.due).sort(dueSort)[0]?.due};
   }).sort((a,b)=>(a.due || '9999').localeCompare(b.due || '9999')||a.name.localeCompare(b.name));
 }
 function renderProjects() {
   const filterValue=state.filters.project;$('filterProject').innerHTML='<option value="all">All projects</option><option value="none">No project</option>'+state.projects.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');$('filterProject').value=filterValue;
-  $('projectOptions').innerHTML = [...new Set(state.projects.filter(p=>p.status==='Active').map(p=>p.name))].sort().map(p => `<option value="${esc(p)}"></option>`).join('');
-  const scroll=$('projects').scrollLeft;
-  $('projects').innerHTML=deriveProjects(state.tasks).map(p=>`<article class="project" data-project-id="${esc(p.id)}"><div class="project-heading"><h3>${esc(p.name)}</h3><select aria-label="Status of ${esc(p.name)}" data-project-status="${esc(p.id)}" ${state.projectPending.has(p.id)?'disabled':''}>${['Active','Completed','Archived'].map(status=>`<option ${status===p.status?'selected':''}>${status}</option>`).join('')}</select></div><div class="project-progress"><progress max="100" value="${p.percent}" aria-label="${esc(p.name)} progress"></progress><small>${p.done}/${p.total} · ${p.percent}%</small></div>${p.next?`<button class="project-next" data-edit="${esc(p.next.id)}"><small>Next → </small>${esc(p.next.name)}</button>`:`<p class="section-note">${p.total?'All tasks complete · project '+p.status.toLowerCase():'No tasks yet'}</p>`}<div class="project-footer"><small>${p.count} unfinished</small><button class="quiet" data-project="${esc(p.name)}" aria-label="Add task to ${esc(p.name)}">+ Task</button></div></article>`).join('') || empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
-  $('projects').scrollLeft=scroll;
+  $('projectOptions').innerHTML=state.projects.filter(p=>p.status==='Active').map(p=>`<option value="${esc(p.name)}"></option>`).join('');
+  const root=$('projects'),projects=deriveProjects(state.tasks),wanted=new Set(projects.map(p=>p.id));
+  root.classList.toggle('many-projects',projects.length>3);
+  root.querySelector('.empty')?.remove();
+  for(const node of root.querySelectorAll('[data-project-id]'))if(!wanted.has(node.dataset.projectId))node.remove();
+  for(const p of projects){
+    let card=root.querySelector(`[data-project-id="${CSS.escape(p.id)}"]`);
+    if(!card){card=document.createElement('article');card.className='project';card.dataset.projectId=p.id;
+      card.innerHTML=`<div class="project-summary" data-cosmetic="project:${esc(p.id)}" data-default-art="grand-reef"><div class="project-heading"><h3></h3><button type="button" class="cosmetic-gear quiet" data-cosmetic-open="project:${esc(p.id)}" aria-label="Appearance of ${esc(p.name)}" hidden>⚙</button></div><div class="project-summary-controls"><label>Due date<input type="date" data-project-due="${esc(p.id)}" aria-label="Due date of ${esc(p.name)}"></label><label>Status<select data-project-status="${esc(p.id)}" aria-label="Status of ${esc(p.name)}"><option>Active</option><option>Completed</option><option>Archived</option></select></label></div><div class="project-progress"><progress max="100"></progress><small></small></div></div><div class="project-work"><details class="project-filter"><summary>Filter tasks</summary><div class="filter-strip"><label>Due<select data-project-filter="due"><option value="all">All dates</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="week">This week</option><option value="later">Later</option></select></label><label>Difficulty<select data-project-filter="difficulty"><option value="all">All levels</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unrated</option></select></label></div></details><div class="project-task-list"></div><button class="quiet project-add" data-project="${esc(p.name)}">+ Task</button></div>`;root.append(card);
+    }
+    card.querySelector('h3').textContent=p.name;
+    const due=card.querySelector('[data-project-due]'),status=card.querySelector('[data-project-status]');
+    if(document.activeElement!==due)due.value=(p.due||'').slice(0,10);
+    status.value=p.status;due.disabled=status.disabled=state.projectPending.has(p.id);
+    due.classList.toggle('overdue',!!p.due&&TaskFilters.dueMatch(p.due,'overdue'));
+    card.querySelector('progress').value=p.percent;card.querySelector('progress').setAttribute('aria-label',p.name+' progress');
+    card.querySelector('.project-progress small').textContent=`${p.done}/${p.total} · ${p.percent}%`;
+    const filters=state.projectFilters.get(p.id)||{};
+    const tasks=p.tasks.filter(t=>TaskFilters.matches(t,filters)).sort((a,b)=>Number(a.status==='done')-Number(b.status==='done')||dueSort(a,b));
+    TaskMotion.render(card.querySelector('.project-task-list'),tasks,taskRow,empty(p.total?'No tasks match these filters.':'No tasks yet.'));
+  }
+  if(!projects.length)root.innerHTML=empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
+  if(typeof NOceanAppearance!=='undefined')NOceanAppearance.apply();
 }
 async function loadProjects() {
   if(state.projectPending.size)return;
   return loadPanel('Projects',async()=>{const revision=state.projectRevision;try{const data=await ProjectStore.load();if(state.projectPending.size || revision!==state.projectRevision)return;state.projects=data.projects;state.loaded.Projects=true;$('projectMessage').textContent='';renderProjects();}catch(e){$('projectMessage').textContent=e.message;throw e;}});
 }
-async function setProjectStatus(id,status) {
+async function updateProject(id,changes) {
   if(state.projectPending.has(id))return;
   state.projectPending.add(id);state.projectRevision++;renderProjects();
-  try{const result=await ProjectStore.update(id,status);state.projects=state.projects.map(p=>p.id===id?result.project:p);toast('Project '+status.toLowerCase()+'.');}
+  try{const result=await ProjectStore.update(id,changes);state.projects=state.projects.map(p=>p.id===id?result.project:p);toast('Project saved.');}
   catch(e){$('projectMessage').textContent=e.message;}
   finally{state.projectPending.delete(id);state.projectRevision++;renderProjects();}
 }
@@ -256,7 +275,7 @@ document.addEventListener('click', event => {
   if (button.dataset.project) { $('taskProject').value=button.dataset.project; $('taskName').focus(); }
   if (button.dataset.day) { state.selectedDay=button.dataset.day; renderEvents(); }
 });
-$('taskList').addEventListener('change', event => { if(event.target.dataset.complete) updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'}); });
+document.addEventListener('change', event => { if(event.target.dataset.complete) updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'}); });
 $('showDone').addEventListener('change', event => { state.showDone=event.target.checked;renderTasks(); });
 $('archiveTask').addEventListener('click', async () => {
   const id = $('editId').value;
@@ -304,10 +323,10 @@ $('newProject').addEventListener('click',()=>{$('projectDialog').showModal();$('
 $('closeProject').addEventListener('click',()=>$('projectDialog').close());
 $('projectForm').addEventListener('submit',async e=>{
   e.preventDefault();if($('saveProject').disabled)return;state.projectRevision++;$('saveProject').disabled=true;$('projectError').textContent='';
-  try{const result=await ProjectStore.create($('projectName').value.trim());state.projects=state.projects.filter(p=>p.id!==result.project.id).concat(result.project);$('projectDialog').close();$('projectName').value='';renderProjects();}
+  try{const result=await ProjectStore.create($('projectName').value.trim(),$('projectDue').value||null);state.projects=state.projects.filter(p=>p.id!==result.project.id).concat(result.project);$('projectDialog').close();$('projectName').value='';$('projectDue').value='';renderProjects();}
   catch(error){$('projectError').textContent=error.message;}finally{state.projectRevision++;$('saveProject').disabled=false;}
 });
-$('projects').addEventListener('change',e=>{if(e.target.dataset.projectStatus)setProjectStatus(e.target.dataset.projectStatus,e.target.value);});
+$('projects').addEventListener('change',e=>{if(e.target.dataset.projectStatus)updateProject(e.target.dataset.projectStatus,{status:e.target.value});if(e.target.dataset.projectDue)updateProject(e.target.dataset.projectDue,{due:e.target.value||null});if(e.target.dataset.projectFilter){const id=e.target.closest('[data-project-id]').dataset.projectId;state.projectFilters.set(id,{...state.projectFilters.get(id),[e.target.dataset.projectFilter]:e.target.value});renderProjects();}});
 $('showInactiveProjects').addEventListener('change',e=>{state.showInactiveProjects=e.target.checked;renderProjects();});
 
 for(const [id,key] of [['filterDue','due'],['filterProject','project'],['filterDifficulty','difficulty']])$(id).addEventListener('change',e=>{state.filters[key]=e.target.value;renderTasks();});

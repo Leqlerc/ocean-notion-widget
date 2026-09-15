@@ -1,6 +1,6 @@
 """Independent project lifecycle; related tasks from every category count equally."""
 import os
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
 from lib import notion
 
@@ -10,7 +10,7 @@ STATUSES = ('Active','Completed','Archived')
 
 def normalize(page):
     return {'id':page['id'],'name':notion.value(page,'Name') or 'Untitled project',
-            'status':notion.value(page,'Status') or 'Active','url':page.get('url',''),
+            'due':notion.value(page,'Due Date'),'status':notion.value(page,'Status') or 'Active','url':page.get('url',''),
             'taskIds':[r['id'] for r in notion.value(page,'Tasks') or []]}
 
 
@@ -35,15 +35,27 @@ class NotionProjectStore:
         return normalize(rows[0]) if rows else self.create({'name':name})
 
     def create(self,data):
-        if set(data)!={'name'} or not isinstance(data['name'],str) or not 1<=len(data['name'].strip())<=100:
+        if set(data)-{'name','due'} or 'name' not in data or not isinstance(data['name'],str) or not 1<=len(data['name'].strip())<=100:
             raise ValueError('Use a project name of 1–100 characters.')
+        due=data.get('due')
+        if due: date.fromisoformat(due)
         name=data['name'].strip()
         rows=notion.query(PROJECTS,{'property':'Name','title':{'equals':name}})
         if rows: return normalize(rows[0])
         return normalize(notion.request('POST','/pages',{'parent':{'type':'data_source_id','data_source_id':PROJECTS},
-            'properties':{'Name':{'title':[{'text':{'content':name}}]},'Status':{'select':{'name':'Active'}}}}))
+            'properties':{'Name':{'title':[{'text':{'content':name}}]},'Status':{'select':{'name':'Active'}},'Due Date':{'date':{'start':due} if due else None}}}))
 
     def update(self,data):
-        if set(data)!={'id','status'} or data['status'] not in STATUSES: raise ValueError('Invalid project status.')
+        if 'id' not in data or not (set(data)-{'id'}) or set(data)-{'id','status','due'}: raise ValueError('Invalid project fields.')
+        props={}
+        if 'status' in data:
+            if data['status'] not in STATUSES: raise ValueError('Invalid project status.')
+            props['Status']={'select':{'name':data['status']}}
+        if 'due' in data:
+            due=data['due']
+            if due:
+                if not isinstance(due,str): raise ValueError('Invalid project date.')
+                date.fromisoformat(due)
+            props['Due Date']={'date':{'start':due} if due else None}
         page=self.owned(data['id'])
-        return normalize(notion.request('PATCH','/pages/'+page['id'],{'properties':{'Status':{'select':{'name':data['status']}}}}))
+        return normalize(notion.request('PATCH','/pages/'+page['id'],{'properties':props}))

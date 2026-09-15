@@ -31,6 +31,13 @@ class Merge(unittest.TestCase):
             with self.assertRaises(RuntimeError):load_calendar()
 
 class ProjectsAndDates(unittest.TestCase):
+    def test_project_date_is_independent(self):
+        page={'id':'11111111-1111-4111-8111-111111111111','parent':{'data_source_id':PROJECTS},'properties':{}}
+        with patch('lib.notion.request',return_value=page) as api:
+            NotionProjectStore().update({'id':page['id'],'due':'2026-09-18'})
+            self.assertEqual(api.call_args.args[2],{'properties':{'Due Date':{'date':{'start':'2026-09-18'}}}})
+        with self.assertRaises(ValueError):NotionProjectStore().update({'id':page['id'],'due':'2026-99-99'})
+
     def test_zero_task_project_is_loaded(self):
         with patch('lib.notion.query',return_value=[{'id':'p','properties':{}}]):
             result=NotionProjectStore().list()['projects'][0];self.assertEqual(result['status'],'Active');self.assertEqual(result['taskIds'],[])

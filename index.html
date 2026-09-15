@@ -83,7 +83,7 @@
     <div class="dialog-actions"><button type="button" id="archiveTask" class="quiet archive-button">Archive task</button><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save changes</button></div>
   </form>
 </dialog>
-<dialog id="projectDialog" aria-labelledby="newProjectTitle"><form id="projectForm"><div class="card-head"><h2 id="newProjectTitle">New project</h2><button type="button" id="closeProject" class="quiet" aria-label="Close project dialog">✕</button></div><label>Project name<input id="projectName" required maxlength="100" autocomplete="off"></label><p id="projectError" class="panel-message" role="alert"></p><button id="saveProject" class="primary" type="submit">Create project</button></form></dialog>
+<dialog id="projectDialog" aria-labelledby="newProjectTitle"><form id="projectForm"><div class="card-head"><h2 id="newProjectTitle">New project</h2><button type="button" id="closeProject" class="quiet" aria-label="Close project dialog">✕</button></div><label>Project name<input id="projectName" required maxlength="100" autocomplete="off"></label><label>Project due date<input id="projectDue" type="date"></label><p id="projectError" class="panel-message" role="alert"></p><button id="saveProject" class="primary" type="submit">Create project</button></form></dialog>
 <div id="toast" role="status" class="toast" hidden></div>
 </body>
 </html>
