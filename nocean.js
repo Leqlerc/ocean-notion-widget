@@ -216,7 +216,7 @@ function renderEvents() {
 }
 function renderCalendar() {
   const [year,month] = state.month.split('-').map(Number), first = new Date(Date.UTC(year,month-1,1));
-  $('monthTitle').textContent = first.toLocaleDateString('en-US',{timeZone:'UTC',month:'short',year:'numeric'});
+  $('monthTitle').textContent = first.toLocaleDateString('en-US',{timeZone:'UTC',month:'long',year:'numeric'});
   const start = new Date(first); start.setUTCDate(1-first.getUTCDay());
   let html = ['S','M','T','W','T','F','S'].map(d => `<span class="weekday">${d}</span>`).join('');
   for (let n=0;n<42;n++) {
@@ -252,6 +252,7 @@ async function loadCampus() {
   })));
 }
 function clock() {
+  $('welcomeLine').textContent=['Pick the next useful thing.','Small wins compound.','Make today lighter than yesterday.'][new Date().getDate()%3];
   $('clock').textContent = new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date());
 }
 function refreshAll() { return Promise.allSettled([loadTasks(),loadProjects(),loadCalendar(),loadCampus()]); }
