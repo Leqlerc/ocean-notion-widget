@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c=vm.createContext({});vm.runInContext(fs.readFileSync('nocean-icons.js','utf8'),c);const run=s=>vm.runInContext(s,c);
+for(const code of ['MA261','MA 261','MA26100','ma 26100'])assert.equal(run(`NOceanIcons.resolveTaskIcon({course:${JSON.stringify(code)}},{name:'Career Prep'})`),'calculator');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({}, {name:'Career Prep'})`),'briefcase');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({course:'CS15900'})`),'terminal');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({course:'UNKNOWN'}, {name:'Career Prep',icon:'flask'})`),'flask');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({})`),'task');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({icon:'book',course:'CS159'}, {icon:'flask'})`),'book');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({icon:'<script>',course:'ENGR 16100'})`),'ruler');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({course:'MFET16300'})`),'cube');
+assert.equal(run(`NOceanIcons.resolveTaskIcon({course:'HONR 19901'})`),'book');
+assert.ok(!run(`NOceanIcons.svg('<script>')`).includes('<script>'));
+console.log('Project defaults, task precedence, course aliases, and safe SVG fallback passed.');

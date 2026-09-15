@@ -4,3 +4,7 @@ assert.equal(run(`NOceanAppearance.validate({image:'https://elsewhere.invalid/x'
 assert.equal(run(`NOceanAppearance.validate({image:'none',tint:'Reef',visibility:'Strong'}).tint`),'Reef');
 assert.equal(run(`Object.keys(NOceanAppearance.assets).length`),12);
 console.log('Cosmetic asset allowlist and safe defaults passed.');
+assert.equal(run(`NOceanAppearance.validate({rotatingMessages:false,message:'My reminder'}).message`),'My reminder');
+assert.equal(run(`NOceanAppearance.validate({}).rotatingMessages`),true);
+assert.equal(run(`NOceanAppearance.validate({message:'x'.repeat(500)}).message.length`),180);
+for(const image of ['dragonair-ocean','lilypad-caves'])assert.equal(run(`NOceanAppearance.validate({image:'${image}'}).image`),image);

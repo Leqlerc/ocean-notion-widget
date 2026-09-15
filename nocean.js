@@ -54,9 +54,9 @@ function visibleTasks() {
   for(const id of state.lingering){const at=result.findIndex(t=>t.id===id);if(at>=0){const [task]=result.splice(at,1);result.splice(Math.min(state.rowPositions.get(id)??at,result.length),0,task);}}
   return result;
 }
-function taskRow(task) {
+function taskRow(task, project = state.projects.find(p=>TaskFilters.belongs(task,p))) {
   const pending = state.pending.has(task.id), done = task.status === 'done';
-  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${esc(task.name)}</button><div class="task-meta"><span class="difficulty">${esc(task.difficulty||'Unrated')}</span>${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
+  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${typeof NOceanIcons!=='undefined'?NOceanIcons.slot(task,project):''}<span>${esc(task.name)}</span></button><div class="task-meta"><span class="difficulty">${esc(task.difficulty||'Unrated')}</span>${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
 }
 function renderTasks() {
   $('filterCount').textContent=Object.values(state.filters).filter(v=>v!=='all').length||'';
@@ -91,7 +91,7 @@ function renderProjects() {
     if(!card){card=document.createElement('article');card.className='project';card.dataset.projectId=p.id;
       card.innerHTML=`<div class="project-summary" data-cosmetic="project:${esc(p.id)}" data-default-art="grand-reef"><div class="project-heading"><h3></h3><button type="button" class="cosmetic-gear quiet" data-cosmetic-open="project:${esc(p.id)}" aria-label="Appearance of ${esc(p.name)}" hidden>⚙</button></div><div class="project-summary-controls"><label>Due date<input type="date" data-project-due="${esc(p.id)}" aria-label="Due date of ${esc(p.name)}"></label><label>Status<select data-project-status="${esc(p.id)}" aria-label="Status of ${esc(p.name)}"><option>Active</option><option>Completed</option><option>Archived</option></select></label></div><div class="project-progress"><progress max="100"></progress><small></small></div></div><div class="project-work"><details class="project-filter"><summary>Filter tasks</summary><div class="filter-strip"><label>Due<select data-project-filter="due"><option value="all">All dates</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="week">This week</option><option value="later">Later</option></select></label><label>Difficulty<select data-project-filter="difficulty"><option value="all">All levels</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unrated</option></select></label></div></details><div class="project-task-list"></div><button class="quiet project-add" data-project="${esc(p.name)}">+ Task</button></div>`;root.append(card);
     }
-    card.querySelector('h3').textContent=p.name;
+    card.querySelector('h3').innerHTML=(typeof NOceanIcons!=='undefined'?NOceanIcons.slot(null,p):'')+esc(p.name);
     const due=card.querySelector('[data-project-due]'),status=card.querySelector('[data-project-status]');
     if(document.activeElement!==due)due.value=(p.due||'').slice(0,10);
     status.value=p.status;due.disabled=status.disabled=state.projectPending.has(p.id);
@@ -100,7 +100,7 @@ function renderProjects() {
     card.querySelector('.project-progress small').textContent=`${p.done}/${p.total} · ${p.percent}%`;
     const filters=state.projectFilters.get(p.id)||{};
     const tasks=p.tasks.filter(t=>TaskFilters.matches(t,filters)).sort((a,b)=>Number(a.status==='done')-Number(b.status==='done')||dueSort(a,b));
-    TaskMotion.render(card.querySelector('.project-task-list'),tasks,taskRow,empty(p.total?'No tasks match these filters.':'No tasks yet.'));
+    TaskMotion.render(card.querySelector('.project-task-list'),tasks,task=>taskRow(task,p),empty(p.total?'No tasks match these filters.':'No tasks yet.'));
   }
   if(!projects.length)root.innerHTML=empty(state.loaded.Projects?'No active projects. Create one to begin.':'Loading projects…');
   if(typeof NOceanAppearance!=='undefined')NOceanAppearance.apply();
