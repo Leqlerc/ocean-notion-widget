@@ -1,0 +1,9 @@
+/* Shared status palette: crowd badges and facility borders use the same tokens. */
+:root{--status-low:#78d999;--status-moderate:#e8c864;--status-busy:#ef877b;--status-very-busy:#a83a59;--status-muted:#66747e;}
+.crowd-low,.status-low,.crowd-open,.status-open{--status-color:var(--status-low);}
+.crowd-moderate,.status-moderate{--status-color:var(--status-moderate);}
+.crowd-busy,.status-busy{--status-color:var(--status-busy);}
+.crowd-very-busy,.status-very-busy{--status-color:var(--status-very-busy);}
+.crowd-unknown,.status-unknown,.crowd-closed,.status-closed{--status-color:var(--status-muted);}
+.crowd-badge{border:1px solid var(--status-color);border-radius:8px;color:#eef3f5;background:color-mix(in srgb,var(--status-color) 24%,#101b22);font-size:11px;padding:3px 6px;}
+.facility-status{border:1px solid var(--status-color);border-radius:8px;padding:10px 12px;background:#111a2399;min-width:0;}.facility-status .facility-title{gap:7px;flex-wrap:wrap;}.facility-status .facility-meta{margin-top:5px;line-height:1.4;}.facility-status .badge{white-space:normal;line-height:1.4;}

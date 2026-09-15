@@ -3,7 +3,7 @@
 renderCalendar = function renderCalendarWithLabels() {
   const [year,month] = state.month.split('-').map(Number);
   const first = new Date(Date.UTC(year,month-1,1));
-  $('monthTitle').textContent = first.toLocaleDateString('en-US',{timeZone:'UTC',month:'short',year:'numeric'});
+  $('monthTitle').textContent = first.toLocaleDateString('en-US',{timeZone:'UTC',month:'long',year:'numeric'});
   const start = new Date(first);
   start.setUTCDate(1-first.getUTCDay());
   let html = ['S','M','T','W','T','F','S'].map(d => `<span class="weekday">${d}</span>`).join('');

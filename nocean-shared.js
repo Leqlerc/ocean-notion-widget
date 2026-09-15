@@ -30,10 +30,11 @@ const NOcean = (() => {
   }
   function facility(name, counter, hours, scope) {
     const percent = counter?.percent;
-    const load = percent == null ? '' : `${percent}% · ${percent < 30 ? 'Quiet' : percent < 60 ? 'Moderate' : 'Busy'}`;
+    const load = percent == null ? '' : `${percent}% · ${percent < 30 ? 'Quiet' : percent < 60 ? 'Moderate' : percent < 85 ? 'Busy' : 'Very busy'}`;
     const closed = hours?.closed ?? counter?.closed;
     const status = closed == null ? 'Status unavailable' : closed ? 'Closed' : 'Open';
-    return `<div><div class="facility-title"><a href="https://www.purdue.edu/recwell/" target="_blank" rel="noopener">${esc(name)}</a><span class="badge ${closed === false ? 'open' : ''}" title="${esc(counter?.updated ? 'Latest count: '+counter.updated : 'No occupancy counter available')}">${status}${load ? ' · '+esc(load) : ''}</span></div><div class="facility-meta">${esc(hours?.hours || 'Hours unavailable')} · ${esc(percent == null ? 'occupancy unavailable' : scope)}</div></div>`;
+    const level = closed !== false ? (closed ? 'closed' : 'unknown') : percent == null ? 'open' : percent < 30 ? 'low' : percent < 60 ? 'moderate' : percent < 85 ? 'busy' : 'very-busy';
+    return `<div class="facility-status status-${level}"><div class="facility-title"><a href="https://www.purdue.edu/recwell/" target="_blank" rel="noopener">${esc(name)}</a><span class="badge crowd-badge crowd-${level}" title="${esc(counter?.updated ? 'Latest count: '+counter.updated : 'No occupancy counter available')}">● ${status}${closed === false && load ? ' · '+esc(load) : ''}</span></div><div class="facility-meta">${esc(hours?.hours || 'Hours unavailable')} · ${esc(percent == null ? 'occupancy unavailable' : scope)}</div></div>`;
   }
   const renderFacilities = data => facility('B&G Gym', data.spaces?.corec_lower, data.corec_hours, 'CoRec hours · B&G count') + facility('Aquatic Center', data.spaces?.aquatic, data.aquatic_hours, 'pool count');
   return {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities};
