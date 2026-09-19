@@ -1,0 +1,2 @@
+# Operator/test dependency only; not wired into the deployed application.
+psycopg[binary]==3.2.10
