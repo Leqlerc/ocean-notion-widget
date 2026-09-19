@@ -57,3 +57,10 @@ Run 2: preserve completed Tasks; establish a tested PostgreSQL migration/import 
 - Embedded PostgreSQL schema tests pass: foreign keys, dates, unique task links, transaction rollback, RLS read/write isolation and metric persistence/time after reopen. Native PostgreSQL cannot start under this sandbox's process permissions; driver/migration integration tests are supplied but remain a required Preview gate.
 - Automatic approval review rejected a direct push to main. Safer continuation: feature/goals-foundation branch and PR; do not retry main/merge to circumvent that rejection. No run-2 production deployment.
 - Next coherent unit: dedicated Projects workspace over existing persisted projects and Tasks; do not invent temporary storage for outcome/history fields. Full Goals editing follows SQL + owner authentication.
+
+## Run 2 — Projects workspace checkpoint
+- Added projects.html with searchable lifecycle lists, direct project URLs, target-date/lifecycle editing using the existing persistent /api/projects provider, task-completion indicators, next actions and related work. Does not pretend task percentage measures goal attainment.
+- Existing Task Manager supports scoped project/task links; capture inherits the selected project. No planning/deadline changes. Shared navigation now includes Projects.
+- Goals outcome/overview, objectives, milestones, metric input and history are NOT enabled: their durable schema exists but requires the SQL/auth gate. Project notes remain accessible through the existing Notion project link.
+- Focused project-model and existing planning/UI/frontend/deadline/filter checks pass. Browser verification of this branch remains pending.
+- Foundation safely published through the GitHub connector on feature/goals-foundation (9b2ba61); draft PR #1. Shell git push lacks credentials; use the connector for this branch only.
