@@ -14,15 +14,13 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 - Today honors explicit plans; old incomplete plans roll over; Tomorrow is distinct; Upcoming covers days 2–14; Later includes explicit Backlog and longer/undated tasks.
 
 ## In progress
-- Live create, Tomorrow persistence after reload, matching Home queue, Backlog/Today moves, and completion verified using one disposable QA record.
-- Live checks found local-date labeling inconsistency and stale Undo from preceding writes; fixes are in this checkpoint and need deployed recheck.
-- Remaining live verification: fixed Undo, edit persistence, archive cleanup and mobile layout.
+- Final mobile visual check after adding the existing shared navigation stylesheet to Tasks.
 
 ## Next actions
-1. Verify Tasks create/edit/plan Today -> Tomorrow -> Backlog, refresh persistence, deadline invariance, completion/undo and archive with disposable records.
-2. Verify Home applies the identical TaskPlanning policy and existing calendar/training remain functional.
-3. Finish normalized persistence design/migrations for new systems; SQL provisioning needs Vercel authorization.
-4. Goals workspaces and Routines are next coherent units; do not claim they exist yet.
+1. Verify Tasks at 390px using tests/layout.html; deployed date-label and Undo fixes already passed functional checks.
+2. Restore Vercel team authorization, then implement authenticated owner boundary and provision Preview SQL. See docs/persistence-architecture.md for entity relationships, migration sequence, idempotency and integration boundaries.
+3. Build Goals workspaces as the next complete unit with applied/verified related schema. Routines follows; neither is implemented in this checkpoint.
+4. Replace all-task initial loads with server pagination plus separate project progress aggregates; keep existing totals correct.
 
 ## Architectural decisions
 - Current runtime: static HTML/vanilla JS + Python stdlib serverless APIs, deployed GitHub main -> Vercel.
@@ -42,8 +40,8 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 
 ## Verification status
 - Implemented and tested before this run: 36 Python tests and frontend/UI/filter/deadline/appearance/icon contracts; prior production visual checks.
-- Implemented and unit tested this run: Tasks planning policy, Notion field validation/mapping, shared transport, standalone Tasks UI. Browser verification pending.
-- Implemented but not fully tested: date-label/Undo fixes and mobile behavior.
+- Implemented and tested this run: 40 Python tests; planning, deadline, frontend and UI JS contracts. Production Tasks create, Today/Tomorrow/Backlog moves, reload persistence, matching Home Tomorrow, edit difficulty without moving deadline, completion/reopen/Undo, and archive passed. Disposable QA record archived and absent after refresh. Local deadline label and stale Undo fixes deployed in 58ce3d6 (Vercel success).
+- Implemented but not fully tested: final shared navigation stylesheet/mobile visual check.
 - Known scaling limitation: Tasks displays 25 records at a time but /api/tasks still loads all Notion tasks. Server pagination needs a separate project progress aggregate so Home totals remain accurate.
-- Designed only: new normalized persistence and module expansion.
+- Designed only: docs/persistence-architecture.md target related entities, migration plan, owner/auth boundary, routine idempotency, Graph/Brightspace integration boundaries. No SQL schema or new external provider deployed.
 - Blocked/unverified: Microsoft and Brightspace authorization, new SQL service provisioning.
