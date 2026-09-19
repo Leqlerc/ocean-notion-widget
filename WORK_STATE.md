@@ -14,8 +14,9 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 - Today honors explicit plans; old incomplete plans roll over; Tomorrow is distinct; Upcoming covers days 2–14; Later includes explicit Backlog and longer/undated tasks.
 
 ## In progress
-- Production verification of Tasks planning and cross-page consistency.
-- Tasks page and shared planning implementation complete locally; awaiting production verification.
+- Live create, Tomorrow persistence after reload, matching Home queue, Backlog/Today moves, and completion verified using one disposable QA record.
+- Live checks found local-date labeling inconsistency and stale Undo from preceding writes; fixes are in this checkpoint and need deployed recheck.
+- Remaining live verification: fixed Undo, edit persistence, archive cleanup and mobile layout.
 
 ## Next actions
 1. Verify Tasks create/edit/plan Today -> Tomorrow -> Backlog, refresh persistence, deadline invariance, completion/undo and archive with disposable records.
@@ -42,6 +43,7 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 ## Verification status
 - Implemented and tested before this run: 36 Python tests and frontend/UI/filter/deadline/appearance/icon contracts; prior production visual checks.
 - Implemented and unit tested this run: Tasks planning policy, Notion field validation/mapping, shared transport, standalone Tasks UI. Browser verification pending.
-- Implemented but not fully tested: Tasks live persistence/mobile behavior.
+- Implemented but not fully tested: date-label/Undo fixes and mobile behavior.
+- Known scaling limitation: Tasks displays 25 records at a time but /api/tasks still loads all Notion tasks. Server pagination needs a separate project progress aggregate so Home totals remain accurate.
 - Designed only: new normalized persistence and module expansion.
 - Blocked/unverified: Microsoft and Brightspace authorization, new SQL service provisioning.

@@ -15,5 +15,12 @@ const Deadlines = (() => {
     const offset=-d.getTimezoneOffset(), sign=offset<0?'-':'+';
     return `${date}T${time || '23:59'}:00${sign}${pad(Math.floor(Math.abs(offset)/60))}:${pad(Math.abs(offset)%60)}`;
   }
-  return {fields,serialize};
+  function label(value) {
+    if (!value) return '';
+    const timed=value.length>10;
+    const d=new Date(timed?value:value+'T12:00:00');
+    const date=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(d);
+    return date+(timed?' · '+new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(d):'');
+  }
+  return {fields,serialize,label};
 })();

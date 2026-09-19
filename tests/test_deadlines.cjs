@@ -1,9 +1,9 @@
 const {readFileSync}=require('node:fs');
 const vm=require('node:vm');const assert=require('node:assert/strict');
-const ctx=vm.createContext({Date,Number,String,Math});
+const ctx=vm.createContext({Date,Number,String,Math,Intl});
 vm.runInContext(readFileSync('nocean-deadlines.js','utf8'),ctx);
 const run=s=>vm.runInContext(s,ctx);
-for(const zone of ['America/Indiana/Indianapolis','Asia/Kolkata','Pacific/Honolulu','UTC']) {
+for(const zone of ['America/Indiana/Indianapolis','Asia/Kolkata','Pacific/Honolulu','UTC','America/Los_Angeles']) {
  process.env.TZ=zone;
  for(const day of ['2026-09-18','2026-09-19','2026-12-18','2026-03-08','2026-11-01']) {
   for(const [time,expected] of [['','23:59'],['15:30','15:30']]) {
@@ -13,4 +13,7 @@ for(const zone of ['America/Indiana/Indianapolis','Asia/Kolkata','Pacific/Honolu
   }
  }
 }
-console.log('Deadline local day/time and DST contracts passed in four time zones.');
+console.log('Deadline local day/time and DST contracts passed in five time zones.');
+
+assert.equal(run(`Deadlines.label(Deadlines.serialize('2026-09-20'))`),'Sep 20 · 11:59 PM');
+assert.equal(run(`Deadlines.label('2026-09-20')`),'Sep 20');
