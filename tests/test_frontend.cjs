@@ -5,7 +5,7 @@ const source = readFileSync('nocean.js','utf8').split("$('quickAdd').addEventLis
 const elements = new Map();
 const context = vm.createContext({Intl,Date,Set,Map,URL,AbortController,setTimeout,clearTimeout,
   document:{getElementById:id=>{if(!elements.has(id))elements.set(id,{});return elements.get(id);}}});
-vm.runInContext(readFileSync('nocean-shared.js','utf8') + '\n' + readFileSync('nocean-deadlines.js','utf8') + '\n' + readFileSync('nocean-filters.js','utf8') + '\n' + readFileSync('calendar-semantics.js','utf8') + '\n' + source, context);
+vm.runInContext(readFileSync('nocean-shared.js','utf8') + '\n' + readFileSync('nocean-data.js','utf8') + '\n' + readFileSync('nocean-planning.js','utf8') + '\n' + readFileSync('nocean-deadlines.js','utf8') + '\n' + readFileSync('nocean-filters.js','utf8') + '\n' + readFileSync('calendar-semantics.js','utf8') + '\n' + source, context);
 const run = s=>vm.runInContext(s,context);
 run(`state.projects=[{id:'p',name:'Exam',status:'Active'},{id:'zero',name:'Zero',status:'Active'}];state.tasks=[
  {id:'1',name:'Later',project:'Exam',status:'next',focus:true,due:'2099-01-01'},

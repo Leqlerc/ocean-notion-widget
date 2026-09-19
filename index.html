@@ -14,13 +14,14 @@
   <link rel="stylesheet" href="/nocean-presets.css?v=2">
   <script src="/nocean-icons.js?v=1" defer></script>
 <script src="/nocean-shared.js?v=2" defer></script>
-  <script src="/nocean-ui.js?v=3" defer></script>
+  <script src="/nocean-ui.js?v=4" defer></script>
   <script src="/time-backgrounds.js?v=1" defer></script>
   <script src="/calendar-semantics.js?v=2" defer></script>
   <script src="/nocean-deadlines.js?v=1" defer></script>
   <script src="/nocean-motion.js?v=1" defer></script>
   <script src="/nocean-filters.js?v=1" defer></script>
-  <script src="/nocean.js?v=6" defer></script>
+  <script src="/nocean-data.js?v=1" defer></script><script src="/nocean-planning.js?v=1" defer></script>
+<script src="/nocean.js?v=7" defer></script>
   <script src="/calendar-labels.js?v=2" defer></script>
 <link rel="stylesheet" href="/nocean-controls.css?v=1">
 <link rel="stylesheet" href="/nocean-appearance.css?v=2">
@@ -29,6 +30,7 @@
 <script src="/nocean-welcome.js?v=2" defer></script>
 <link rel="stylesheet" href="/nocean-status.css?v=1">
 <link rel="preload" as="image" href="/assets/backgrounds/dragonair-ocean.webp">
+<link rel="stylesheet" href="/nocean-modules.css?v=1">
 </head>
 <body data-page="home">
 <div class="app">
@@ -48,7 +50,7 @@
         <button type="submit" class="primary" id="addButton">+ Add task</button>
         <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Due date<input id="taskDue" name="due" type="date"></label><label>Time · optional<input id="taskTime" type="time" aria-describedby="dueDefault"></label><label>Difficulty<select id="taskDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><small id="dueDefault">No time selected → 11:59 PM local</small></div>
       </form>
-      <nav class="tabs" aria-label="Task lists"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="all" aria-pressed="false">All</button><label class="done-toggle"><input id="showDone" type="checkbox"> Show done</label></nav>
+      <nav class="tabs" aria-label="Task lists"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="later" aria-pressed="false">Later</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="all" aria-pressed="false">All</button><label class="done-toggle"><input id="showDone" type="checkbox"> Show done</label></nav>
       <details class="task-filters" id="taskFilters"><summary>Filters <span id="filterCount"></span></summary><div class="filter-strip"><label>Due<select id="filterDue"><option value="all">Any due date</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="tomorrow">Tomorrow</option><option value="week">This week</option><option value="later">Later</option><option value="none">No due date</option></select></label><label>Project<select id="filterProject"><option value="all">All projects</option><option value="none">No project</option></select></label><label>Difficulty<select id="filterDifficulty"><option value="all">Any difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unrated</option></select></label><button id="clearFilters" class="quiet" type="button">Clear filters</button></div><small>Filters refine the selected view. Use All to search every task. This week = Monday–Sunday.</small></details>
       <div id="taskMessage" class="panel-message" role="status"></div>
       <div id="taskList" class="scroll task-list"><p class="empty">Loading your tasks…</p></div>
@@ -80,7 +82,7 @@
 </div>
 <datalist id="projectOptions"></datalist>
 <dialog id="editDialog">
-  <form id="editTask">
+  <form id="editTask"><div class="plan-actions"><span>Work plan · keeps deadline</span><button type="button" data-plan="today">Today</button><button type="button" data-plan="tomorrow">Tomorrow</button><button type="button" data-plan="later">Backlog</button><button type="button" data-plan="automatic">Automatic</button></div>
     <div class="card-head"><h2>Edit task</h2><button type="button" id="closeEdit" class="quiet" aria-label="Close editor">✕</button></div>
     <input id="editId" type="hidden">
     <label>Task<input id="editName" required maxlength="500"></label>

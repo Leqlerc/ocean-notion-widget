@@ -4,7 +4,7 @@ from uuid import UUID
 from lib import notion
 
 STATUSES = {'inbox': 'Inbox', 'next': 'Next', 'doing': 'Doing', 'waiting': 'Waiting', 'done': 'Done'}
-FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty'}
+FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty', 'scheduledFor', 'planningMode'}
 
 
 def normalize(page):
@@ -14,6 +14,7 @@ def normalize(page):
             'difficulty': get('Difficulty') or 'Unrated', 'course': get('Course') or '', 'project': get('Project') or '',
             'projectIds':[r['id'] for r in get('Projects') or []],
             'due': get('Deadline'), 'scheduledFor': get('Do date'),
+            'planningMode':(get('Planning Mode') or 'Automatic').lower(), 'sourceId':get('Source ID') or None, 'sourceUrl':get('Source') or None, 'sourceCalendar':get('Source calendar') or None,
             'completedOn': get('Date Completed'), 'url': page.get('url', '')}
 
 
@@ -38,6 +39,17 @@ def validate(data, creating=False):
     if 'projectId' in data and data['projectId'] is not None:
         try: data['projectId'] = str(UUID(str(data['projectId'])))
         except ValueError: raise ValueError('Invalid project ID.')
+    if 'planningMode' in data and data['planningMode'] not in ('automatic','planned','backlog'):
+        raise ValueError('Invalid planning mode.')
+    if 'scheduledFor' in data:
+        planned=data['scheduledFor']
+        if planned is not None:
+            if not isinstance(planned,str) or len(planned)!=10: raise ValueError('Use a plan date in YYYY-MM-DD format.')
+            date.fromisoformat(planned)
+    if data.get('planningMode')=='planned' and not data.get('scheduledFor'):
+        raise ValueError('A planned task needs a plan date.')
+    if data.get('planningMode')=='backlog' and data.get('scheduledFor'):
+        raise ValueError('Backlog tasks cannot have a plan date.')
     if data.get('due'):
         if not isinstance(data['due'], str):
             raise ValueError('Invalid due date.')
@@ -63,6 +75,10 @@ class NotionTaskStore:
         for field, name, kind in [('name', 'Task', 'title'), ('project', 'Project', 'rich_text')]:
             if field in data:
                 props[name] = {kind: [{'text': {'content': data[field]}}] if data[field] else []}
+        if 'scheduledFor' in data:
+            props['Do date']={'date':{'start':data['scheduledFor']} if data['scheduledFor'] else None}
+        if 'planningMode' in data:
+            props['Planning Mode']={'select':{'name':data['planningMode'].capitalize()}}
         if 'difficulty' in data:
             props['Difficulty']={'select':{'name':data['difficulty']} if data['difficulty']!='Unrated' else None}
         if 'course' in data:

@@ -9,15 +9,19 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 - Prior work: working Home/Training pages, Notion tasks/projects/sets, direct Google + Notion calendar merge, Purdue dining menus, local appearance and SVG icons.
 - Latest main inspected; user-uploaded assets and layout changes retained. One uncommitted CSS comment from previous Work saved in git stash before fast-forward.
 
+- Added `Planning Mode` select to existing Tasks database; reused Do date. No task data backfill. See migrations/001_notion_task_planning.md.
+- Added shared nocean-data.js transport and nocean-planning.js policy. Tasks page uses same /api/tasks records as Home. Date-only deadlines retain 23:59 local behavior.
+- Today honors explicit plans; old incomplete plans roll over; Tomorrow is distinct; Upcoming covers days 2–14; Later includes explicit Backlog and longer/undated tasks.
+
 ## In progress
-- Audit persistence, API authorization, deployment access, and existing task fields.
-- No new feature or database migration completed in this run yet.
+- Production verification of Tasks planning and cross-page consistency.
+- Tasks page and shared planning implementation complete locally; awaiting production verification.
 
 ## Next actions
-1. Inspect task/project/training providers, active HTML/JS, tests, and Vercel project configuration.
-2. Choose normalized persistence for new growing datasets; do not deploy ephemeral-file storage.
-3. Complete/test a coherent Tasks planning module using existing authoritative task records.
-4. Add further systems only after the current unit is tested and checkpointed.
+1. Verify Tasks create/edit/plan Today -> Tomorrow -> Backlog, refresh persistence, deadline invariance, completion/undo and archive with disposable records.
+2. Verify Home applies the identical TaskPlanning policy and existing calendar/training remain functional.
+3. Finish normalized persistence design/migrations for new systems; SQL provisioning needs Vercel authorization.
+4. Goals workspaces and Routines are next coherent units; do not claim they exist yet.
 
 ## Architectural decisions
 - Current runtime: static HTML/vanilla JS + Python stdlib serverless APIs, deployed GitHub main -> Vercel.
@@ -27,7 +31,7 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 - Current API checks request origin but has no user authentication. Resolve this boundary before adding sensitive integration credentials or exposing new database-backed APIs.
 
 ## External setup required
-- Determine whether a durable SQL connection and authenticated deployment access are already available; no credentials have been requested or invented.
+- Vercel connector denied project team scope yiqwill-3102 (403). Reauthorize that scope before SQL provisioning/environment changes. No SQL URL, Vercel token or CLI authentication exists in this workspace. Existing GitHub -> Vercel deploy remains usable. No browser workaround attempted.
 - Microsoft Graph requires a registered application and user/tenant authorization; not connected by this run.
 - Purdue Brightspace access method not yet verified; no direct sync claim.
 
@@ -37,6 +41,7 @@ Audit and incrementally evolve NOcean into related modules. First preserve exist
 
 ## Verification status
 - Implemented and tested before this run: 36 Python tests and frontend/UI/filter/deadline/appearance/icon contracts; prior production visual checks.
-- Implemented but not fully tested: none newly in this run.
+- Implemented and unit tested this run: Tasks planning policy, Notion field validation/mapping, shared transport, standalone Tasks UI. Browser verification pending.
+- Implemented but not fully tested: Tasks live persistence/mobile behavior.
 - Designed only: new normalized persistence and module expansion.
 - Blocked/unverified: Microsoft and Brightspace authorization, new SQL service provisioning.

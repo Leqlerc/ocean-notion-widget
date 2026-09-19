@@ -2,12 +2,7 @@
 const {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities} = NOcean;
 const state = {tasks:[], filters:{due:'all',project:'all',difficulty:'all'}, projects:[], projectFilters:new Map(), projectPending:new Set(), projectRevision:0, removalTimers:new Map(), showInactiveProjects:false, lingering:new Set(), rowPositions:new Map(), courses:[], statuses:[], tab:'today', showDone:false, events:[], month:dayKey().slice(0,7), selectedDay:null, pending:new Set(), revision:0, loading:new Set(), health:{}, loaded:{}, creating:false};
 
-const TaskStore = {
-  list: () => request('/api/tasks'),
-  create: task => request('/api/tasks', {method:'POST', body:JSON.stringify(task)}),
-  archive: id => request('/api/tasks', {method:'DELETE', body:JSON.stringify({id})}),
-  update: task => request('/api/tasks', {method:'PATCH', body:JSON.stringify(task)})
-};
+const TaskStore = NOceanData.tasks;
 const ProjectStore = {load:()=>request('/api/projects'),create:(name,due)=>request('/api/projects',{method:'POST',body:JSON.stringify({name,due})}),update:(id,changes)=>request('/api/projects',{method:'PATCH',body:JSON.stringify({id,...changes})})};
 const CalendarProvider = {load: () => request('/api/events')};
 const DiningProvider = {load: () => request('/api/dining')};
@@ -39,34 +34,31 @@ function dueLabel(task) {
   const time=task.due.length>10?new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(task.due)):'';
   return `<span class="${day<today&&task.status!=='done'?'overdue':''}">${esc(label)}${time?' · '+esc(time):''}</span>`;
 }
-function isToday(task) {
-  const today = Deadlines.fields(new Date().toISOString()).date;
-  return task.focus || task.status === 'doing' || (task.due && Deadlines.fields(task.due).date <= today) || (task.scheduledFor && dateDay(task.scheduledFor) <= today);
-}
+function isToday(task) { return TaskPlanning.bucket(task)==='today'; }
 const dueSort = (a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.name.localeCompare(b.name);
 function visibleTasks() {
   const result=state.tasks.filter(task => {
     if (state.lingering.has(task.id)) return true;
     if(!TaskFilters.matches(task,state.filters,state.projects))return false;
     if (task.status === 'done') return state.showDone && (state.tab === 'all' || (state.tab === 'today' && dateDay(task.completedOn) === dayKey()));
-    return state.tab === 'all' || (state.tab === 'today' ? isToday(task) : task.due && Deadlines.fields(task.due).date > Deadlines.fields(new Date().toISOString()).date);
+    return TaskPlanning.matches(task,state.tab);
   }).sort((a,b) => Number(a.status === 'done') - Number(b.status === 'done') || Number(b.status === 'doing') - Number(a.status === 'doing') || Number(b.focus) - Number(a.focus) || dueSort(a,b));
   for(const id of state.lingering){const at=result.findIndex(t=>t.id===id);if(at>=0){const [task]=result.splice(at,1);result.splice(Math.min(state.rowPositions.get(id)??at,result.length),0,task);}}
   return result;
 }
 function taskRow(task, project = state.projects.find(p=>TaskFilters.belongs(task,p))) {
   const pending = state.pending.has(task.id), done = task.status === 'done';
-  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${typeof NOceanIcons!=='undefined'?NOceanIcons.slot(task,project):''}<span>${esc(task.name)}</span></button><div class="task-meta"><span class="difficulty">${esc(task.difficulty||'Unrated')}</span>${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
+  return `<div data-task-id="${esc(task.id)}" class="task-row ${done ? 'done' : ''}"><input type="checkbox" data-complete="${esc(task.id)}" ${done ? 'checked' : ''} ${pending ? 'disabled' : ''} aria-label="${done ? 'Reopen' : 'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name" data-edit="${esc(task.id)}" ${pending ? 'disabled' : ''}>${typeof NOceanIcons!=='undefined'?NOceanIcons.slot(task,project):''}<span>${esc(task.name)}</span></button><div class="task-meta">${TaskPlanning.label(task)?`<span>${esc(TaskPlanning.label(task))}</span>`:''}<span class="difficulty">${esc(task.difficulty||'Unrated')}</span>${task.project || task.course ? `<span>${esc(task.project || task.course)}</span>` : ''}${task.status === 'doing' ? '<span>Doing</span>' : ''}${dueLabel(task)}</div></div><button class="focus-button ${task.focus ? 'on' : ''}" data-focus="${esc(task.id)}" aria-pressed="${task.focus}" aria-label="${task.focus ? 'Remove focus from' : 'Focus on'} ${esc(task.name)}" ${pending ? 'disabled' : ''}>${task.focus ? '● Focus' : '+ Focus'}</button></div>`;
 }
 function renderTasks() {
   $('filterCount').textContent=Object.values(state.filters).filter(v=>v!=='all').length||'';
   const tasks = visibleTasks();
-  $('tasksTitle').textContent = {today:'Today', upcoming:'Upcoming tasks', all:'All tasks'}[state.tab];
+  $('tasksTitle').textContent = {today:'Today', tomorrow:'Tomorrow',upcoming:'Next 14 days',later:'Later / Backlog',all:'All tasks'}[state.tab];
   TaskMotion.render($('taskList'),tasks,taskRow,empty(state.tab === 'today' ? 'A clear slate. Add a task or choose a Focus task from All.' : 'No tasks in this view.'));
   $('taskCount').textContent = `${tasks.filter(t => t.status !== 'done').length} to do`;
   const done = state.tasks.filter(t => t.status === 'done' && dateDay(t.completedOn) === dayKey()).length;
   $('doneCount').textContent = `${done} done today`;
-  $('taskHint').textContent = {today:'Focus, Doing, and tasks scheduled or due by today.', upcoming:'Future deadlines, ordered by what’s next.', all:'All your tasks. Click a task name to edit.'}[state.tab];
+  $('taskHint').textContent = {today:'Your plan, rolled-over work, and unplanned urgent tasks.',tomorrow:'A deliberate plan for tomorrow. Deadlines stay unchanged.',upcoming:'Days 2–14. Tomorrow has its own queue.',later:'Backlog and obligations beyond two weeks.',all:'All tasks, including longer-horizon work.'}[state.tab];
   renderProjects();
 }
 function deriveProjects(tasks,projects=state.projects) {
@@ -257,7 +249,7 @@ function clock() {
 function refreshAll() { return Promise.allSettled([loadTasks(),loadProjects(),loadCalendar(),loadCampus()]); }
 $('quickAdd').addEventListener('submit', async event => {
   event.preventDefault(); if (state.creating) return;
-  const task = {difficulty:$('taskDifficulty').value,name:$('taskName').value.trim(),project:$('taskProject').value.trim(),due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true};
+  const task = {difficulty:$('taskDifficulty').value,name:$('taskName').value.trim(),project:$('taskProject').value.trim(),due:Deadlines.serialize($('taskDue').value,$('taskTime').value),...TaskPlanning.change('today')};
   if (!task.name) return;
   state.creating = true; state.revision++; $('addButton').disabled = true; $('taskMessage').textContent = '';
   try {
@@ -276,6 +268,7 @@ document.addEventListener('click', event => {
   const button = event.target.closest('button'); if (!button) return;
   if (button.dataset.tab) setTab(button.dataset.tab);
   if (button.dataset.edit) openEditor(button.dataset.edit);
+  if(button.dataset.plan){const id=$('editId').value;updateTask(id,TaskPlanning.change(button.dataset.plan)).then(saved=>{if(saved){$('editDialog').close();toast('Work plan updated; deadline unchanged.');}});}
   if (button.dataset.focus) { const task = state.tasks.find(t=>t.id===button.dataset.focus); if(task) updateTask(task.id,{focus:!task.focus}); }
   if (button.dataset.project) { $('taskProject').value=button.dataset.project; $('taskName').focus(); }
   if (button.dataset.day) { state.selectedDay=button.dataset.day; renderEvents(); }

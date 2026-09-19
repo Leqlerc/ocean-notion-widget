@@ -1,0 +1,3 @@
+'use strict';
+// Shared HTTP contracts; pages own only their visible state.
+const NOceanData={tasks:{list:()=>NOcean.request('/api/tasks'),create:task=>NOcean.request('/api/tasks',{method:'POST',body:JSON.stringify(task)}),update:task=>NOcean.request('/api/tasks',{method:'PATCH',body:JSON.stringify(task)}),archive:id=>NOcean.request('/api/tasks',{method:'DELETE',body:JSON.stringify({id})})},projects:{list:()=>NOcean.request('/api/projects')}};
