@@ -3,7 +3,7 @@
  const {$,esc,empty}=NOcean,store=NOceanData.projects;
  let projects=[],tasks=[],loaded=false,loading=false,saving=false,revision=0,editing=null,limit=25;
  const selected=()=>projects.find(p=>p.id===location.hash.slice(1));
- const dateLabel=value=>value?Deadlines.label(value):'No target date';
+ const dateLabel=value=>value?new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(new Date(value.length===10?value+'T12:00:00':value)):'No target date';
  function taskLink(t,p){return `<a class="project-task-link" href="${esc(ProjectModel.taskURL(p.id,t.id))}"><strong>${esc(t.name)}</strong><small>${esc(t.status==='done'?'Completed':TaskPlanning.label(t)||'Unplanned')}${t.due?' · Due '+esc(Deadlines.label(t.due)):''}${t.course?' · '+esc(t.course):''}</small></a>`;}
  function render(){
   if(!loaded)return;
@@ -23,12 +23,12 @@
  async function load(){
   if(loading||saving||$('projectEditor').open)return;
   loading=true;const version=revision;$('refresh').disabled=true;
-  try{const [p,t]=await Promise.all([store.list(),NOceanData.tasks.list()]);if(version!==revision)return;projects=p.projects;tasks=t.tasks;loaded=true;render();$('projectStatus').textContent='Projects and tasks up to date.';}
+  try{const [p,t]=await Promise.all([store.list(),NOceanData.tasks.list()]);if(version!==revision)return;projects=p.projects;tasks=t.tasks;loaded=true;$('newProject').disabled=false;render();$('projectStatus').textContent='Projects and tasks up to date.';}
   catch(e){$('projectStatus').textContent=e.message+(loaded?' Showing the last loaded records.':' Use Refresh to retry.');}
   finally{loading=false;$('refresh').disabled=false;}
  }
  function openEditor(project=null){
-  if(saving)return;editing=project?.id||null;
+  if(saving||!loaded)return;editing=project?.id||null;
   $('projectEditorTitle').textContent=editing?'Edit project':'New project';
   $('nameField').hidden=Boolean(editing);$('projectName').required=!editing;$('projectName').value=project?.name||'';
   $('projectDue').value=project?.due?.slice(0,10)||'';$('projectLifecycle').value=project?.status||'Active';$('lifecycleField').hidden=!editing;
