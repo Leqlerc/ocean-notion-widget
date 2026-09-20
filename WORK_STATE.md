@@ -1,6 +1,6 @@
 # NOcean Work State
 
-Updated: 2026-09-19. Authoritative continuation checkpoint.
+Updated: 2026-09-20. Authoritative continuation checkpoint.
 
 ## Current objective
 Continue the integrated NOcean roadmap from completed Tasks. Run 2 has prepared the Goals database foundation and a dedicated Projects workspace using existing persisted records. Finish the access/Preview gates before production deployment or SQL activation. Do not rebuild Tasks or redesign Home.
@@ -9,7 +9,7 @@ Continue the integrated NOcean roadmap from completed Tasks. Run 2 has prepared 
 - Production remains at Run 1 main checkpoint e32e696. Existing Tasks and Google/Notion providers remain active.
 - Run 2 review branch: `feature/goals-foundation`; PR: https://github.com/Leqlerc/ocean-notion-widget/pull/1 (draft pending access-dependent verification).
 - Remote foundation checkpoint 9b2ba61; Projects workspace checkpoint b061148. Later verification checkpoint contains this file. Read remote branch HEAD before continuing.
-- Automatic approval review rejected pushing directly to main because it was a consequential default-branch mutation. Do not evade this by merging/updating main through another tool. User approval of this concrete PR/deployment is needed before retrying that action.
+- Prior direct-main approval rejection is now resolved by the user’s explicit 2026-09-20 authorization to merge/deploy PR #1 AFTER Preview passes. Do not ask for merge permission again. Preview access/testing is still the gate; approval does not waive it.
 - Shell git push also lacks credentials. The connected GitHub tool successfully published the feature branch and PR. No production data or private snapshot is committed.
 
 ## Completed in Run 1 — preserve
@@ -45,13 +45,13 @@ No unfinished feature code. Feature branch is checkpointed; verification blocked
 - Then connect managed PostgreSQL to the existing project's Preview environment, with a separate server-only connection string. Operator CLI deliberately uses NOCEAN_PREVIEW_DATABASE_URL and NOCEAN_DB_ENV=preview; never put values in chat/source/logs. Full procedure is in the runbook.
 - Preview UI is deployment-protected. Sign-in is required to inspect it; do not disable protection. Branch preview from Vercel's PR comment: https://ocean-notion-widget-git-feature-goals-foundation-yiqwill-3102.vercel.app
 - Current production has origin checks, not authenticated owner sessions. Implement and verify server-owned sessions, CSRF checks, record authorization and a separate non-owner runtime SQL role BEFORE enabling new personal-data or token-management APIs. RLS alone is not authentication.
-- Direct main push/deployment approval is separate from connector authorization. PR #1 is the reviewable result; production remains unchanged until approval and remaining verification.
+- Merge/deployment is explicitly authorized by the user after Preview verification. Production remains unchanged because Preview access and testing are still blocked, not because approval is missing.
 - Microsoft Graph registration/consent and Purdue Brightspace access remain unverified; no connection claim.
 
 ## Exact next actions
 1. Read this file and inspect remote feature/goals-foundation HEAD/PR #1. Preserve feature work; do not restart from main e32e696.
 2. Restore Vercel team authorization; authenticate to protected Preview for desktop/mobile Projects and scoped Tasks verification. Confirm Preview uses intended data before any disposable-record live tests; archive only test records afterward.
-3. Resolve user approval for merging/deploying the reviewable Projects increment after verification. Do not claim this branch is on production.
+3. Once Preview passes the requested Projects and Tasks flows/mobile checks, merge/deploy PR #1 using the authorization already provided, then verify production. Do not claim fixture tests prove live persistence or mobile layout.
 4. Implement authenticated owner boundary, provision dedicated Preview PostgreSQL and disposable `_test` database, run native integration tests and the migration/import rehearsal. Verify counts/relations/dates and hosted persistence. Notion remains authoritative until an explicit reconciled cutover.
 5. Add full Goals workspace editing against SQL: outcome/overview/start dates, objectives, phases, milestones, manual metric samples and activity. Do not put growing history into temporary localStorage or giant Notion text blobs. Training-derived metrics require a real adapter.
 6. Follow original order: recurring routines + idempotent generation and separate Errands calendar, Training, Nutrition with historical food snapshots, shared calendar providers, Outlook, Brightspace, cross-module analytics. No placeholder integrations.
@@ -63,3 +63,11 @@ No unfinished feature code. Feature branch is checkpointed; verification blocked
 - Appearance remains separate/local. No Home, dining, training, calendar or cosmetic redesign in Run 2.
 - /api/tasks still fetches all records; client pagination is not server pagination. Future pagination must preserve project totals via independent aggregates.
 - No production SQL, Goals history API, routine scheduler, training expansion, nutrition logger, Outlook or Brightspace integration was activated in this run.
+
+## Run 3 — reconnected-access check and regression checkpoint (2026-09-20)
+- Resumed existing branch at 8c355b5 and inspected PR #1: open draft, mergeable, head unchanged; Vercel’s PR comment reports the existing Preview build Ready. No project restart or architecture audit.
+- Rechecked after the user reported reconnection: get_project for prj_OLAnEKEEsQ3UDm35NAYOBGChtCEV still returns 403 for yiqwill-3102 / team_dU7W9Acdpgi8v6eLzDGS0TP1. list_teams returns an empty teams array. Protected Preview fetch also fails with 403 while creating authorized access. Repeated user reconnect reports were checked; no successful team authorization was observed.
+- Exact external action: authorize the Vercel connection for the account/team that owns ocean-notion-widget, specifically yiqwill-3102. A reconnect that still exposes zero teams is insufficient. If that team is not available during authorization, verify the signed-in Vercel account has access to it. Do not disable deployment protection or share tokens in chat.
+- New tests/test_task_interactions.cjs runs the actual Tasks script with disposable API fixtures: Today/Tomorrow/Upcoming/Backlog, fresh-page loading of saved plans, plan moves, editing, completion/Undo, failed-save rollback, failed/successful archive, deadline preservation and date-only 23:59 defaults. All pass. This is not live Notion persistence or a browser/mobile layout test.
+- Existing Projects DOM interaction suite passes again. No application behavior changes or auth endpoints added. No real tasks/projects were created/edited/archived. No SQL activated, no PR merge or production deployment performed.
+- Next action remains access -> live Preview Projects/Tasks/mobile verification -> authorized merge/deploy -> production verification -> SQL and owner-auth activation. Do not begin unrelated features while release verification is blocked.
