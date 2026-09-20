@@ -13,15 +13,17 @@
   if(project){
    const s=ProjectModel.summarize(project,tasks),url=NOcean.safeURL(project.url);
    $('projectDetail').innerHTML=`<div class="project-actions"><a href="/projects.html">← All projects</a></div><section class="card module-card"><div class="card-head"><div><p class="eyebrow">${esc(project.status)}</p><h2>${esc(project.name)}</h2></div><button id="editProject">Edit project</button></div><dl class="project-overview"><div><dt>Target date</dt><dd>${esc(dateLabel(project.due))}</dd></div><div><dt>Task completion</dt><dd>${s.percent===null?'No tasks yet':s.percent+'%'}</dd></div><div><dt>Open tasks</dt><dd>${s.open.length}</dd></div></dl>${s.percent===null?'':`<progress class="project-progress" max="100" value="${s.percent}" aria-label="Task completion"></progress><p class="section-note">${s.done} of ${s.related.length} tasks complete. Project lifecycle is managed separately.</p>`}<div class="project-actions"><a href="${esc(ProjectModel.taskURL(project.id))}">Plan or add related tasks →</a>${url?`<a href="${esc(url)}" target="_blank" rel="noopener">Project notes in Notion ↗</a>`:''}</div></section><div class="project-columns"><section class="card module-card"><h2>Next actions</h2><p class="section-note">${s.today} Today · ${s.tomorrow} Tomorrow${s.overdue?' · '+s.overdue+' overdue':''}</p>${s.next.slice(0,5).map(t=>taskLink(t,project)).join('')||empty('No open actions. Add a task or review your project’s status.')}</section><section class="card module-card"><h2>Related work</h2><p class="section-note">${s.related.length} tasks · includes completed work</p>${[...s.next,...s.related.filter(t=>t.status==='done')].slice(0,limit).map(t=>taskLink(t,project)).join('')||empty('Your first related task will appear here.')}<button id="moreRelated" ${s.related.length<=limit?'hidden':''}>Show more</button></section></div>`;
+   window.NOceanProjectPlan?.mount(project.id);
    $('editProject').onclick=()=>openEditor(project);$('moreRelated').onclick=()=>{limit+=25;render();};
   }else{
+   window.NOceanProjectPlan?.reset();
    const query=$('projectSearch').value.trim().toLowerCase(),status=$('statusFilter').value;
    const visible=projects.filter(p=>(status==='all'||p.status===status)&&p.name.toLowerCase().includes(query)).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.name.localeCompare(b.name));
    $('projectGrid').innerHTML=visible.map(p=>{const s=ProjectModel.summarize(p,tasks);return `<a class="workspace-link" href="#${esc(p.id)}"><h3>${esc(p.name)}</h3><p>${esc(p.status)} · ${esc(dateLabel(p.due))}</p>${s.percent===null?'<p>No related tasks yet</p>':`<progress class="project-progress" max="100" value="${s.percent}" aria-label="Task completion for ${esc(p.name)}"></progress><p>${s.done} / ${s.related.length} tasks complete</p>`}<p>${s.today} Today · ${s.tomorrow} Tomorrow${s.overdue?' · '+s.overdue+' overdue':''}</p></a>`;}).join('')||empty('No matching projects. Create one or change the filters.');
   }
  }
  async function load(){
-  if(loading||saving||$('projectEditor').open)return;
+  if(loading||saving||window.NOceanProjectPlan?.isBusy()||$('projectEditor').open||document.getElementById('goalEditor')?.open)return;
   loading=true;const version=revision;$('refresh').disabled=true;
   try{const [p,t]=await Promise.all([store.list(),NOceanData.tasks.list()]);if(version!==revision)return;projects=p.projects;tasks=t.tasks;loaded=true;$('newProject').disabled=false;render();$('projectStatus').textContent='Projects and tasks up to date.';}
   catch(e){$('projectStatus').textContent=e.message+(loaded?' Showing the last loaded records.':' Use Refresh to retry.');}
