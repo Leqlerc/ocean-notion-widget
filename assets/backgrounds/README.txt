@@ -1,1 +1,0 @@
-NOcean decorated-mode backgrounds. Upload these WebP files into this folder: tree-cove.webp, safe-shallows.webp, kelp-forest.webp, grassy-plateaus.webp, jellyshroom.webp, bulb-zone.webp, blood-kelp.webp, grand-reef.webp, lost-river.webp.
