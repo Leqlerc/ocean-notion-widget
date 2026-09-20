@@ -5,5 +5,15 @@
       "maxDuration": 60,
       "excludeFiles": "{tests/**,assets/**,*.png,**/*.png}"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/integration-sync?provider=brightspace",
+      "schedule": "15 11 * * *"
+    },
+    {
+      "path": "/api/integration-sync?provider=outlook",
+      "schedule": "30 11 * * *"
+    }
+  ]
 }

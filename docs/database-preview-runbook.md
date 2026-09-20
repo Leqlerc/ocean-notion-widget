@@ -1,10 +1,20 @@
 # Goals persistence foundation — inactive until Preview verification
 
-This code does not switch production away from Notion or expose a new API. Existing Tasks, project lifecycle, training, and Google/Notion calendar data remain authoritative. SQL provisioning and HTTP owner authentication are still blocked, not completed.
+This code does not switch production away from Notion or expose a new API. Existing Tasks, project lifecycle, training, and Google/Notion calendar data remain authoritative. Hosted SQL provisioning is still unverified. Integration owner-key sessions and an additive provider setup command now exist; see integration-setup.md. Full Goals APIs are not enabled.
 
 ## Access required
 
-The Vercel connector returned 403 for team `yiqwill-3102` (`team_dU7W9Acdpgi8v6eLzDGS0TP1`). Reconnect/reauthorize the connector for that team. Connect managed PostgreSQL to **Preview**, keeping its URL server-only. Do not reuse a production database for staging. Before a production cutover, complete owner sign-in, server-verified sessions and CSRF checks; register the verified issuer/subject in `nocean.owners`. Never infer identity from a browser-supplied owner ID.
+Vercel connector access to team `yiqwill-3102` (`team_dU7W9Acdpgi8v6eLzDGS0TP1`) and project `ocean-notion-widget` is verified as of 2026-09-20. No reconnect is needed. Available connector operations do not provision storage or manage environment variables; the separate storage-dashboard browser session requires login. No database connection is available in the operator environment. Connect managed PostgreSQL to **Preview**, keeping its URL server-only. Do not reuse a production database for staging. Before a production cutover, complete owner sign-in, server-verified sessions and CSRF checks; register the verified issuer/subject in `nocean.owners`. Never infer identity from a browser-supplied owner ID.
+
+## Exact external setup still required
+
+After the Projects release is verified, open the existing project's Storage settings under the `yiqwill-3102` team (https://vercel.com/dashboard/yiqwill-3102/stores). Inspect existing connected databases first; do not create a duplicate if one already exists.
+
+1. Connect a dedicated **Preview-only** managed PostgreSQL database through Vercel Marketplace (Neon is the documented default). Keep production isolated. Prefer the free tier where available; review any provider billing terms before accepting them.
+2. Supply its server-only TLS migration connection to the authorized operator environment as `NOCEAN_PREVIEW_DATABASE_URL`, with `NOCEAN_DB_ENV=preview`. A Vercel environment variable alone does not make the connection available to the local operator CLI. Use authenticated environment tooling/secret injection; never paste a database URL in chat or commit it.
+3. Provision a separate disposable database whose name ends in `_test`; make its connection available as `NOCEAN_TEST_DATABASE_URL` for the native integration tests. These tests destroy only their test schema, so do not reuse Preview or production.
+4. Provide a separate least-privileged runtime database role. Implement server-verified owner sign-in before enabling SQL-backed APIs; do not configure a fake owner or use the migration role for runtime. Provider registration/redirect URLs must match the eventual implemented sign-in flow.
+5. Follow the procedure below for migration, snapshot reconciliation, retry checks and hosted persistence. Provisioning alone is not activation. No Goals production cutover has been implemented or validated by reconciliation yet.
 
 ## What is implemented
 

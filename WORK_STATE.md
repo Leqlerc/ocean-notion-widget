@@ -1,73 +1,46 @@
 # NOcean Work State
 
-Updated: 2026-09-20. Authoritative continuation checkpoint.
+Updated 2026-09-20. Resume this checkpoint; do not re-audit completed Tasks/Projects.
 
-## Current objective
-Continue the integrated NOcean roadmap from completed Tasks. Run 2 has prepared the Goals database foundation and a dedicated Projects workspace using existing persisted records. Finish the access/Preview gates before production deployment or SQL activation. Do not rebuild Tasks or redesign Home.
+## Current objective and user priorities
+The latest explicit sprint instruction supersedes the earlier roadmap/mobile gate:
+**Projects shipped → minimum durable SQL → Outlook → Brightspace → Goals/Projects expansion → Routines/Errands → Training → Nutrition → analytics.**
+Build usable functionality; test changed paths only. Spend at most a few minutes on an external blocker, record exact setup and move on. No mobile retest of unchanged Tasks required.
 
-## Repository and deployment state
-- Production remains at Run 1 main checkpoint e32e696. Existing Tasks and Google/Notion providers remain active.
-- Run 2 review branch: `feature/goals-foundation`; PR: https://github.com/Leqlerc/ocean-notion-widget/pull/1 (draft pending access-dependent verification).
-- Remote foundation checkpoint 9b2ba61; Projects workspace checkpoint b061148. Later verification checkpoint contains this file. Read remote branch HEAD before continuing.
-- Prior direct-main approval rejection is now resolved by the user’s explicit 2026-09-20 authorization to merge/deploy PR #1 AFTER Preview passes. Do not ask for merge permission again. Preview access/testing is still the gate; approval does not waive it.
-- Shell git push also lacks credentials. The connected GitHub tool successfully published the feature branch and PR. No production data or private snapshot is committed.
+## Shipped and verified
+- PR #1 merged as `ad9c92fc9820baa889812a515e4c6251560bf693`. Production deployment `dpl_68PUfW4WMzgYj15Cj4N5YhYwg4wn` READY, correct SHA/main.
+- Minimal production smoke: `/projects.html` 200 with workspace; `/api/projects` 200 (9 records); `/api/tasks` 200 (134 records). Existing API records preserved.
+- Vercel access WORKS for team `team_dU7W9Acdpgi8v6eLzDGS0TP1` / `yiqwill-3102`, project `prj_OLAnEKEEsQ3UDm35NAYOBGChtCEV`. No further connector reconnect needed.
+- Prior live Preview tests passed Projects create/reload/search/target/lifecycle, linked capture/editor, Tasks Today/Tomorrow/Upcoming/Backlog, persistence/edit/completion/Undo/archive/deadline preservation. QA project `3e177f3e-dfc6-81ed-a8a3-e34bfd9468c6` Archived; QA task `3e177f3e-dfc6-8116-aa5e-c0d1f6943a45` in Notion Trash. Do not repeat exhaustive QA. Details in `docs/release-verification.md`; its old mobile gate is waived by the user's newer instruction.
 
-## Completed in Run 1 — preserve
-- Dedicated Tasks: Today, Tomorrow, Upcoming (days 2–14), Backlog; shared Home policy; explicit deferral, rollover, persistence, editing, completion/Undo and archive.
-- Added Notion Planning Mode; reused Do date without backfill. Deadlines remain independent, date-only input becomes 23:59 local, and local labels agree with entered time.
-- Production persistence and 390px layout checks passed in prior run. Details: migrations/001_notion_task_planning.md and docs/persistence-architecture.md.
-- Earlier working systems: Home, Training, Notion tasks/projects/sets, direct Google + Notion calendar merge, dining, appearance and icons.
+## Current implementation checkpoint — provider integrations
+Branch `feature/provider-integrations`, based on merged main. Check latest remote HEAD/PR before continuing.
+- Additive SQL `002_integrations.sql`: provider accounts, encrypted secrets, stable external/local item mappings, sync status/timestamps, idempotent operation records and one-use OAuth state. Reuses `001_goals.sql`, migration ledger and forced owner RLS.
+- Runtime `lib/integrations/store.py`: TLS, rejects superuser/BYPASSRLS, owner-local transactions and cross-instance advisory locks. No migration credentials in runtime.
+- `scripts/setup_integrations.py`: apply existing migrations, register single owner, grant integration-only runtime access, verify committed encrypted read/write across separate connections, clean probe. Not run against hosted SQL: credentials unavailable.
+- New Connections UI `/integrations.html`: unlock/lock owner session, connect/sync Outlook, create/edit events, connect private Purdue feed, sync coursework in bounded batches. Strong random owner key; signed Secure/HttpOnly cookie + CSRF/origin checks. Provider tokens/feed URL encrypted in SQL, never browser storage.
+- Outlook implementation: official Graph OAuth code+PKCE, expiring single-use SQL state, verified `/me` account, refresh tokens, default calendar view with recurrence instances, immutable IDs, atomic snapshot replacement after all pages, preserve last snapshot on failure. Create uses durable request fingerprint plus Graph transactionId; update uses stored ID/ETag. Meeting attendees/recurring series are not edited here. Home includes cached Outlook only with owner session.
+- Brightspace implementation: official user calendar subscription feed, allowed Purdue HTTPS host/no redirects, parse stable UID/recurrence IDs, 23:59 campus date-only deadline, sequence dedup, skip recurring class entries. Imports/updates current Notion Tasks without touching planning/completion/project/difficulty. Durable operation reservation and source marker prevent blind duplicate creation after uncertain writes; retries adopt the marker or stop for reconciliation; SQL mapping preserves archive choice. Feed omission/cancellation never deletes Tasks. Submission/grade status unavailable from feeds.
+- Scheduled daily sync routes (Brightspace 11:15 UTC, Outlook 11:30 UTC), protected by CRON_SECRET. Manual sync available; initial large coursework import may need repeated bounded batches.
+- Google calendar fix: stable Google source-link identity suppresses stale Notion mirrors after a move/rename; live Google time/title wins. Unrelated Outlook/Google events are not collapsed just because titles/times match. Does not repair unlinked mirrors or deletion tombstones.
+- Existing Tasks UI/model unchanged; shared navigation adds Connections.
 
-## Completed in Run 2 — review branch, not production
-1. Inspected complete prior WORK_STATE, architecture, recent history including e32e696, clean checkout and matching remote main. Read-only production checks confirmed /api/projects, /tasks.html and direct Google calendar with no missing configuration. Browser Tasks loaded successfully.
-2. Inactive PostgreSQL foundation: owners/projects/objectives/phases/milestones/metrics/samples and references to existing Notion tasks. Composite foreign keys and row policies enforce owner/project relationships. No API route imports this schema or switches providers.
-3. Transactional migration ledger with checksum drift protection and advisory locking; insert-only Preview importer with atomic conflict refusal and no deletion. Full task-side relations avoid Notion's capped inline project relations. Legacy names must resolve unambiguously. Tasks/planning/deadlines are not copied or modified.
-4. Preview-only operator CLI and exact setup/verification/rollback runbook: docs/database-preview-runbook.md. No production import support.
-5. Dedicated Projects page: searchable Active/Completed/Archived lists, stable per-project links, stored target-date/lifecycle edits through existing /api/projects, next actions, related work and task completion indicators. Project lifecycle stays independent of task completion. Existing Notion link opens notes.
-6. Shared navigation includes Projects. Project links scope the existing Tasks page, preset capture's project, and optionally open the related task editor. Existing planning and deadline behavior preserved.
-7. Project saves wait for server confirmation; failed saves retain inputs/old records, stale reads cannot overwrite newer saves, and creating before initial load is prevented.
+## Exact external setup required — no repeated retries
+Full concise procedure: `docs/integration-setup.md`.
+1. **SQL**: Vercel connector lacks storage/env management tools. Storage dashboard requires a separate signed-in browser session; no database URL/CLI credentials in operator environment. Inspect existing storage, then connect isolated managed PostgreSQL Preview + separate migration/runtime roles. Securely configure NOCEAN_DATABASE_URL, NOCEAN_OWNER_ID, NOCEAN_OWNER_SECRET (random 32+ bytes), NOCEAN_TOKEN_KEY (Fernet), NOCEAN_PUBLIC_ORIGIN. Operator-only NOCEAN_MIGRATION_DATABASE_URL and NOCEAN_DB_ENV. Run setup command against Preview, then real read/write tests; production uses isolated DB. Never paste secrets in chat.
+2. **Microsoft**: no app registration/client credentials or consent available. Register a Web app with delegated User.Read/Calendars.ReadWrite, exact `<origin>/api/outlook-callback`; set MICROSOFT_CLIENT_ID/SECRET/TENANT_ID server-side. Connect from UI; if Purdue requires administrator consent, request approval from Purdue IT. Tenant policy is unverified, not asserted blocked.
+3. **Brightspace**: no authenticated feed or institution-approved OAuth client available. Use Calendar → Settings → Enable Calendar Feeds → Subscribe, copy private Purdue feed URL into Connections. If unavailable, ask Purdue support to enable feeds or approve OAuth API access. No credential scraping. Student API access is unverified, not conclusively prohibited.
+4. **Scheduler**: set random 32+ byte CRON_SECRET in production. Credentials/config changes need redeployment.
 
-## In progress
-No unfinished feature code. Feature branch is checkpointed; verification blocked on access is explicitly listed below. Full Goals editing is not enabled.
+## Verification in this sprint
+- 15 focused Python integration tests pass: sessions/CSRF/tampering/expiry, encryption, Graph pagination/moves/cancellations, failed-page retention, retry transaction ID, field validation, feed date/identity/dedup/rejection, existing-task field preservation/archive, moved Google mirror.
+- 5 existing calendar-provider tests pass because calendar merge changed. Python compile and JS syntax checks pass. No full Tasks/Projects regression repeated.
+- Embedded PostgreSQL checks passed both migrations, stable-ID uniqueness/move updates, owner RLS read/write isolation, rollback and committed persistence after reopen. Changed UI DOM tests passed owner unlock/secret clearing, failure-preserved inputs/idempotency IDs, conflicting retry refusal and coursework sync results.
+- Live Outlook consent/read/write, Purdue feed syncing and hosted SQL persistence are NOT verified or activated. New routes fail closed without setup; Notion stays authoritative. No real provider credentials were created or user events/tasks imported by the new code.
 
-## Verification status
-- 44 Python tests pass; 6 native PostgreSQL integration tests skipped here. The latter cover migration transactions, checksum drift, import retries/conflicts, owner boundaries and reload persistence. They require a disposable database ending in `_test`; NEVER use the application or production database.
-- Embedded PostgreSQL (PGlite 0.5.8) schema tests passed: actual DDL, cross-owner and cross-project constraints, target dates, duplicate links, transaction rollback, RLS read/write isolation, metric values and timestamp persistence after reopen. This does not prove hosted connectivity, native advisory-lock concurrency or owner authentication.
-- Native PostgreSQL cannot start under this workspace's process permissions. Do not spend another run repeating attempts to create system users. Use authorized Preview infrastructure and a dedicated disposable test database.
-- Read-only production import rehearsal validated 8 projects, 125 tasks and 21 task links. Snapshot stayed outside repository; regenerate for actual migration because live data changes.
-- Project model and DOM interaction tests passed: identity-based relations, explicit deferral ordering, task-only progress, search/detail/create, saved-state reload, lifecycle/date update, failed-save recovery, stale-read guard, missing project, and scoped task editor/capture. These use API fixtures, not live writes.
-- Existing planning, UI, frontend, deadline (five timezones) and filter tests pass. Python existing-provider tests pass. No Run 2 writes to real project/task data were made.
-- Vercel reports successful Preview builds for 9b2ba61 and b061148. Browser Preview redirects to Vercel sign-in; no visual/mobile or live-save verification claimed for this branch. Existing production Tasks browser read passed.
-- Prior unrelated known failure: tests/test_appearance.cjs asserts 12 assets, while main already has 17. Unchanged; do not confuse with Run 2 regressions.
+## Exact next action
+Finish focused schema/UI checks, publish integration branch/PR, verify READY Preview plus safe unconfigured endpoints, then deploy the usable Connections/setup UI and Google move fix. Record resulting deployment SHA. Do not claim external providers connected before credentials and real tests succeed.
+After setup: run minimum SQL probe → Outlook connect/read/create/move/retry happy path → Brightspace small batch/rerun/changed deadline → expand Goals or routines only after these boundaries are resolved. Do not expand Training/Nutrition schema now.
 
-## External setup and blockers
-- Vercel connector still returns 403 for `yiqwill-3102`, team `team_dU7W9Acdpgi8v6eLzDGS0TP1`. Exact user action: reconnect/reauthorize the Vercel connector with access to that team. No authorized database URL/CLI credentials are available.
-- Then connect managed PostgreSQL to the existing project's Preview environment, with a separate server-only connection string. Operator CLI deliberately uses NOCEAN_PREVIEW_DATABASE_URL and NOCEAN_DB_ENV=preview; never put values in chat/source/logs. Full procedure is in the runbook.
-- Preview UI is deployment-protected. Sign-in is required to inspect it; do not disable protection. Branch preview from Vercel's PR comment: https://ocean-notion-widget-git-feature-goals-foundation-yiqwill-3102.vercel.app
-- Current production has origin checks, not authenticated owner sessions. Implement and verify server-owned sessions, CSRF checks, record authorization and a separate non-owner runtime SQL role BEFORE enabling new personal-data or token-management APIs. RLS alone is not authentication.
-- Merge/deployment is explicitly authorized by the user after Preview verification. Production remains unchanged because Preview access and testing are still blocked, not because approval is missing.
-- Microsoft Graph registration/consent and Purdue Brightspace access remain unverified; no connection claim.
-
-## Exact next actions
-1. Read this file and inspect remote feature/goals-foundation HEAD/PR #1. Preserve feature work; do not restart from main e32e696.
-2. Restore Vercel team authorization; authenticate to protected Preview for desktop/mobile Projects and scoped Tasks verification. Confirm Preview uses intended data before any disposable-record live tests; archive only test records afterward.
-3. Once Preview passes the requested Projects and Tasks flows/mobile checks, merge/deploy PR #1 using the authorization already provided, then verify production. Do not claim fixture tests prove live persistence or mobile layout.
-4. Implement authenticated owner boundary, provision dedicated Preview PostgreSQL and disposable `_test` database, run native integration tests and the migration/import rehearsal. Verify counts/relations/dates and hosted persistence. Notion remains authoritative until an explicit reconciled cutover.
-5. Add full Goals workspace editing against SQL: outcome/overview/start dates, objectives, phases, milestones, manual metric samples and activity. Do not put growing history into temporary localStorage or giant Notion text blobs. Training-derived metrics require a real adapter.
-6. Follow original order: recurring routines + idempotent generation and separate Errands calendar, Training, Nutrition with historical food snapshots, shared calendar providers, Outlook, Brightspace, cross-module analytics. No placeholder integrations.
-
-## Architectural decisions and known limits
-- Static HTML/vanilla JS + Python serverless APIs; keep shared transport/planning policy and stable IDs.
-- Existing Notion Projects/Tasks/Training remain authoritative. New Projects page adds no temporary persistence and requires no Notion schema migration.
-- Task completion is explicitly labeled, not treated as overall goal attainment; lifecycle can be completed/archived independently.
-- Appearance remains separate/local. No Home, dining, training, calendar or cosmetic redesign in Run 2.
-- /api/tasks still fetches all records; client pagination is not server pagination. Future pagination must preserve project totals via independent aggregates.
-- No production SQL, Goals history API, routine scheduler, training expansion, nutrition logger, Outlook or Brightspace integration was activated in this run.
-
-## Run 3 — reconnected-access check and regression checkpoint (2026-09-20)
-- Resumed existing branch at 8c355b5 and inspected PR #1: open draft, mergeable, head unchanged; Vercel’s PR comment reports the existing Preview build Ready. No project restart or architecture audit.
-- Rechecked after the user reported reconnection: get_project for prj_OLAnEKEEsQ3UDm35NAYOBGChtCEV still returns 403 for yiqwill-3102 / team_dU7W9Acdpgi8v6eLzDGS0TP1. list_teams returns an empty teams array. Protected Preview fetch also fails with 403 while creating authorized access. Repeated user reconnect reports were checked; no successful team authorization was observed.
-- Exact external action: authorize the Vercel connection for the account/team that owns ocean-notion-widget, specifically yiqwill-3102. A reconnect that still exposes zero teams is insufficient. If that team is not available during authorization, verify the signed-in Vercel account has access to it. Do not disable deployment protection or share tokens in chat.
-- New tests/test_task_interactions.cjs runs the actual Tasks script with disposable API fixtures: Today/Tomorrow/Upcoming/Backlog, fresh-page loading of saved plans, plan moves, editing, completion/Undo, failed-save rollback, failed/successful archive, deadline preservation and date-only 23:59 defaults. All pass. This is not live Notion persistence or a browser/mobile layout test.
-- Existing Projects DOM interaction suite passes again. No application behavior changes or auth endpoints added. No real tasks/projects were created/edited/archived. No SQL activated, no PR merge or production deployment performed.
-- Next action remains access -> live Preview Projects/Tasks/mobile verification -> authorized merge/deploy -> production verification -> SQL and owner-auth activation. Do not begin unrelated features while release verification is blocked.
+## Preserve
+Notion Tasks/Projects/Training and direct Google + Notion calendar remain authoritative. Tasks queues/planning/deadlines are working; selected date without time stays 23:59 local. Existing inactive Goals SQL and insert-only importer remain available. No user data backfill/deletion. Prior unrelated appearance test expects 12 assets but main contains 17; not part of this sprint.

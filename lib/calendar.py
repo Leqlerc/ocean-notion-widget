@@ -6,7 +6,7 @@ import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode, quote
+from urllib.parse import urlencode, quote, urlsplit, parse_qs
 from urllib.request import Request, urlopen
 from lib import notion
 
@@ -104,16 +104,28 @@ def same_event(a, b):
     return True
 
 
+def same_provider_link(a, b):
+    """A stable Google source link wins over an old mirrored date after a move."""
+    if a['source'] != 'google' or b['source'] != 'notion': return False
+    def identity(event):
+        url=urlsplit(event.get('url',''))
+        if url.scheme!='https' or url.netloc not in ('www.google.com','calendar.google.com'): return None
+        if not url.path.startswith('/calendar'): return None
+        return parse_qs(url.query).get('eid',[None])[0]
+    left,right=identity(a),identity(b)
+    return bool(left and right and left==right)
+
+
 def merge_events(batches):
     merged = []
-    for source in ('google', 'notion'):
+    for source in ('google', 'outlook', 'notion'):
         for item in batches.get(source, []):
             try:
                 event_instant(item['at'])
             except (KeyError, ValueError, TypeError):
                 continue
             event = {**item, 'source':source, 'sources':[source], 'sourceIds':{source:item['id']}}
-            duplicate = next((e for e in merged if same_event(e,event)), None)
+            duplicate = next((e for e in merged if same_provider_link(e,event) or (source == 'notion' and e['source'] == 'google' and same_event(e,event))), None)
             if duplicate:
                 duplicate['sources'].append(source)
                 duplicate['sourceIds'][source] = item['id']
@@ -125,7 +137,7 @@ def merge_events(batches):
     return sorted(merged, key=lambda e:(event_instant(e['at']),title_key(e['name']),e['id']))
 
 
-def load_calendar():
+def load_calendar(include_outlook=False):
     required = ('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN')
     missing = [key for key in required if not os.getenv(key, '').strip()]
     providers = {'notion':NotionCalendarProvider()}
@@ -142,9 +154,20 @@ def load_calendar():
                 status[key] = {'available':False,'count':0,'error':key.title()+' events unavailable'}
     if not batches:
         raise RuntimeError('All calendar sources unavailable.')
+    if include_outlook:
+        try:
+            from lib.integrations.store import configured, cached_outlook
+            cached=cached_outlook() if configured() else None
+            if cached:
+                batches['outlook']=cached['events']
+                status['outlook']={'available':True,'count':len(cached['events']),'lastSync':cached['lastSync'],'stale':cached['status']=='error'}
+        except Exception:
+            status['outlook']={'available':False,'count':0,'error':'Saved Outlook events unavailable'}
     direct = 'google' in batches
     source = 'Direct Google Calendar + Notion events' if direct and 'notion' in batches else 'Direct Google Calendar' if direct else 'Notion events'
+    if 'outlook' in batches: source += ' + Outlook'
     warnings = [v['error'] for v in status.values() if not v['available']]
+    if status.get('outlook',{}).get('stale'): warnings.append('Outlook sync failed; showing last saved events.')
     if missing:
         status['google'] = {'available':False,'count':0,'error':'Direct Google is not configured'}
         source += ' · Google not configured'
