@@ -44,3 +44,5 @@ After setup: run minimum SQL probe → Outlook connect/read/create/move/retry ha
 
 ## Preserve
 Notion Tasks/Projects/Training and direct Google + Notion calendar remain authoritative. Tasks queues/planning/deadlines are working; selected date without time stays 23:59 local. Existing inactive Goals SQL and insert-only importer remain available. No user data backfill/deletion. Prior unrelated appearance test expects 12 assets but main contains 17; not part of this sprint.
+
+- Publishing correction: initial PR #2 Preview hit Vercel Hobby’s 12-function limit. Consolidated the cron handler into the existing integrations endpoint; total functions now 12. No plan upgrade required.

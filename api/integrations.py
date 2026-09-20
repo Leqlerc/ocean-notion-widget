@@ -1,11 +1,31 @@
 import os
+import hmac
+from urllib.parse import parse_qs, urlsplit
 from lib.http import JsonHandler
 from lib.integrations import store, outlook, brightspace
 from lib.integrations.security import require_owner, owner_id
 
 
 class handler(JsonHandler):
+    def scheduled_sync(self, provider):
+        secret=os.getenv('CRON_SECRET','')
+        if len(secret)<32 or not hmac.compare_digest(self.headers.get('Authorization',''),'Bearer '+secret):
+            self.send_json(403,{'error':'Unauthorized.'}); return
+        try:
+            if provider not in ('outlook','brightspace'): raise ValueError('Unknown provider.')
+            if not store.configured():
+                self.send_json(200,{'skipped':'Integration setup incomplete.'}); return
+            with store.connection() as db:
+                linked=store.account(db,provider)
+            if not linked:
+                self.send_json(200,{'skipped':'Provider not connected.'}); return
+            self.send_json(200,outlook.sync() if provider=='outlook' else brightspace.sync())
+        except Exception: self.send_json(502,{'error':'Sync failed; saved data retained.'})
+
     def do_GET(self):
+        query=parse_qs(urlsplit(self.path).query)
+        if 'sync' in query:
+            self.scheduled_sync(query['sync'][0]); return
         try:
             require_owner(self.headers)
             if not store.configured():
