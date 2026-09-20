@@ -82,6 +82,40 @@ def connect(url):
     return {'count':len(preview['items']),'skipped':preview['skipped']}
 
 
+def task_key(name,due):
+    # Conservative manual-task dedupe: same local due day + same title after
+    # punctuation/spacing normalization, with an optional leading course code removed.
+    title=(name or '').casefold()
+    title=re.sub(r'^\\s*[a-z]{2,5}\\s*[- ]?\\s*\\d{3,5}\\s*[:\\-–—]?\\s*','',title)
+    title=re.sub(r'[^a-z0-9]+','',title)
+    return (notion.local_day(due),title)
+
+
+def existing_match(record,pages):
+    normalized=[(page,normalize(page)) for page in pages]
+    source=[page for page,item in normalized
+            if item.get('sourceId') in (record['sourceId'],record['externalId'])
+            or (item.get('sourceUrl')==record['url'] and '/calendar/6824' not in record['url'])]
+    if len(source)>1:
+        raise ValueError('Multiple tasks match this Brightspace item. Reconcile before sync.')
+    if source:
+        return source[0]
+
+    # Adopt a manually-created task instead of creating a duplicate when the
+    # title and local due day clearly match. Existing user-owned fields survive.
+    key=task_key(record['name'],record['due'])
+    manual=[]
+    for page,item in normalized:
+        if item.get('sourceId'):
+            continue
+        if task_key(item.get('name',''),item.get('due'))!=key:
+            continue
+        if record.get('course') and item.get('course') and item['course'].casefold()!=record['course'].casefold():
+            continue
+        manual.append(page)
+    return manual[0] if len(manual)==1 else None
+
+
 def source_matches(record):
     # Persist a recovery marker in Notion in the SAME create request as the task.
     # A SQL commit/network failure cannot make a retry create another task.
@@ -94,7 +128,7 @@ def source_matches(record):
     return matches
 
 
-def sync_task(record, local_id=None, allow_create=True):
+def sync_task(record, local_id=None, allow_create=True, existing_pages=None):
     tasks=NotionTaskStore()
     if local_id:
         try: page=tasks.owned_page({'id':local_id})
@@ -102,8 +136,11 @@ def sync_task(record, local_id=None, allow_create=True):
             # Respect user archive. Never recreate an explicitly archived imported task.
             return local_id,'archived'
     else:
-        matches=source_matches(record)
-        page=matches[0] if matches else None
+        if existing_pages is not None:
+            page=existing_match(record,existing_pages)
+        else:
+            matches=source_matches(record)
+            page=matches[0] if matches else None
 
     properties=tasks.properties({'name':record['name'],'due':record['due'],**({'course':record['course']} if record['course'] else {})})
     properties.update({'Source ID':{'rich_text':[{'text':{'content':record['sourceId']}}]},
@@ -126,9 +163,23 @@ def sync(limit=8):
             account=store.account(db,'brightspace')
             if not account: raise ValueError('Connect the Brightspace feed first.')
             feed=fetch_feed(store.decrypt(account['secret_ciphertext']))
-        result={'created':0,'updated':0,'archived':0,'unchanged':0,'remaining':0,'skipped':feed['skipped']}
-        processed=0
+        now=datetime.now(notion.TZ)
+        upcoming=[]
+        past=0
         for record in feed['items']:
+            due=datetime.fromisoformat(record['due'].replace('Z','+00:00'))
+            if due.tzinfo is None:
+                due=due.replace(tzinfo=notion.TZ)
+            if due<now:
+                past+=1
+            else:
+                upcoming.append(record)
+        upcoming.sort(key=lambda record: record['due'])
+        existing_pages=notion.query(notion.TASKS)
+        result={'created':0,'updated':0,'archived':0,'unchanged':0,'remaining':0,
+                'skipped':feed['skipped'],'skippedPast':past}
+        processed=0
+        for record in upcoming:
             operation=str(uuid5(NAMESPACE_URL,record['sourceId']))
             allow_create=False
             # Durable reservation survives a timeout after Notion accepted a create.
@@ -149,7 +200,8 @@ def sync(limit=8):
                     result['unchanged']+=1; continue
                 if processed>=limit or (clock.monotonic()-started>18 and not allow_create):
                     result['remaining']+=1; continue
-                local,action=sync_task(record,old['local_id'] if old else (previous['external_id'] if previous else None),allow_create=allow_create)
+                local,action=sync_task(record,old['local_id'] if old else (previous['external_id'] if previous else None),
+                                       allow_create=allow_create,existing_pages=existing_pages)
                 store.put_item(db,'brightspace',account['account_id'],record['externalId'],record,local)
                 db.execute('UPDATE nocean.provider_operations SET external_id=%s WHERE owner_id=%s AND provider=%s AND operation_id=%s',(local,owner_id(),'brightspace',operation))
                 result[action]+=1; processed+=1
