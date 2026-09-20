@@ -14,7 +14,7 @@ Build usable functionality; test changed paths only. Spend at most a few minutes
 - Prior live Preview tests passed Projects create/reload/search/target/lifecycle, linked capture/editor, Tasks Today/Tomorrow/Upcoming/Backlog, persistence/edit/completion/Undo/archive/deadline preservation. QA project `3e177f3e-dfc6-81ed-a8a3-e34bfd9468c6` Archived; QA task `3e177f3e-dfc6-8116-aa5e-c0d1f6943a45` in Notion Trash. Do not repeat exhaustive QA. Details in `docs/release-verification.md`; its old mobile gate is waived by the user's newer instruction.
 
 ## Current implementation checkpoint — provider integrations
-Branch `feature/provider-integrations`, based on merged main. Check latest remote HEAD/PR before continuing.
+PR #2 merged as `1ca85e07b29c12ee3cab50a60c26bcdaf0ecd4d3`; production deployment `dpl_4PWmePDd17VzSr2tRAaau5GAbqcs` READY. Check latest main before continuing. Provider credentials remain unconfigured; deployed implementation is not activated live sync.
 - Additive SQL `002_integrations.sql`: provider accounts, encrypted secrets, stable external/local item mappings, sync status/timestamps, idempotent operation records and one-use OAuth state. Reuses `001_goals.sql`, migration ledger and forced owner RLS.
 - Runtime `lib/integrations/store.py`: TLS, rejects superuser/BYPASSRLS, owner-local transactions and cross-instance advisory locks. No migration credentials in runtime.
 - `scripts/setup_integrations.py`: apply existing migrations, register single owner, grant integration-only runtime access, verify committed encrypted read/write across separate connections, clean probe. Not run against hosted SQL: credentials unavailable.
@@ -33,16 +33,28 @@ Full concise procedure: `docs/integration-setup.md`.
 4. **Scheduler**: set random 32+ byte CRON_SECRET in production. Credentials/config changes need redeployment.
 
 ## Verification in this sprint
-- 15 focused Python integration tests pass: sessions/CSRF/tampering/expiry, encryption, Graph pagination/moves/cancellations, failed-page retention, retry transaction ID, field validation, feed date/identity/dedup/rejection, existing-task field preservation/archive, moved Google mirror.
+- 16 focused Python integration tests pass: sessions/CSRF/tampering/expiry, encryption, Graph pagination/moves/cancellations, failed-page retention, retry transaction ID, field validation, feed date/identity/dedup/rejection, existing-task field preservation/archive, moved Google mirror.
 - 5 existing calendar-provider tests pass because calendar merge changed. Python compile and JS syntax checks pass. No full Tasks/Projects regression repeated.
 - Embedded PostgreSQL checks passed both migrations, stable-ID uniqueness/move updates, owner RLS read/write isolation, rollback and committed persistence after reopen. Changed UI DOM tests passed owner unlock/secret clearing, failure-preserved inputs/idempotency IDs, conflicting retry refusal and coursework sync results.
 - Live Outlook consent/read/write, Purdue feed syncing and hosted SQL persistence are NOT verified or activated. New routes fail closed without setup; Notion stays authoritative. No real provider credentials were created or user events/tasks imported by the new code.
 
 ## Exact next action
-Finish focused schema/UI checks, publish integration branch/PR, verify READY Preview plus safe unconfigured endpoints, then deploy the usable Connections/setup UI and Google move fix. Record resulting deployment SHA. Do not claim external providers connected before credentials and real tests succeed.
-After setup: run minimum SQL probe → Outlook connect/read/create/move/retry happy path → Brightspace small batch/rerun/changed deadline → expand Goals or routines only after these boundaries are resolved. Do not expand Training/Nutrition schema now.
+Start with external setup in docs/integration-setup.md. Code is deployed; no need to rebuild Projects, Tasks or integration scaffolding. Minimum SQL credentials/roles and Microsoft app registration/Purdue feed must be provided through secure setup. Run setup_integrations.py on Preview, then one real Outlook/Feed read-write-update verification before activating production providers. Do not claim external providers connected before these checks succeed.
+When credentials become available: run minimum SQL probe → Outlook connect/read/create/move/retry happy path → Brightspace small batch/rerun/changed deadline → otherwise continue useful Goals/routines work without waiting for external setup. Do not expand Training/Nutrition schema now.
 
 ## Preserve
 Notion Tasks/Projects/Training and direct Google + Notion calendar remain authoritative. Tasks queues/planning/deadlines are working; selected date without time stays 23:59 local. Existing inactive Goals SQL and insert-only importer remain available. No user data backfill/deletion. Prior unrelated appearance test expects 12 assets but main contains 17; not part of this sprint.
 
 - Publishing correction: initial PR #2 Preview hit Vercel Hobby’s 12-function limit. Consolidated the cron handler into the existing integrations endpoint; total functions now 12. No plan upgrade required.
+
+## Publishing checkpoint
+- Corrected integration Preview dpl_8EKXa77MKapYfQnUfutVAA7BYQgi READY at 6221dd5. Authorized HTTP smoke passed Connections 200, integration-session 200 with authenticated=false/configured=false, integrations 403 without owner session.
+- PR #2 merged and production build READY. First alias smoke ran during build and returned old-deployment 404 for new routes; rechecked after READY.
+- Final focused fix ensures cached Outlook still renders when both older calendar providers fail; new failure-case test passes. This is part of the final main checkpoint.
+
+## Goals milestone — current publication
+- Integration production is already live; Connections and session smoke returned 200 (configured=false). No new credentials or feed appeared. External actions above remain necessary; no repeated authorization attempts.
+- Added project goal plans: overview, objectives with completion progress, dated milestones, editable notes/considerations, remove and reload. Stored as individual native Notion blocks inside the existing project, preserving all unmarked content and existing Tasks. Stable block IDs permit later SQL adoption; this is durable Notion storage, NOT activated SQL or SQL goal history.
+- Uses existing projects API: still 12 Vercel functions. Validates project ownership, managed block membership, text/date bounds, stale edits. Stable save IDs recognize sequential retries; Notion has no atomic uniqueness/CAS, so uncertain creates require refresh and concurrent clients are not guaranteed exactly-once.
+- Focused validation: six backend goal tests and actual component DOM happy path/completion/milestone/reload/uncertain-save tests passed; Python/JS syntax passed. Live new-block verification pending Preview publication. No unchanged Task QA.
+- Next: publish this checkpoint, test one disposable native goal block in Preview (create/reload/update/retry/remove), merge and minimally verify production. Then SQL activation if credentials available; otherwise continue functional goal depth or routines, not integration scaffolding rebuild.

@@ -152,8 +152,6 @@ def load_calendar(include_outlook=False):
                 status[key] = {'available':True,'count':len(batches[key])}
             except Exception:
                 status[key] = {'available':False,'count':0,'error':key.title()+' events unavailable'}
-    if not batches:
-        raise RuntimeError('All calendar sources unavailable.')
     if include_outlook:
         try:
             from lib.integrations.store import configured, cached_outlook
@@ -163,9 +161,12 @@ def load_calendar(include_outlook=False):
                 status['outlook']={'available':True,'count':len(cached['events']),'lastSync':cached['lastSync'],'stale':cached['status']=='error'}
         except Exception:
             status['outlook']={'available':False,'count':0,'error':'Saved Outlook events unavailable'}
+    if not batches:
+        raise RuntimeError('All calendar sources unavailable.')
     direct = 'google' in batches
     source = 'Direct Google Calendar + Notion events' if direct and 'notion' in batches else 'Direct Google Calendar' if direct else 'Notion events'
-    if 'outlook' in batches: source += ' + Outlook'
+    if 'outlook' in batches:
+        source = source+' + Outlook' if 'google' in batches or 'notion' in batches else 'Outlook'
     warnings = [v['error'] for v in status.values() if not v['available']]
     if status.get('outlook',{}).get('stale'): warnings.append('Outlook sync failed; showing last saved events.')
     if missing:

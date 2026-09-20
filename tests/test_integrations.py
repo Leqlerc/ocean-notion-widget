@@ -4,7 +4,7 @@ from datetime import datetime,timezone
 from unittest.mock import patch,MagicMock
 from contextlib import contextmanager
 from lib.integrations import security,store,outlook,brightspace
-from lib.calendar import merge_events
+from lib.calendar import merge_events, load_calendar
 
 ENV={'NOCEAN_OWNER_ID':'11111111-1111-4111-8111-111111111111','NOCEAN_OWNER_SECRET':'a'*40,
      'NOCEAN_PUBLIC_ORIGIN':'https://nocean.example'}
@@ -106,6 +106,12 @@ class BrightspaceTests(unittest.TestCase):
             self.assertEqual(brightspace.sync_task({},'task-1'),('task-1','archived')); request.assert_not_called()
 
 class CalendarIdentityTests(unittest.TestCase):
+    def test_saved_outlook_survives_other_provider_failure(self):
+        event={'id':'o','name':'Saved','at':'2026-09-25T12:00:00Z'}
+        with patch.dict(os.environ,{},clear=True),patch('lib.calendar.NotionCalendarProvider.load',side_effect=RuntimeError('down')),patch.object(store,'configured',return_value=True),patch.object(store,'cached_outlook',return_value={'events':[event],'lastSync':'2026-09-20','status':'ok'}):
+            result=load_calendar(include_outlook=True)
+        self.assertEqual(len(result['events']),1);self.assertTrue(result['source'].startswith('Outlook'))
+
     def test_moved_google_mirror_is_one_event(self):
         a={'id':'g','name':'New title','at':'2026-09-25T12:00:00Z','url':'https://www.google.com/calendar/event?eid=stable&ctz=UTC'}
         b={'id':'n','name':'Old title','at':'2026-09-24T12:00:00Z','url':'https://www.google.com/calendar/event?eid=stable&ctz=America/New_York'}
