@@ -1,22 +1,38 @@
 'use strict';
 (() => {
-  const schedule = [
-    [0, 8, 'tree-cove', 'Tree Cove'],
-    [8, 10, 'safe-shallows', 'Safe Shallows'],
-    [10, 12, 'kelp-forest', 'Kelp Forest'],
-    [12, 14, 'grassy-plateaus', 'Grassy Plateaus'],
-    [14, 16, 'jellyshroom', 'Jellyshroom Caves'],
-    [16, 18, 'bulb-zone', 'Bulb Zone'],
-    [18, 20, 'blood-kelp', 'Blood Kelp Zone'],
-    [20, 22, 'grand-reef', 'Grand Reef'],
-    [22, 24, 'lost-river', 'Lost River']
+  const dayBiomes = [
+    ['kelp-day', 'Sunlit Kelp Forest'],
+    ['lily-islands', 'Lily Islands'],
+    ['mushroom-forest', 'Mushroom Forest'],
+    ['twisty-bridge', 'Twisty Bridge']
+  ];
+  const nightBiomes = [
+    ['blood-kelp', 'Blood Kelp Zone'],
+    ['bulb-zone', 'Bulb Zone'],
+    ['cove-tree', 'Cove Tree'],
+    ['dunes', 'Dunes'],
+    ['grand-reef', 'Grand Reef'],
+    ['islands', 'Underwater Islands'],
+    ['jelly-caves', 'Jelly Caves'],
+    ['kelp-night', 'Moonlit Kelp Forest'],
+    ['lily-caves', 'Lily Caves'],
+    ['lost-river', 'Lost River'],
+    ['mountains', 'Abyssal Mountains'],
+    ['shallows-night', 'Moonlit Shallows'],
+    ['sparse-reef', 'Sparse Reef'],
+    ['twisty-bridge-night', 'Twisty Bridge · Night']
   ];
   let activeKey = '';
   let requestId = 0;
 
   function currentBiome(now = new Date()) {
     const hour = now.getHours();
-    return schedule.find(([start, end]) => hour >= start && hour < end) || schedule[0];
+    const isNight = hour < 6 || hour >= 20;
+    const pool = isNight ? nightBiomes : dayBiomes;
+    const hourSlot = Math.floor(now.getTime() / 3_600_000);
+    const index = ((hourSlot % pool.length) + pool.length) % pool.length;
+    const [key, label] = pool[index];
+    return { key, label, mode: isNight ? 'night' : 'day' };
   }
 
   function updateBackground(force = false) {
@@ -25,18 +41,20 @@
       requestId += 1;
       delete document.body.dataset.biome;
       delete document.body.dataset.biomeName;
+      delete document.body.dataset.biomeMode;
       document.documentElement.style.removeProperty('--decorated-bg-image');
       return;
     }
 
-    const [, , key, label] = currentBiome();
+    const { key, label, mode } = currentBiome();
     if (!force && key === activeKey) return;
     activeKey = key;
     document.body.dataset.biome = key;
     document.body.dataset.biomeName = label;
+    document.body.dataset.biomeMode = mode;
 
     const id = ++requestId;
-    const url = `/assets/backgrounds/${key}.webp`;
+    const url = `/assets/backgrounds/${key}.png`;
     const image = new Image();
     image.onload = () => {
       if (id !== requestId || key !== activeKey) return;

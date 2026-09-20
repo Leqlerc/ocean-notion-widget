@@ -5,11 +5,11 @@ body[data-page="home"][data-preset="card-art"] .dashboard,body[data-page="home"]
 body[data-page="home"][data-preset="card-art"]::after,body[data-page="home"][data-preset="experimental"]::after{display:none;}
 body[data-page="home"][data-preset="card-art"] .card{background:#121b20;border-color:#425d69;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 10px 28px #0005;}
 /* Card Art should make the biome imagery obvious, while keeping enough local contrast for text. */
-body[data-page="home"][data-preset="card-art"] .tasks-card{background:linear-gradient(135deg,rgba(7,18,24,.60),rgba(7,18,24,.38)),url('/assets/backgrounds/kelp-forest.webp') center/cover;}
-body[data-page="home"][data-preset="card-art"] .campus-card{background:linear-gradient(90deg,rgba(8,19,27,.62),rgba(8,19,27,.38)),url('/assets/backgrounds/safe-shallows.webp') center/cover;}
-body[data-page="home"][data-preset="card-art"] .dining-card{background:linear-gradient(135deg,rgba(10,16,28,.58),rgba(10,16,28,.36)),url('/assets/backgrounds/jellyshroom.webp') center/cover;}
-body[data-page="home"][data-preset="card-art"] .events-card{background:linear-gradient(120deg,rgba(8,18,27,.54),rgba(8,18,27,.64)),url('/assets/backgrounds/tree-cove.webp') center/cover;}
-body[data-page="home"][data-preset="card-art"] .project{background:linear-gradient(110deg,rgba(10,27,36,.50),rgba(10,27,36,.34)),url('/assets/backgrounds/grand-reef.webp') center/cover;border-color:#4e7180;}
+body[data-page="home"][data-preset="card-art"] .tasks-card{background:linear-gradient(135deg,rgba(7,18,24,.60),rgba(7,18,24,.38)),url('/assets/backgrounds/kelp-day.png') center/cover;}
+body[data-page="home"][data-preset="card-art"] .campus-card{background:linear-gradient(90deg,rgba(8,19,27,.62),rgba(8,19,27,.38)),url('/assets/backgrounds/lily-islands.png') center/cover;}
+body[data-page="home"][data-preset="card-art"] .dining-card{background:linear-gradient(135deg,rgba(10,16,28,.58),rgba(10,16,28,.36)),url('/assets/backgrounds/jelly-caves.png') center/cover;}
+body[data-page="home"][data-preset="card-art"] .events-card{background:linear-gradient(120deg,rgba(8,18,27,.54),rgba(8,18,27,.64)),url('/assets/backgrounds/twisty-bridge.png') center/cover;}
+body[data-page="home"][data-preset="card-art"] .project{background:linear-gradient(110deg,rgba(10,27,36,.50),rgba(10,27,36,.34)),url('/assets/backgrounds/lost-river.png') center/cover;border-color:#4e7180;}
 body[data-page="home"][data-preset="card-art"] .tasks-card,body[data-page="home"][data-preset="card-art"] .campus-card,body[data-page="home"][data-preset="card-art"] .dining-card,body[data-page="home"][data-preset="card-art"] .events-card,body[data-page="home"][data-preset="card-art"] .project{text-shadow:0 1px 2px #000c;}
 body[data-page="home"][data-preset="card-art"] .tasks-card input,body[data-page="home"][data-preset="card-art"] .tasks-card select{background:rgba(8,14,18,.74);border-color:#5f7b86;}
 body[data-page="home"][data-preset="experimental"]{--accent:#a8d6ed;--raised:#202e39;--surface:#16212b;--line:#3a4e60;--text:#edf1f3;--muted:#b3c1cd;}

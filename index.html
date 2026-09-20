@@ -15,7 +15,7 @@
   <script src="/nocean-icons.js?v=1" defer></script>
 <script src="/nocean-shared.js?v=2" defer></script>
   <script src="/nocean-ui.js?v=4" defer></script>
-  <script src="/time-backgrounds.js?v=1" defer></script>
+  <script src="/time-backgrounds.js?v=2" defer></script>
   <script src="/calendar-semantics.js?v=2" defer></script>
   <script src="/nocean-deadlines.js?v=1" defer></script>
   <script src="/nocean-motion.js?v=1" defer></script>
@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="/nocean-polish.css?v=3">
 <script src="/nocean-welcome.js?v=2" defer></script>
 <link rel="stylesheet" href="/nocean-status.css?v=1">
-<link rel="preload" as="image" href="/assets/backgrounds/dragonair-ocean.webp">
+<link rel="preload" as="image" href="/assets/backgrounds/twisty-bridge-night.png">
 <link rel="stylesheet" href="/nocean-modules.css?v=1">
 </head>
 <body data-page="home">
@@ -40,9 +40,9 @@
     <div id="clock" class="clock"></div>
     <div class="sync"><span id="syncStatus" role="status">Connecting…</span><button id="refresh" class="quiet">Refresh</button></div>
   </header>
-  <div class="welcome" data-cosmetic="welcome" data-default-art="dragonair-ocean" data-cosmetic-always="true"><div><h2>Welcome back, Will.</h2><p id="welcomeLine">Trust the process. Own the inputs.</p></div><div class="welcome-clock"><time id="welcomeTime" aria-label="Current local time"></time><small id="welcomeDate"></small></div></div>
+  <div class="welcome" data-cosmetic="welcome" data-default-art="twisty-bridge-night" data-cosmetic-always="true"><div><h2>Welcome back, Will.</h2><p id="welcomeLine">Trust the process. Own the inputs.</p></div><div class="welcome-clock"><time id="welcomeTime" aria-label="Current local time"></time><small id="welcomeDate"></small></div></div>
   <main class="dashboard">
-    <section class="card tasks-card" data-cosmetic="today" data-default-art="kelp-forest" aria-labelledby="tasksTitle">
+    <section class="card tasks-card" data-cosmetic="today" data-default-art="kelp-day" aria-labelledby="tasksTitle">
       <div class="card-head"><div><p class="eyebrow">Make room for what matters</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>
       <form id="quickAdd" class="quick-add">
         <label class="sr-only" for="taskName">Task name</label>
@@ -61,16 +61,16 @@
       <p id="projectMessage" class="panel-message" role="status"></p>
       <div id="projects" class="scroll projects-grid"><p class="empty">Loading projects…</p></div>
     </section>
-    <section class="card campus-card" data-cosmetic="campus" data-default-art="safe-shallows" aria-labelledby="campusTitle">
+    <section class="card campus-card" data-cosmetic="campus" data-default-art="lily-islands" aria-labelledby="campusTitle">
       <div class="card-head"><h2 id="campusTitle">Campus now</h2><span class="muted">West Lafayette</span></div>
       <div class="campus-grid"><div id="weather" class="weather"><p class="empty">Loading weather…</p></div><div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div></div>
     </section>
-    <section class="card dining-card" data-cosmetic="dining" data-default-art="jellyshroom" aria-labelledby="diningTitle">
+    <section class="card dining-card" data-cosmetic="dining" data-default-art="jelly-caves" aria-labelledby="diningTitle">
       <div class="card-head"><h2 id="diningTitle">Where to eat</h2><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">Full menus ↗</a></div>
       <div class="meal-controls"><div class="tabs" aria-label="Dining meal"><button data-meal="Lunch">Lunch</button><button data-meal="Dinner">Dinner</button></div><small id="diningDate"></small></div><p class="section-note">Rotating entrées · protein per serving. Crowd status is current, not a meal forecast.</p>
       <div id="dining" class="scroll dining-list"><p class="empty">Finding macro-efficient picks at five dining courts…</p></div>
     </section>
-    <section class="card events-card" data-cosmetic="calendar" data-default-art="tree-cove" aria-labelledby="eventsTitle">
+    <section class="card events-card" data-cosmetic="calendar" data-default-art="twisty-bridge" aria-labelledby="eventsTitle">
       <div class="card-head"><h2 id="eventsTitle">Upcoming & calendar</h2><a href="https://calendar.google.com/" target="_blank" rel="noopener" aria-label="Open Google Calendar">Calendar ↗</a></div>
       <div class="events-layout"><div class="event-stack"><div id="eventList" class="scroll"><p class="empty">Loading events…</p></div></div>
         <div class="mini-calendar"><div class="month-nav"><button id="prevMonth" class="quiet" aria-label="Previous month">‹</button><button id="monthTitle" class="quiet" title="Return to this month"></button><button id="nextMonth" class="quiet" aria-label="Next month">›</button></div><div id="calendarGrid" class="calendar-grid"></div><button id="clearDay" class="quiet clear-day" hidden>Show upcoming events</button><div class="calendar-legend" aria-label="Calendar event types"><span class="event-exam">Exam</span><span class="event-quiz">Quiz</span><span class="event-assessment">CFU / Practical</span><span class="event-presentation">Presentation</span><span class="event-personal">Personal</span><span class="event-break">Break</span><span class="event-class">Class</span></div></div>

@@ -2,14 +2,7 @@
 // Local presentation only: this module never calls a data provider or writes to Notion.
 const NOceanAppearance=(()=>{
   const KEY='nocean.appearance.v1';
-  const assets={'none':'None / solid','safe-shallows':'Safe Shallows','kelp-forest':'Kelp Forest','grassy-plateaus':'Grassy Plateaus',jellyshroom:'Jelly Shroom','mushroom-forest':'Mushroom Forest','underwater-islands':'Underwater Islands','sparse-reef':'Sparse Reef',dunes:'Dunes',mountains:'Mountains','grand-reef':'Grand Reef','blood-kelp':'Blood Kelp','bulb-zone':'Bulb Zone','lost-river':'Lost River','tree-cove':'Tree Cove','dragonair-ocean':'Dragonair Ocean','lilypad-caves':'Lilypad Caves'};
-  const assetFiles={
-    'mushroom-forest':'/assets/backgrounds/mushroom%20forest.png',
-    'underwater-islands':'/assets/backgrounds/uuw-islands.svg',
-    'sparse-reef':'/assets/backgrounds/sparse-reef.svg',
-    dunes:'/assets/backgrounds/dunes.png',
-    mountains:'/assets/backgrounds/mountains%20-%20Copy.png'
-  };
+  const assets={'none':'None / solid','blood-kelp':'Blood Kelp Zone','bulb-zone':'Bulb Zone','cove-tree':'Cove Tree',dunes:'Dunes','grand-reef':'Grand Reef',islands:'Underwater Islands','jelly-caves':'Jelly Caves','kelp-day':'Sunlit Kelp Forest','kelp-night':'Moonlit Kelp Forest','lily-caves':'Lily Caves','lily-islands':'Lily Islands','lost-river':'Lost River',mountains:'Abyssal Mountains','mushroom-forest':'Mushroom Forest','shallows-night':'Moonlit Shallows','sparse-reef':'Sparse Reef','twisty-bridge-night':'Twisty Bridge · Night','twisty-bridge':'Twisty Bridge'};
   const tints={Ocean:['7,18,24','#abd7e6'],Deep:['16,12,34','#c4bee9'],Reef:['6,30,23','#b0dfbf'],Neutral:['19,22,24','#d6dce0']};
   const visibility={Subtle:.68,Medium:.46,Strong:.28};
   let settings={},active=null,dialog;
@@ -21,7 +14,7 @@ const NOceanAppearance=(()=>{
   function save(){try{localStorage.setItem(KEY,JSON.stringify({cards:settings}));return true;}catch{return false;}}
   function paint(el,value){
     const v=validate(value),[rgb,accent]=tints[v.tint],alpha=visibility[v.visibility];
-    const imageUrl=assetFiles[v.image]||`/assets/backgrounds/${v.image}.webp`;
+    const imageUrl=`/assets/backgrounds/${v.image}.png`;
     el.style.background=v.image==='none'?`rgb(${rgb})`:`linear-gradient(145deg,rgba(${rgb},${alpha}),rgba(${rgb},${Math.min(.78,alpha+.15)})),url('${imageUrl}') center/cover`;
     el.style.setProperty('--accent',accent);el.dataset.appearanceApplied='true';
   }
