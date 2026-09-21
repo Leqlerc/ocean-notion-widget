@@ -6,16 +6,16 @@
   <meta name="theme-color" content="#071016">
   <title>NOcean · Home</title>
   <link rel="stylesheet" href="/nocean.css?v=2">
-  <link rel="stylesheet" href="/nocean-system.css?v=1">
+  <link rel="stylesheet" href="/nocean-system.css?v=2">
   <script src="/nocean-shared.js?v=3" defer></script>
   <script src="/nocean-data.js?v=2" defer></script>
-  <script src="/nocean-ui.js?v=6" defer></script>
+  <script src="/nocean-ui.js?v=7" defer></script>
   <script src="/time-backgrounds.js?v=3" defer></script>
   <script src="/nocean-deadlines.js?v=2" defer></script>
   <script src="/nocean-planning.js?v=1" defer></script>
   <script src="/calendar-semantics.js?v=2" defer></script>
   <script src="/nocean-store.js?v=1" defer></script>
-  <script src="/home.js?v=1" defer></script>
+  <script src="/home.js?v=2" defer></script>
 </head>
 <body data-page="home">
 <div class="app">
@@ -26,18 +26,12 @@
   </header>
   <main>
     <div class="command-intro">
-      <div><p class="eyebrow" id="homeDate">Today</p><h2>Are you on top of today?</h2><p>Deadlines, deliberate work, and the campus conditions that can change your plan.</p></div>
+      <div><p class="eyebrow" id="homeDate">Today</p><h2>What needs your attention today?</h2><p>Work the plan, verify the deadlines, and keep the shape of the day in view.</p></div>
       <p id="lifeStatus" class="life-status">Loading today’s signal…</p>
     </div>
     <div class="dashboard">
-      <section class="card radar-card" aria-labelledby="radarTitle">
-        <div class="card-head"><div><p class="eyebrow">Academic radar</p><h2 id="radarTitle">Classes and submission checks</h2></div><span id="academicSummary" class="muted"></span></div>
-        <div id="academicRadar" class="academic-radar"><p class="empty">Loading current classes…</p></div>
-        <p class="section-note">Work completion and submission verification are separate. Only you clear a submission check.</p>
-      </section>
-
       <section class="card tasks-card" aria-labelledby="tasksTitle">
-        <div class="card-head"><div><p class="eyebrow">Deliberate work plan</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>
+        <div class="card-head"><div><p class="eyebrow">Tasks</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>
         <form id="quickAdd" class="quick-add">
           <label class="sr-only" for="taskName">Task name</label>
           <input id="taskName" required maxlength="500" placeholder="What will you actually work on?" autocomplete="off">
@@ -55,19 +49,33 @@
         <div class="card-foot"><span id="taskHint">Only work you deliberately planned or focused appears here.</span><a href="/tasks.html">All tasks →</a></div>
       </section>
 
+      <section class="card deadlines-card" aria-labelledby="radarTitle">
+        <div class="card-head"><div><p class="eyebrow">Academic safety net</p><h2 id="radarTitle">Deadlines</h2></div><span id="academicSummary" class="muted"></span></div>
+        <div id="academicRadar" class="academic-radar"><p class="empty">Loading trusted coursework…</p></div>
+        <p class="section-note">Work completion never clears submission verification.</p>
+      </section>
+
+      <section class="card events-card" aria-labelledby="eventsTitle">
+        <div class="card-head"><div><p class="eyebrow">Next on the clock</p><h2 id="eventsTitle">Events</h2></div><a href="https://calendar.google.com/" target="_blank" rel="noopener">Open ↗</a></div>
+        <div id="eventList" class="compact-events"><p class="empty">Loading events…</p></div>
+        <div id="calendarSource" class="card-foot">Checking event source…</div>
+      </section>
+
+      <section class="card calendar-card" aria-labelledby="calendarTitle">
+        <div class="card-head"><div><p class="eyebrow">Temporal context</p><h2 id="calendarTitle">Calendar</h2></div><div class="calendar-controls"><button id="calendarPrev" class="quiet" type="button" aria-label="Previous month">←</button><span id="calendarLabel" class="muted"></span><button id="calendarNext" class="quiet" type="button" aria-label="Next month">→</button></div></div>
+        <div class="mini-calendar-layout">
+          <div><div class="calendar-weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Month calendar"></div></div>
+          <div id="calendarAgenda" class="calendar-agenda"><p class="empty">Choose a date to see its work and events.</p></div>
+        </div>
+      </section>
+
       <section class="card campus-card" aria-labelledby="campusTitle">
-        <div class="card-head"><div><p class="eyebrow">Campus intelligence</p><h2 id="campusTitle">Today and tomorrow</h2></div><span class="muted">West Lafayette</span></div>
+        <div class="card-head"><div><p class="eyebrow">Campus signals</p><h2 id="campusTitle">Today in West Lafayette</h2></div></div>
         <div class="campus-grid">
           <div id="weather"><p class="empty">Loading the forecast…</p></div>
           <div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div>
           <div id="diningBrief" class="dining-brief"><h3>Dining signal</h3><div id="dining"><p class="empty">Finding one useful option…</p></div></div>
         </div>
-      </section>
-
-      <section class="card events-card" aria-labelledby="eventsTitle">
-        <div class="card-head"><div><p class="eyebrow">Next on the clock</p><h2 id="eventsTitle">Upcoming events</h2></div><a href="https://calendar.google.com/" target="_blank" rel="noopener">Open calendar ↗</a></div>
-        <div id="eventList" class="compact-events"><p class="empty">Loading events…</p></div>
-        <div id="calendarSource" class="card-foot">Checking event source…</div>
       </section>
     </div>
   </main>

@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const {CONFIG,$,esc,safeURL,dayKey,dateDay,timeLabel,empty,request,renderFacilities}=NOcean;
-  const state={tasks:[],projects:[],courses:[],statuses:[],tab:'today',pending:new Set(),loading:new Set(),events:[]};
+  const state={tasks:[],projects:[],courses:[],statuses:[],tab:'today',pending:new Set(),loading:new Set(),events:[],selectedDay:dayKey(),calendarMonth:dayKey().slice(0,7)};
   const tasks=NOceanData.tasks,projects=NOceanData.projects;
   let editingPlan=null,toastTimer;
   const tomorrow=()=>TaskPlanning.add(dayKey(),1);
@@ -27,7 +27,7 @@
     $('tasksTitle').textContent={today:'Today',tomorrow:'Tomorrow',later:'Backlog'}[state.tab];
     $('taskCount').textContent=`${visible.length} planned`;
     $('taskList').innerHTML=visible.map(taskRow).join('')||empty(state.tab==='today'?'No deliberate work yet. Add the next thing you will actually do.':'Nothing planned here.');
-    $('taskHint').textContent={today:'Focused, doing, or explicitly planned for today — deadlines live above.',tomorrow:'A deliberate plan for tomorrow; moving work never changes its deadline.',later:'Work intentionally held in the backlog.'}[state.tab];
+    $('taskHint').textContent={today:'Focused, doing, or explicitly planned for today — deadlines stay separate.',tomorrow:'A deliberate plan for tomorrow; moving work never changes its deadline.',later:'Work intentionally held in the backlog.'}[state.tab];
     updateLifeStatus();
   }
   function courseKey(value){const m=String(value||'').toUpperCase().match(/([A-Z]{2,5})\s*0*(\d{3,5})/);return m?m[1]+Number(m[2]):String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
@@ -42,6 +42,33 @@
     $('academicSummary').textContent=`${classes.length} classes · ${open} to verify`;
     $('academicRadar').dataset.total=String(total);$('academicRadar').dataset.open=String(open);updateLifeStatus();
   }
+  function calendarItems(day){
+    const deadlines=state.tasks.filter(t=>t.due&&dateDay(t.due)===day&&NOceanStore.isRadarItem(t));
+    const work=state.tasks.filter(t=>t.status!=='done'&&!NOceanStore.isRadarItem(t)&&(t.scheduledFor===day||dateDay(t.due)===day));
+    const events=state.events.filter(e=>e.at&&dateDay(e.at)===day);
+    return {deadlines,work,events};
+  }
+  function renderCalendar(){
+    const monthDate=new Date(state.calendarMonth+'-01T12:00:00'),year=monthDate.getFullYear(),month=monthDate.getMonth();
+    const firstDay=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();
+    $('calendarLabel').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(monthDate);
+    let html='';for(let i=0;i<firstDay;i++)html+='<span class="calendar-blank" aria-hidden="true"></span>';
+    for(let day=1;day<=days;day++){
+      const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,items=calendarItems(key),count=items.deadlines.length+items.work.length+items.events.length;
+      html+=`<button type="button" class="calendar-day${key===dayKey()?' is-today':''}${key===state.selectedDay?' is-selected':''}" data-calendar-day="${key}" aria-label="${esc(new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric'}).format(new Date(key+'T12:00:00')))}${count?' · '+count+' item'+(count===1?'':'s'):''}"><span>${day}</span>${count?`<i aria-hidden="true">${Math.min(count,9)}</i>`:''}</button>`;
+    }
+    $('calendarGrid').innerHTML=html;
+    const items=calendarItems(state.selectedDay),label=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric'}).format(new Date(state.selectedDay+'T12:00:00'));
+    const rows=[
+      ...items.deadlines.map(t=>`<div class="agenda-row agenda-deadline"><small>Deadline · ${esc(t.course||'Course')}</small><strong>${esc(t.name)}</strong></div>`),
+      ...items.events.map(e=>`<div class="agenda-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>`:`<strong>${esc(e.name)}</strong>`}</div>`),
+      ...items.work.map(t=>`<div class="agenda-row"><small>Task${t.project?' · '+esc(t.project):''}</small><strong>${esc(t.name)}</strong></div>`)
+    ];
+    $('calendarAgenda').innerHTML=`<h3>${esc(label)}</h3>${rows.join('')||empty('Nothing tracked for this date.')}`;
+  }
+  function moveCalendar(delta){
+    const date=new Date(state.calendarMonth+'-01T12:00:00');date.setMonth(date.getMonth()+delta);state.calendarMonth=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;state.selectedDay=state.calendarMonth+'-01';renderCalendar();
+  }
   function updateLifeStatus(){
     const academic=Number($('academicRadar').dataset.open||0),planned=state.tasks.filter(t=>plannedFor(t,'today')).length,maintenance=NOceanStore.maintenanceStatus(dayKey()).filter(x=>x.isDue&&!x.completedToday).length;
     if(!state.tasks.length&&!$('academicRadar').dataset.open){$('lifeStatus').textContent='Loading today’s signal…';return;}
@@ -51,16 +78,16 @@
   async function loadCore(){
     setLoading('core',true);$('taskMessage').textContent='';
     const [taskResult,projectResult]=await Promise.allSettled([tasks.list(),projects.list()]);
-    if(taskResult.status==='fulfilled'){state.tasks=taskResult.value.tasks;state.courses=taskResult.value.courses;state.statuses=taskResult.value.statuses;renderTasks();renderRadar();}
+    if(taskResult.status==='fulfilled'){state.tasks=taskResult.value.tasks;state.courses=taskResult.value.courses;state.statuses=taskResult.value.statuses;renderTasks();renderRadar();renderCalendar();}
     else{$('taskMessage').textContent='Tasks unavailable. Refresh to reconnect.';$('taskList').innerHTML=empty('Your work plan could not load.');}
     if(projectResult.status==='fulfilled'){state.projects=projectResult.value.projects;$('projectOptions').innerHTML=state.projects.filter(p=>p.status==='Active').map(p=>`<option value="${esc(p.name)}"></option>`).join('');}
     setLoading('core',false);
   }
   async function updateTask(id,changes){
     if(state.pending.has(id))return false;const original=state.tasks.find(t=>t.id===id);if(!original)return false;
-    state.pending.add(id);state.tasks=state.tasks.map(t=>t.id===id?{...t,...changes}:t);renderTasks();renderRadar();
-    try{const result=await tasks.update({id,...changes});state.tasks=state.tasks.map(t=>t.id===id?result.task:t);renderTasks();renderRadar();return true;}
-    catch(error){state.tasks=state.tasks.map(t=>t.id===id?original:t);$('taskMessage').textContent=error.message;renderTasks();renderRadar();return false;}
+    state.pending.add(id);state.tasks=state.tasks.map(t=>t.id===id?{...t,...changes}:t);renderTasks();renderRadar();renderCalendar();
+    try{const result=await tasks.update({id,...changes});state.tasks=state.tasks.map(t=>t.id===id?result.task:t);renderTasks();renderRadar();renderCalendar();return true;}
+    catch(error){state.tasks=state.tasks.map(t=>t.id===id?original:t);$('taskMessage').textContent=error.message;renderTasks();renderRadar();renderCalendar();return false;}
     finally{state.pending.delete(id);renderTasks();}
   }
   function openEditor(id){
@@ -100,18 +127,20 @@
     setLoading('events',true);try{const data=await request('/api/events'),now=Date.now(),count=Math.max(3,Math.min(10,Number(NOceanStore.settings().dashboard.eventCount)||6));state.events=data.events||[];
       const future=state.events.filter(e=>{try{return new Date(e.at.length===10?e.at+'T23:59:00':e.at).getTime()>=now;}catch{return false;}}).sort((a,b)=>a.at.localeCompare(b.at));
       const important=future.filter(e=>CalendarSemantics.classify(e).key!=='class'),chosen=[...important,...future.filter(e=>CalendarSemantics.classify(e).key==='class')].filter((e,i,a)=>a.findIndex(x=>x.id===e.id)===i).slice(0,count).sort((a,b)=>a.at.localeCompare(b.at));
-      $('eventList').innerHTML=chosen.map(e=>`<div class="event-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a class="event-name" href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>`:`<span class="event-name">${esc(e.name)}</span>`}</div>`).join('')||empty('No upcoming events.');$('calendarSource').textContent=data.source||'Calendar';
+      $('eventList').innerHTML=chosen.map(e=>`<div class="event-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a class="event-name" href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>`:`<span class="event-name">${esc(e.name)}</span>`}</div>`).join('')||empty('No upcoming events.');$('calendarSource').textContent=data.source||'Calendar';renderCalendar();
     }catch{$('eventList').innerHTML=empty('Calendar unavailable.');$('calendarSource').textContent='Use Open calendar to check directly.';}finally{setLoading('events',false);}
   }
   function refresh(){loadCore();loadCampus();loadEvents();}
-  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim();if(!name)return;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true,...TaskPlanning.change('today')});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();notify('Added to today.');}catch(error){$('taskMessage').textContent=error.message;}finally{$('addButton').disabled=false;}});
+  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim();if(!name)return;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true,...TaskPlanning.change('today')});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify('Added to today.');}catch(error){$('taskMessage').textContent=error.message;}finally{$('addButton').disabled=false;}});
   document.querySelector('.tabs').addEventListener('click',event=>{const button=event.target.closest('[data-tab]');if(button){state.tab=button.dataset.tab;renderTasks();}});
   $('taskList').addEventListener('click',event=>{const button=event.target.closest('[data-edit]');if(button)openEditor(button.dataset.edit);});
   $('taskList').addEventListener('change',event=>{if(event.target.dataset.complete)updateTask(event.target.dataset.complete,{status:'done'});});
   $('academicRadar').addEventListener('change',event=>{const select=event.target.closest('[data-verify]');if(!select)return;const task=state.tasks.find(t=>t.id===select.dataset.verify);if(task){NOceanStore.setVerification(task,select.value);renderRadar();notify(select.value==='verified'?'Submission verified.':'Submission state saved.');}});
+  $('calendarGrid').addEventListener('click',event=>{const button=event.target.closest('[data-calendar-day]');if(!button)return;state.selectedDay=button.dataset.calendarDay;renderCalendar();});
+  $('calendarPrev').addEventListener('click',()=>moveCalendar(-1));$('calendarNext').addEventListener('click',()=>moveCalendar(1));
   document.querySelector('.plan-actions').addEventListener('click',event=>{const button=event.target.closest('[data-plan]');if(!button)return;editingPlan=button.dataset.plan;document.querySelectorAll('#editDialog [data-plan]').forEach(b=>b.classList.toggle('active',b===button));});
   $('editTask').addEventListener('submit',async event=>{event.preventDefault();const id=$('editId').value,radar=$('editRadar').checked,changes={name:$('editName').value.trim(),project:$('editProject').value.trim(),course:$('editCourse').value,difficulty:$('editDifficulty').value,focus:$('editFocus').checked,due:Deadlines.serialize($('editDue').value,$('editTime').value)};if(editingPlan)Object.assign(changes,TaskPlanning.change(editingPlan));$('saveEdit').disabled=true;if(await updateTask(id,changes)){const saved=state.tasks.find(t=>t.id===id);if(saved)NOceanStore.setRadarItem(saved,radar);renderRadar();$('editDialog').close();notify('Task saved.');}$('saveEdit').disabled=false;});
-  $('archiveTask').addEventListener('click',async()=>{const id=$('editId').value;try{await tasks.archive(id);state.tasks=state.tasks.filter(t=>t.id!==id);$('editDialog').close();renderTasks();renderRadar();notify('Task archived.');}catch(error){$('editError').textContent=error.message;}});
+  $('archiveTask').addEventListener('click',async()=>{const id=$('editId').value;try{await tasks.archive(id);state.tasks=state.tasks.filter(t=>t.id!==id);$('editDialog').close();renderTasks();renderRadar();renderCalendar();notify('Task archived.');}catch(error){$('editError').textContent=error.message;}});
   $('closeEdit').onclick=$('cancelEdit').onclick=()=>$('editDialog').close();$('refresh').addEventListener('click',refresh);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!document.querySelector('dialog[open]'))refresh();});
   refresh();

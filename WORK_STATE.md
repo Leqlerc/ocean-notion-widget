@@ -2,7 +2,36 @@
 
 Updated 2026-09-21. This is the current authoritative checkpoint.
 
-## Product reset shipped
+## Sketch-led UI restructuring — implemented locally, not deployed
+
+- Started from remote `preview/product-reset-current` (`cfbf323`), not the temporarily restored production branch. The known-good pre-reset production state remains untouched.
+- Working branch: `feature/sketch-ui`.
+- Primary navigation is now exactly **Home / Projects / Athletics / Settings**.
+- Home now follows the hand-drawn layout:
+  - Tasks is the dominant left panel and still uses the existing Task API/persistence.
+  - Deadlines shows only Brightspace-linked or explicitly verified coursework and retains the independent `Not submitted / Submitted / Verified` ledger.
+  - Events still uses the existing merged calendar source and moved-event duplicate handling.
+  - A compact month calendar exposes tracked tasks, trusted coursework, and events for a selected date without becoming the main product surface.
+  - Existing weather, RecWell, and dining signals remain available in a lower-priority campus strip instead of being deleted.
+- Projects now uses a horizontally scrolling project selector and one selected-project control panel containing status, task progress, immediate next actions, project organization/objectives/notes, and milestones. Existing Projects, task links, Notion goal blocks, edit/create flows, and APIs are reused.
+- Athletics is intentionally a polished placeholder. The already-working Machine/training/nutrition/sleep/habits/maintenance/reflection interface is preserved unchanged at `/machine.html` and linked from the Athletics shell; no records or APIs were removed.
+- Settings and Connections remain at `/integrations.html`, including appearance, classes, maintenance configuration, Outlook, and Brightspace controls.
+- No migrations, database tables, environment values, provider logic, API routes, sync behavior, or production deployment were changed.
+
+## Focused verification for this restructuring
+
+- JavaScript syntax and `git diff --check` pass.
+- Updated sketch UI contract tests pass for the exact four-destination navigation, Home hierarchy, Projects control panel, Athletics placeholder, preserved Machine route, and Settings ownership.
+- Home DOM coverage passes with fixtures proving ordinary work remains in Tasks, trusted coursework remains in Deadlines, Events use calendar data, and selecting a calendar date exposes all relevant records without conflating them.
+- Projects and goal-plan DOM interaction suites pass for selector/detail rendering, create/edit, failure rollback, stale-read protection, next actions, objectives, milestone dates, completion, refresh, and uncertain-create handling.
+- Existing Task interaction, planning, deadlines, project-model, and shared UI contract tests pass.
+- A remote browser cannot reach the local-only server in this runtime, so no deployed visual smoke was performed. This is not a deployment failure; deployment was intentionally skipped.
+
+## Next action
+
+- Review the local feature checkpoint or explicitly request a Preview deployment. Do not promote it to production until Home and Projects have had one authenticated visual pass at desktop and mobile widths.
+
+## Inherited product reset preview
 
 - Primary navigation is exactly **Home / Projects / Machine / Settings**. The full Tasks workspace remains available as a secondary link from Home, not a primary destination.
 - Home is rebuilt around the daily control question:
