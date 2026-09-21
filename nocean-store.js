@@ -12,10 +12,13 @@ const NOceanStore = (() => {
     {id:'sheets',name:'Change sheets',every:7},
     {id:'shopping',name:'Shop essentials',every:7}
   ];
+  const cardArtKeys = ['tasks','deadlines','events','campus','calendar'];
+  const biomeAssets = new Set(['blood-kelp','bulb-zone','cove-tree','dunes','grand-reef','islands','jelly-caves','kelp-day','kelp-night','lily-caves','lily-islands','lost-river','mountains','mushroom-forest','shallows-night','sparse-reef','twisty-bridge-night','twisty-bridge']);
   const defaults = {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
-    dashboard: {showDining:true,rainThreshold:35,eventCount:6}
+    dashboard: {showDining:true,rainThreshold:35,eventCount:6},
+    appearance: {topBiomeSize:'compact',cardArt:{}}
   };
   const clone = value => JSON.parse(JSON.stringify(value));
   function read(key, fallback) {
@@ -25,10 +28,14 @@ const NOceanStore = (() => {
   function write(key,value) { try { localStorage.setItem(key,JSON.stringify(value)); return true; } catch { return false; } }
   function settings() {
     const value=read(SETTINGS_KEY,defaults);
+    const rawAppearance=value.appearance&&typeof value.appearance==='object'?value.appearance:{};
+    const rawCardArt=rawAppearance.cardArt&&typeof rawAppearance.cardArt==='object'?rawAppearance.cardArt:{};
+    const cardArt=Object.fromEntries(cardArtKeys.map(key=>[key,biomeAssets.has(rawCardArt[key])?rawCardArt[key]:'none']));
     return {
       classes:Array.isArray(value.classes)?value.classes.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,40)):clone(defaultClasses),
       maintenance:Array.isArray(value.maintenance)?value.maintenance.filter(x=>x&&x.id&&x.name).map(x=>({id:String(x.id),name:String(x.name).slice(0,80),every:Math.max(1,Math.min(365,Number(x.every)||7))})):clone(defaultMaintenance),
-      dashboard:{...defaults.dashboard,...(value.dashboard||{})}
+      dashboard:{...defaults.dashboard,...(value.dashboard||{})},
+      appearance:{topBiomeSize:rawAppearance.topBiomeSize==='expanded'?'expanded':'compact',cardArt}
     };
   }
   function saveSettings(value) { return write(SETTINGS_KEY,{...settings(),...value}); }
