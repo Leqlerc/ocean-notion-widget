@@ -4,6 +4,7 @@
 const NOceanStore = (() => {
   const SETTINGS_KEY = 'nocean.command.settings.v1';
   const VERIFY_KEY = 'nocean.coursework.verification.v1';
+  const RADAR_KEY = 'nocean.coursework.radar.v1';
   const MACHINE_KEY = 'nocean.machine.local.v1';
   const defaultClasses = ['MA 261', 'MFET 163', 'CS 159', 'ENGR 161', 'HONR 19901'];
   const defaultMaintenance = [
@@ -32,6 +33,16 @@ const NOceanStore = (() => {
   }
   function saveSettings(value) { return write(SETTINGS_KEY,{...settings(),...value}); }
   function verificationId(task) { return task?.sourceId || task?.id || ''; }
+  function isRadarItem(task) {
+    if (String(task?.sourceId||'').startsWith('brightspace:')) return true;
+    return Boolean(task?.id && read(RADAR_KEY,{})[String(task.id)]);
+  }
+  function setRadarItem(task,tracked) {
+    if (!task?.id || String(task?.sourceId||'').startsWith('brightspace:')) return false;
+    const all=read(RADAR_KEY,{}),key=String(task.id);
+    if(tracked) all[key]=true; else delete all[key];
+    return write(RADAR_KEY,all);
+  }
   function verification(task) {
     const item=read(VERIFY_KEY,{})[verificationId(task)];
     return ['submitted','verified'].includes(item?.state) ? item.state : 'pending';
@@ -66,5 +77,5 @@ const NOceanStore = (() => {
     const data=machine(),config=settings().maintenance;
     return config.map(item=>{const last=data.maintenance[item.id]||'';const due=last?addDays(last,item.every):today;return {...item,last,due,completedToday:last===today,overdue:due<today,isDue:due<=today};});
   }
-  return {defaults,settings,saveSettings,verification,setVerification,machine,saveNutrition,saveSleep,completeMaintenance,addReflection,removeReflection,maintenanceStatus};
+  return {defaults,settings,saveSettings,isRadarItem,setRadarItem,verification,setVerification,machine,saveNutrition,saveSleep,completeMaintenance,addReflection,removeReflection,maintenanceStatus};
 })();
