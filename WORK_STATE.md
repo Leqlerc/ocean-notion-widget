@@ -33,13 +33,15 @@ Updated 2026-09-21. This is the current authoritative checkpoint.
 - New product-reset contracts pass: exact four-destination nav, Home hierarchy, no Projects/full calendar on Home, Machine flows, Settings ownership, verification persistence, maintenance completion, and reflection capture.
 - Existing focused UI, planning, deadline/DST, appearance, filter, frontend, project-model tests pass.
 - 32 relevant Python provider/training/task/project-plan tests pass. The optional Brightspace parser tests were not rerun locally because `icalendar` is not installed in this checkout; that code path was not modified in this reset and Vercel installs it from `requirements.txt`.
+- Vercel Preview `dpl_5bbj8ddCe3eoNaCQzbz3qNDLJ7jb` built the exact GitHub checkpoint `0df1953d6d88881884acd19bff1c93d30d41248e` and reached `READY` at `https://ocean-notion-widget-git-feature-product-reset-yiqwill-3102.vercel.app`.
+- The connector's protected-URL fetch returned the Vercel SSO redirect rather than retaining its temporary cookie, so it could not complete an authenticated live-response smoke. Do not mistake that access-tool limitation for a build failure; the deployment itself is READY. Local route/entrypoint checks confirm all four pages and referenced scripts exist.
 
 ## Remains
 
-- Publish and smoke the current feature branch as a Vercel Preview; record its URL/status below.
+- Open the READY Preview once in an authenticated browser for the visual smoke of Home, Projects, Machine, and Settings. No broad regression pass is needed.
 - Use the new Home and Machine flows with real data. Do not expand Projects or add advanced Machine analytics until usage reveals the real gaps.
 - If cross-device persistence for the new lightweight records becomes important, move those namespaces behind the existing owner-scoped SQL foundation after database credentials are available.
 
 ## Next highest-value action
 
-Deploy this checkpoint to Preview, confirm Home, Projects, Machine, and Settings return successfully with no obvious runtime failure, then stop. The next product sprint should start from observed daily usage, not another speculative model expansion.
+Open the READY Preview for one visual pass, then use the new Home and Machine flows with real data. The next product sprint should start from observed daily usage, not another speculative model expansion.
