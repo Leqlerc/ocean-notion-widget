@@ -30,7 +30,6 @@ function render(){
   $('setMessage').textContent=data.setMessage||'Bodyweight sets record reps without external-load volume. For assisted movements, log reps without external load.';
   document.querySelectorAll('[data-support]').forEach(el=>el.checked=Boolean(day.support[el.dataset.support]));
   $('recent').innerHTML=data.recent.length?data.recent.map(d=>`<div class="recent-row"><div><strong>${esc(d.workoutType||'Workout')} · ${esc(shortDate(d.date))}</strong><small>${esc(d.quality||'In progress')}</small></div><div><span>${esc(d.workingSets)} sets</span><small>${Number(d.volume).toLocaleString()} lb volume</small></div></div>`).join(''):empty('No earlier workouts in the past four weeks.');
-  document.dispatchEvent(new CustomEvent('nocean:training',{detail:{date:training.date,day,workingSets:work.length,volume}}));
   lock();
 }
 async function loadTraining(){
@@ -72,7 +71,7 @@ $('setForm').addEventListener('submit',async e=>{
   if(await mutate('POST',body,result=>{if(!training.data.sets.some(s=>s.id===result.set.id))training.data.sets.push(result.set);training.data.day.started=true;training.data.week=training.data.week.map(d=>d.date===training.date?{...d,started:true}:d);})){training.requestId=null;}
 });
 $('sets').addEventListener('click',e=>{const button=e.target.closest('[data-remove]');if(button)mutate('DELETE',{id:button.dataset.remove},result=>{training.data.sets=training.data.sets.filter(s=>s.id!==result.id);training.data.day.started=training.data.sets.length>0;});});
-async function loadFacilities(){if(!$('recreation'))return;try{$('recreation').innerHTML=renderFacilities(await request('/api/recwell'));}catch{$('recreation').innerHTML=empty('Facilities unavailable. Refresh to try again.');}}
+async function loadFacilities(){try{$('recreation').innerHTML=renderFacilities(await request('/api/recwell'));}catch{$('recreation').innerHTML=empty('Facilities unavailable. Refresh to try again.');}}
 $('refresh').addEventListener('click',()=>{loadTraining();loadFacilities();});
 loadTraining();loadFacilities();
 // Refresh on return, without replacing form values while the user is editing.

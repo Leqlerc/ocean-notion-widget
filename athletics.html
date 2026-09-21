@@ -1,46 +1,25 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071016">
-  <title>NOcean · Machine</title>
-  <link rel="stylesheet" href="/nocean.css?v=2"><link rel="stylesheet" href="/nocean-system.css?v=1">
-  <script src="/nocean-shared.js?v=3" defer></script><script src="/nocean-ui.js?v=6" defer></script><script src="/time-backgrounds.js?v=3" defer></script><script src="/nocean-store.js?v=1" defer></script><script src="/athletics.js?v=2" defer></script><script src="/machine.js?v=1" defer></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#141719"><title>NOcean · Athletics</title>
+<link rel="stylesheet" href="/nocean.css?v=2"><link rel="stylesheet" href="/nocean-tweaks.css?v=2"><link rel="stylesheet" href="/athletics.css?v=1"><link rel="stylesheet" href="/nocean-decorated.css?v=1"><link rel="stylesheet" href="/nocean-backgrounds.css?v=1">
+<script src="/nocean-icons.js?v=1" defer></script>
+<script src="/nocean-shared.js?v=2" defer></script><script src="/nocean-ui.js?v=4" defer></script><script src="/time-backgrounds.js?v=2" defer></script><script src="/athletics.js?v=1" defer></script>
+<link rel="stylesheet" href="/nocean-appearance.css?v=2"><script src="/nocean-appearance.js?v=2" defer></script>
+<link rel="stylesheet" href="/nocean-status.css?v=1">
 </head>
-<body data-page="machine"><div class="app">
-  <header class="topbar"><h1>NOcean<span class="brand-dot">.</span></h1><div data-app-controls class="app-controls"></div><div class="sync"><span id="syncStatus" role="status">Connecting…</span><button id="refresh" class="quiet">Refresh</button></div></header>
-  <main class="machine-main">
-    <div class="machine-intro"><div><p class="eyebrow">Machine tracker</p><h2>Keep the system running.</h2><p>Training, recovery, inputs, recurring upkeep, and honest reflection in one place.</p></div><label>Tracking date<input id="trainingDate" type="date" required></label></div>
-    <section class="machine-summary" aria-label="Machine summary">
-      <article class="summary-tile"><span>Training</span><strong id="summaryTraining">Loading…</strong></article>
-      <article class="summary-tile"><span>Nutrition</span><strong id="summaryNutrition">Not logged</strong></article>
-      <article class="summary-tile"><span>Sleep</span><strong id="summarySleep">Not logged</strong></article>
-      <article class="summary-tile"><span>Habits</span><strong id="summaryHabits">Loading…</strong></article>
-      <article class="summary-tile"><span>Maintenance</span><strong id="summaryMaintenance">Checking…</strong></article>
-      <article class="summary-tile"><span>Reflection</span><strong id="summaryReflection">No entry</strong></article>
-    </section>
-
-    <div class="machine-grid">
-      <div class="training-column">
-        <section class="card training-week"><div class="card-head"><div><p class="eyebrow">Training rhythm</p><h2>This week</h2></div><span class="muted">Saved workouts override the rotation</span></div><div id="week" class="week-grid" aria-label="Training week"></div></section>
-        <section class="card workout-card"><div class="card-head"><div><p class="eyebrow" id="workoutDate">Selected day</p><h2 id="workoutTitle">Workout</h2></div><span id="workoutStatus" class="badge"></span></div>
-          <div id="trainingError" class="panel-message" role="alert"></div>
-          <fieldset id="workoutControls" disabled><div class="form-pair"><label>Workout type<select id="workoutType"><option value="">Choose type</option><option>Push</option><option>Pull</option><option>Legs</option><option>Other</option></select></label><label>Workout quality<select id="quality"><option>Productive</option><option>Great</option><option>Not great</option></select></label></div><div class="completion-row"><button id="completeWorkout" class="primary">Complete workout</button><span id="workoutTotals" class="muted"></span></div></fieldset>
-          <div class="section-heading"><h3>Exercise log</h3><span class="muted">Completed sets</span></div><div id="sets"><p class="empty">Loading training…</p></div>
-          <form id="setForm"><fieldset id="setControls" disabled><legend>Log a set</legend><label>Exercise<select id="exercise" required><option value="">Choose exercise</option></select></label><div class="set-fields"><label>Reps<input id="reps" type="number" min="1" max="500" step="1" required inputmode="numeric"></label><label>Load · lb<input id="load" type="number" min="0" max="2000" step="any" value="0" required inputmode="decimal"></label><label>RIR · optional<input id="rir" type="number" min="0" max="20" step="any" inputmode="decimal"></label></div><div class="set-options"><label class="toggle-row"><input id="bodyweight" type="checkbox"> Bodyweight</label><label class="toggle-row"><input id="warmup" type="checkbox"> Warm-up</label><button type="submit" class="primary">Log set</button></div></fieldset></form><p id="setMessage" class="section-note"></p>
-          <div class="section-heading"><h3>Support work</h3><span class="muted">Selected day</span></div><fieldset id="supportControls" class="support-grid" disabled><label><input type="checkbox" data-support="rehab"> Rehab</label><label><input type="checkbox" data-support="stretch"> Stretch</label><label><input type="checkbox" data-support="cardio"> Cardio</label><label><input type="checkbox" data-support="swim"> Swim</label></fieldset>
-          <details><summary>Recent performance</summary><div id="recent"><p class="empty">Loading history…</p></div></details>
-        </section>
-      </div>
-
-      <div class="machine-column">
-        <section class="card"><div class="card-head"><div><p class="eyebrow">Daily inputs</p><h2>Nutrition and sleep</h2></div></div><div class="machine-tabs"><button class="active" data-machine-tab="nutrition">Nutrition</button><button data-machine-tab="sleep">Sleep</button></div>
-          <form id="nutritionForm" class="daily-form"><div class="form-pair"><label>Calories<input id="nutritionCalories" type="number" min="0" max="10000" step="1"></label><label>Protein · g<input id="nutritionProtein" type="number" min="0" max="1000" step="1"></label><label>Water · cups<input id="nutritionWater" type="number" min="0" max="50" step=".5"></label></div><button class="primary">Save nutrition</button></form>
-          <form id="sleepForm" class="daily-form" hidden><div class="form-pair"><label>Hours<input id="sleepHours" type="number" min="0" max="24" step=".25"></label><label>Quality<select id="sleepQuality"><option value="">Not rated</option><option>Rough</option><option>Okay</option><option>Good</option><option>Excellent</option></select></label></div><button class="primary">Save sleep</button></form>
-        </section>
-        <section class="card"><div class="card-head"><div><p class="eyebrow">Daily rhythm</p><h2>Habits</h2></div><span id="habitStatus" class="muted"></span></div><fieldset id="habitControls" class="habit-grid" disabled><label><input type="checkbox" data-habit="Meditate"> Meditate</label><label><input type="checkbox" data-habit="Journal"> Journal</label><label><input type="checkbox" data-habit="Sleep early"> Sleep early</label><label><input type="checkbox" data-habit="Pray"> Pray</label><label><input type="checkbox" data-habit="Chinese"> Chinese</label></fieldset></section>
-        <section class="card"><div class="card-head"><div><p class="eyebrow">Recurring upkeep</p><h2>Maintenance</h2></div><a href="/integrations.html#maintenanceSettings">Configure →</a></div><div id="maintenanceList" class="maintenance-list"></div></section>
-        <section class="card"><div class="card-head"><div><p class="eyebrow">Close the loop</p><h2>Reflection / hotwash</h2></div></div><form id="reflectionForm" class="reflection-form"><div class="reflection-fields"><label>Type<select id="reflectionType"><option>Reflection</option><option>Hotwash</option><option>Win</option><option>Concern</option></select></label><label>Title<input id="reflectionTitle" maxlength="120" required placeholder="What happened?"></label></div><label>Notes<textarea id="reflectionBody" maxlength="4000" required placeholder="What worked, what did not, and what changes next?"></textarea></label><button class="primary">Save entry</button></form><div id="reflectionList" class="reflection-list"></div></section>
-      </div>
-    </div>
-  </main>
-</div><div id="toast" role="status" class="toast" hidden></div></body></html>
+<body data-page="athletics"><div class="app">
+<header class="topbar"><h1>NOcean<span class="brand-dot">.</span></h1><div data-app-controls class="app-controls"></div><div class="sync"><span id="syncStatus" role="status">Connecting…</span><button id="refresh" class="quiet">Refresh</button></div></header>
+<main class="athletics-dashboard">
+<section class="card training-week" data-cosmetic="athletics-week" data-default-art="lily-caves"><div class="card-head"><div><p class="eyebrow">Consistency over intensity</p><h2>Athletics</h2></div><label class="date-picker">Training date<input id="trainingDate" type="date" required></label></div><div id="week" class="week-grid" aria-label="Training week"></div><p class="section-note">Weekly rhythm · Push / Pull / Legs / Rest / Push / Pull / Legs. Saved workouts take precedence.</p></section>
+<section class="card workout-card" data-cosmetic="athletics-workout" data-default-art="kelp-day"><div class="card-head"><div><p class="eyebrow" id="workoutDate">Selected day</p><h2 id="workoutTitle">Workout</h2></div><span id="workoutStatus" class="badge"></span></div>
+<div id="trainingError" class="panel-message" role="alert"></div>
+<fieldset id="workoutControls" disabled><div class="form-pair"><label>Workout type<select id="workoutType"><option value="">Choose type</option><option>Push</option><option>Pull</option><option>Legs</option><option>Other</option></select></label><label>Workout quality<select id="quality"><option>Productive</option><option>Great</option><option>Not great</option></select></label></div><div class="completion-row"><button id="completeWorkout" class="primary">Complete workout</button><span id="workoutTotals" class="muted"></span></div></fieldset>
+<div class="section-heading"><h3>Exercise log</h3><span class="muted">Completed sets for this day</span></div><div id="sets"><p class="empty">Loading training…</p></div>
+<form id="setForm"><fieldset id="setControls" disabled><legend>Log a set</legend><p class="section-note">Choose from your existing exercises. Current rotation appears first.</p><label>Exercise<select id="exercise" required><option value="">Choose exercise</option></select></label><div class="set-fields"><label>Reps<input id="reps" type="number" min="1" max="500" step="1" required inputmode="numeric"></label><label>Load · lb<input id="load" type="number" min="0" max="2000" step="any" value="0" required inputmode="decimal"></label><label>RIR · optional<input id="rir" type="number" min="0" max="20" step="any" inputmode="decimal"></label></div><div class="set-options"><label class="check-label"><input id="bodyweight" type="checkbox"> Bodyweight (no external load)</label><label class="check-label"><input id="warmup" type="checkbox"> Warm-up</label><button type="submit" class="primary">+ Log set</button></div></fieldset></form><p id="setMessage" class="section-note"></p>
+</section>
+<div class="athletics-side"><section class="card" data-cosmetic="athletics-support" data-default-art="mushroom-forest"><div class="card-head"><h2>Support work</h2><span class="muted">Selected day</span></div><fieldset id="supportControls" class="support-grid" disabled><label><input type="checkbox" data-support="rehab"> Rehab</label><label><input type="checkbox" data-support="stretch"> Stretch</label><label><input type="checkbox" data-support="cardio"> Cardio</label><label><input type="checkbox" data-support="swim"> Swim</label></fieldset></section>
+<section class="card" data-cosmetic="athletics-facilities" data-default-art="sparse-reef"><div class="card-head"><h2>Facilities</h2><span class="muted">Live campus hours</span></div><div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div></section>
+<section class="card" data-cosmetic="athletics-recent" data-default-art="lost-river"><div class="card-head"><h2>Recent performance</h2><span class="muted">Previous workouts</span></div><div id="recent"><p class="empty">Loading recent workouts…</p></div><p class="section-note">Working sets and external-load volume from your training log. Warm-ups excluded.</p></section></div>
+</main></div><div id="toast" role="status" class="toast" hidden></div></body></html>
