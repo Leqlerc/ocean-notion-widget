@@ -54,8 +54,10 @@
     $('calendarLabel').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(monthDate);
     let html='';for(let i=0;i<firstDay;i++)html+='<span class="calendar-blank" aria-hidden="true"></span>';
     for(let day=1;day<=days;day++){
-      const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,items=calendarItems(key),count=items.deadlines.length+items.work.length+items.events.length;
-      html+=`<button type="button" class="calendar-day${key===dayKey()?' is-today':''}${key===state.selectedDay?' is-selected':''}" data-calendar-day="${key}" aria-label="${esc(new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric'}).format(new Date(key+'T12:00:00')))}${count?' · '+count+' item'+(count===1?'':'s'):''}"><span>${day}</span>${count?`<i aria-hidden="true">${Math.min(count,9)}</i>`:''}</button>`;
+      const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,items=calendarItems(key),workload=items.deadlines.length+items.work.length,level=CalendarSemantics.workloadLevel(workload),events=items.events.length;
+      const dateLabel=new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric'}).format(new Date(key+'T12:00:00'));
+      const workloadLabel=`${workload} workload item${workload===1?'':'s'}`,eventLabel=`${events} calendar event${events===1?'':'s'}`,accessible=`${dateLabel} · ${workloadLabel} · ${eventLabel}`;
+      html+=`<button type="button" class="calendar-day workload-${level}${key===dayKey()?' is-today':''}${key===state.selectedDay?' is-selected':''}" data-calendar-day="${key}" data-workload-count="${workload}" aria-label="${esc(accessible)}" title="${esc(accessible)}"><span>${day}</span>${workload?`<i aria-hidden="true">${Math.min(workload,9)}</i>`:events?'<i class="calendar-event-dot" aria-hidden="true">•</i>':''}</button>`;
     }
     $('calendarGrid').innerHTML=html;
     const items=calendarItems(state.selectedDay),label=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric'}).format(new Date(state.selectedDay+'T12:00:00'));
