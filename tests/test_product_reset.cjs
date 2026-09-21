@@ -13,6 +13,9 @@ for(const text of ['Nutrition','Sleep','Habits','Maintenance','Reflection / hotw
 for(const text of ['Appearance and biomes','Current classes','Recurring maintenance','Integrations'])assert.match(pages.settings,new RegExp(text));
 const memory=new Map(),context={localStorage:{getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,value)},crypto:{randomUUID:()=> '11111111-1111-4111-8111-111111111111'}};vm.createContext(context);vm.runInContext(read('nocean-store.js')+';globalThis.store=NOceanStore',context);
 assert.equal(context.store.settings().classes.length,5);const task={id:'coursework',name:'Lab',due:'2026-09-23'};context.store.setVerification(task,'submitted');assert.equal(context.store.verification(task),'submitted');
+assert.deepEqual(JSON.parse(JSON.stringify(context.store.settings().homeCopy)),{heading:'What needs your attention today?',subtitle:'Work the plan, verify the deadlines, and keep the shape of the day in view.'});
+context.store.saveSettings({homeCopy:{heading:'My day',subtitle:'Do the right work.'},appearance:{topBiomeHeight:350,cardOpacity:55,cardArt:{}}});
+assert.deepEqual(JSON.parse(JSON.stringify(context.store.settings().homeCopy)),{heading:'My day',subtitle:'Do the right work.'});assert.equal(context.store.settings().appearance.topBiomeHeight,350);assert.equal(context.store.settings().appearance.cardOpacity,55);
 context.store.completeMaintenance('sheets','2026-09-21');assert.equal(context.store.maintenanceStatus('2026-09-21').find(x=>x.id==='sheets').completedToday,true);
 context.store.addReflection({date:'2026-09-21',type:'Hotwash',title:'Sprint',body:'Keep the good part.'});assert.equal(context.store.machine().reflections[0].title,'Sprint');
 console.log('Sketch UI contracts passed: four destinations, Home hierarchy, Projects control panel, Athletics shell, preserved tracker, and Settings ownership.');

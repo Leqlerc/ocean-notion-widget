@@ -23,5 +23,9 @@ const CalendarSemantics = (() => {
   function highest(events) {
     return events.reduce((best,event) => {const current=classify(event); return !best || current.priority>best.priority ? current : best;},null);
   }
-  return {categories,classify,highest};
+  function workloadLevel(count) {
+    const value=Math.max(0,Number(count)||0);
+    return value>=5?5:Math.floor(value);
+  }
+  return {categories,classify,highest,workloadLevel};
 })();

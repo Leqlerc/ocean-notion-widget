@@ -12,15 +12,29 @@ const NOceanStore = (() => {
     {id:'sheets',name:'Change sheets',every:7},
     {id:'shopping',name:'Shop essentials',every:7}
   ];
+  const defaultHomeCopy = {
+    heading:'What needs your attention today?',
+    subtitle:'Work the plan, verify the deadlines, and keep the shape of the day in view.'
+  };
   const cardArtKeys = ['tasks','deadlines','events','campus','calendar'];
   const biomeAssets = new Set(['blood-kelp','bulb-zone','cove-tree','dunes','grand-reef','islands','jelly-caves','kelp-day','kelp-night','lily-caves','lily-islands','lost-river','mountains','mushroom-forest','shallows-night','sparse-reef','twisty-bridge-night','twisty-bridge']);
   const defaults = {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
     dashboard: {showDining:true,rainThreshold:35,eventCount:6},
-    appearance: {topBiomeSize:'compact',cardArt:{}}
+    appearance: {topBiomeHeight:176,cardOpacity:100,cardArt:{}},
+    homeCopy: defaultHomeCopy
   };
   const clone = value => JSON.parse(JSON.stringify(value));
+  const clamp = (value,min,max,fallback) => {
+    const number=Number(value);
+    return Number.isFinite(number)?Math.round(Math.max(min,Math.min(max,number))):fallback;
+  };
+  const copyText = (value,fallback,limit,allowEmpty=false) => {
+    if(typeof value!=='string')return fallback;
+    const text=value.trim().slice(0,limit);
+    return text|| (allowEmpty?'':fallback);
+  };
   function read(key, fallback) {
     try { const value=JSON.parse(localStorage.getItem(key)||'null'); return value && typeof value==='object' ? value : clone(fallback); }
     catch { return clone(fallback); }
@@ -30,12 +44,22 @@ const NOceanStore = (() => {
     const value=read(SETTINGS_KEY,defaults);
     const rawAppearance=value.appearance&&typeof value.appearance==='object'?value.appearance:{};
     const rawCardArt=rawAppearance.cardArt&&typeof rawAppearance.cardArt==='object'?rawAppearance.cardArt:{};
+    const rawHomeCopy=value.homeCopy&&typeof value.homeCopy==='object'?value.homeCopy:{};
     const cardArt=Object.fromEntries(cardArtKeys.map(key=>[key,biomeAssets.has(rawCardArt[key])?rawCardArt[key]:'none']));
+    const legacyHeight=rawAppearance.topBiomeSize==='expanded'?258:defaults.appearance.topBiomeHeight;
     return {
       classes:Array.isArray(value.classes)?value.classes.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,40)):clone(defaultClasses),
       maintenance:Array.isArray(value.maintenance)?value.maintenance.filter(x=>x&&x.id&&x.name).map(x=>({id:String(x.id),name:String(x.name).slice(0,80),every:Math.max(1,Math.min(365,Number(x.every)||7))})):clone(defaultMaintenance),
       dashboard:{...defaults.dashboard,...(value.dashboard||{})},
-      appearance:{topBiomeSize:rawAppearance.topBiomeSize==='expanded'?'expanded':'compact',cardArt}
+      appearance:{
+        topBiomeHeight:clamp(rawAppearance.topBiomeHeight,80,500,legacyHeight),
+        cardOpacity:clamp(rawAppearance.cardOpacity,20,100,defaults.appearance.cardOpacity),
+        cardArt
+      },
+      homeCopy:{
+        heading:copyText(rawHomeCopy.heading,defaultHomeCopy.heading,80),
+        subtitle:copyText(rawHomeCopy.subtitle,defaultHomeCopy.subtitle,180,true)
+      }
     };
   }
   function saveSettings(value) { return write(SETTINGS_KEY,{...settings(),...value}); }

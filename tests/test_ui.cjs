@@ -16,4 +16,5 @@ for(const preset of ['default','card-art','experimental']){run(`NOceanUI.setPres
 for(const [name,key] of [['MA 261 Exam','exam'],['Quiz','quiz'],['CFU','assessment'],['Practical','assessment'],['Demo','presentation'],['Roundtable','presentation'],['Meetup','personal'],['Fall Break','break'],['Lecture','class']])assert.equal(run(`CalendarSemantics.classify({name:${JSON.stringify(name)}}).key`),key);
 assert.equal(run(`CalendarSemantics.classify({name:'Quiz',type:'Class'}).key`),'quiz');
 assert.equal(run(`CalendarSemantics.highest([{name:'Break'},{name:'Meetup'},{name:'Quiz'},{name:'Exam',type:'Class'}]).key`),'exam');
-console.log('UI contracts passed: shortcut guards, shared theme persistence, semantic priority.');
+for(const [count,level] of [[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[9,5],[-1,0]])assert.equal(run(`CalendarSemantics.workloadLevel(${count})`),level);
+console.log('UI contracts passed: shortcut guards, shared theme persistence, semantic priority, and exact 0–5+ workload heat thresholds.');
