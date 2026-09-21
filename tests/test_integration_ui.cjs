@@ -12,7 +12,7 @@ const wait=()=>new Promise(r=>setTimeout(r,10));
   if(path==='/api/integration-session'&&data){authenticated=true;return {ok:true,json:async()=>({ok:true})};}
   if(path==='/api/integration-session')return {ok:true,json:async()=>({authenticated,configured:true,csrf:'token'})};
   if(data?.action==='outlook-save')return {ok:false,json:async()=>({error:'Network failed; retry the same request.'})};
-  if(data?.action==='brightspace-sync')return {ok:true,json:async()=>({created:1,updated:1,unchanged:3,remaining:0})};
+  if(data?.action==='brightspace-sync')return {ok:true,json:async()=>({created:1,updated:1,unchanged:3,archived:0,remaining:0,skipped:2,skippedPast:4})};
   return {ok:true,json:async()=>({ready:true,accounts:[],events:[],outlookConfigured:true})};
  };
  w.eval(fs.readFileSync('integrations.js','utf8'));await wait();
@@ -29,6 +29,6 @@ const wait=()=>new Promise(r=>setTimeout(r,10));
  w.document.getElementById('eventName').value='Changed';submit('eventForm');await wait();
  assert.equal(calls.filter(c=>c.data?.action==='outlook-save').length,2);
  w.document.getElementById('syncBrightspace').click();await wait();
- assert.match(w.document.getElementById('message').textContent,/1 created, 1 updated, 3 unchanged/);
+ assert.match(w.document.getElementById('message').textContent,/9 discovered · 1 created · 1 adopted\/updated · 3 unchanged · 6 skipped \(4 past, 0 archived, 2 feed entries\).*no reconciliation warnings/);
  dom.window.close();console.log('PASS: owner unlock, secret clearing, save failure preserves input/idempotency key, changed uncertain retry blocked, coursework sync result.');
 })();

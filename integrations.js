@@ -81,7 +81,10 @@
   }); });
   $('syncBrightspace').addEventListener('click', () => run(async () => {
     const result = await request('/api/integrations',{action:'brightspace-sync'}); await load();
-    message(`${result.created} created, ${result.updated} updated, ${result.unchanged} unchanged. ${result.remaining ? result.remaining + ' remain; sync again to continue.' : 'Coursework sync complete.'}`);
+    const created=Number(result.created)||0,updated=Number(result.updated)||0,unchanged=Number(result.unchanged)||0,archived=Number(result.archived)||0,remaining=Number(result.remaining)||0,skippedPast=Number(result.skippedPast)||0,skippedFeed=Number(result.skipped)||0;
+    const discovered=created+updated+unchanged+archived+remaining+skippedPast;
+    const skipped=archived+skippedPast+skippedFeed;
+    message(`${discovered} discovered · ${created} created · ${updated} adopted/updated · ${unchanged} unchanged · ${skipped} skipped (${skippedPast} past, ${archived} archived, ${skippedFeed} feed entries). ${remaining ? remaining + ' remain; sync again to continue.' : 'Coursework sync complete · no reconciliation warnings.'}`);
   }));
   const result = new URLSearchParams(location.search).get('outlook');
   if (result) { history.replaceState({},'',location.pathname); message(result === 'connected' ? 'Outlook connected. Sync now to load events.' : 'Microsoft connection failed or was cancelled. Check setup and try again.'); }
