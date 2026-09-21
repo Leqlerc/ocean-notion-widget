@@ -80,7 +80,7 @@
     <label>Task<input id="editName" required maxlength="500"></label>
     <label>Project<input id="editProject" list="projectOptions" maxlength="100" placeholder="Optional"></label>
     <div class="form-pair"><label>Due date<input id="editDue" type="date"></label><label>Time<input id="editTime" type="time"></label><label>Course<select id="editCourse"><option value="">None</option></select></label></div>
-    <div class="form-pair"><label>Difficulty<select id="editDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><label class="toggle-row"><input id="editFocus" type="checkbox"> Focus</label></div>
+    <div class="form-pair"><label>Difficulty<select id="editDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><label class="toggle-row"><input id="editFocus" type="checkbox"> Focus</label></div><label class="toggle-row"><input id="editRadar" type="checkbox"> Verified class assignment · show in Academic Radar</label>
     <div class="plan-actions"><span>Move the work plan without changing the deadline</span><button type="button" data-plan="today">Today</button><button type="button" data-plan="tomorrow">Tomorrow</button><button type="button" data-plan="later">Backlog</button><button type="button" data-plan="automatic">Automatic</button></div>
     <p id="editError" class="panel-message" role="alert"></p>
     <div class="dialog-actions"><button type="button" id="archiveTask" class="quiet">Archive</button><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save task</button></div>
