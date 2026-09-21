@@ -2,7 +2,22 @@
 
 Updated 2026-09-21. This is the current authoritative checkpoint.
 
-## Sketch-led UI restructuring — implemented locally, not deployed
+## Refined sketch UI — Production checkpoint
+
+- The previous Production/main version is permanently preserved on `backup/pre-sketch-ui-production-2026-09-21` at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`. Do not delete or overwrite this branch.
+- Reviewed feature implementation: `feature/sketch-ui` commit `54a05e211865692060c561fb091569954566b3b0`.
+- Verified Preview: `dpl_7RP8TytgzEoGP9B52Bx8ERhguwmp`, READY at `https://ocean-notion-widget-ohkgki2r7-yiqwill-3102.vercel.app`.
+- Production promotion merge: `393f34098c65a97a3cb228b9b57fb10663b72d26`. It has the prior main and the reviewed feature commit as parents, and its tree exactly matches the reviewed Preview tree.
+- First READY Production deployment of the refined UI: `dpl_3FC8RVK85ijQ8QpoTA1i6JgUZnDW`. Stable URL: `https://ocean-notion-widget.vercel.app`.
+- Home keeps the sketch information architecture, but Campus now occupies the former compact Calendar area and Calendar / Temporal Context is a substantially larger full-width bottom section.
+- Settings → Appearance now includes a persistent Compact/Expanded top-biome choice. Compact remains the default.
+- Settings → Appearance also configures Tasks, Deadlines, Events, Campus, and Calendar card backgrounds independently from the existing biome allowlist. None/default preserves the original card exactly; selected art uses a readable dark overlay and can be removed again.
+- All appearance preferences remain device-local in the existing lightweight settings namespace. No task, project, provider, database, OAuth, environment, or integration behavior changed.
+- Focused validation passed: JavaScript syntax, diff checks, new appearance/persistence contracts, four-destination contracts, planning/deadline/project-model regressions, and 10 focused Python task/project-plan tests.
+- Authenticated visual Preview checks passed for default cards, Expanded header art, image-backed card readability, persistence across navigation, reset-to-default behavior, Campus placement, and the larger Calendar.
+- Production smoke passed for Home, Projects, Athletics, and Settings with no application console errors. Existing Tasks, Brightspace deadlines, Google/Notion events, weather, RecWell, dining, Projects, Machine, and Connections data remained visible.
+
+## Base sketch-led UI restructuring
 
 - Started from remote `preview/product-reset-current` (`cfbf323`), not the temporarily restored production branch. The known-good pre-reset production state remains untouched.
 - Working branch: `feature/sketch-ui`.
@@ -26,10 +41,6 @@ Updated 2026-09-21. This is the current authoritative checkpoint.
 - Projects and goal-plan DOM interaction suites pass for selector/detail rendering, create/edit, failure rollback, stale-read protection, next actions, objectives, milestone dates, completion, refresh, and uncertain-create handling.
 - Existing Task interaction, planning, deadlines, project-model, and shared UI contract tests pass.
 - A remote browser cannot reach the local-only server in this runtime, so no deployed visual smoke was performed. This is not a deployment failure; deployment was intentionally skipped.
-
-## Next action
-
-- Review the local feature checkpoint or explicitly request a Preview deployment. Do not promote it to production until Home and Projects have had one authenticated visual pass at desktop and mobile widths.
 
 ## Inherited product reset preview
 
