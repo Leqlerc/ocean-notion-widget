@@ -13,9 +13,9 @@
   }
   async function run(action) {
     if (busy) return;
-    busy = true; document.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    busy = true; document.querySelectorAll('.integration-main button').forEach(b => { b.disabled = true; });
     try { await action(); } catch (error) { message(error.message); }
-    finally { busy = false; document.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
+    finally { busy = false; document.querySelectorAll('.integration-main button').forEach(b => { b.disabled = false; }); }
   }
   function localInput(value) {
     const date = new Date(value);
