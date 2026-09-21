@@ -24,8 +24,14 @@
   ];
   let activeKey = '';
   let requestId = 0;
+  const BIOME_KEY = 'nocean.biome.v1';
+  const allBiomes = [...dayBiomes,...nightBiomes];
 
   function currentBiome(now = new Date()) {
+    let chosen='auto';
+    try{chosen=localStorage.getItem(BIOME_KEY)||'auto';}catch{}
+    const manual=allBiomes.find(([key])=>key===chosen);
+    if(manual)return {key:manual[0],label:manual[1],mode:'manual'};
     const hour = now.getHours();
     const isNight = hour < 6 || hour >= 20;
     const pool = isNight ? nightBiomes : dayBiomes;
@@ -75,6 +81,8 @@
     });
     window.setInterval(updateBackground, 60_000);
     window.addEventListener('focus', () => updateBackground());
+    window.addEventListener('storage', event => { if(event.key===BIOME_KEY)updateBackground(true); });
+    document.addEventListener('nocean:biome',()=>updateBackground(true));
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) updateBackground();
     });
