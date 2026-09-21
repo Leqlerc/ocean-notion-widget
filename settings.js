@@ -2,10 +2,12 @@
 (() => {
   const {$,esc}=NOcean;
   const biomes=[['auto','Rotate with time of day'],['blood-kelp','Blood Kelp Zone'],['bulb-zone','Bulb Zone'],['cove-tree','Cove Tree'],['dunes','Dunes'],['grand-reef','Grand Reef'],['islands','Underwater Islands'],['jelly-caves','Jelly Caves'],['kelp-day','Sunlit Kelp Forest'],['kelp-night','Moonlit Kelp Forest'],['lily-caves','Lily Caves'],['lily-islands','Lily Islands'],['lost-river','Lost River'],['mountains','Abyssal Mountains'],['mushroom-forest','Mushroom Forest'],['shallows-night','Moonlit Shallows'],['sparse-reef','Sparse Reef'],['twisty-bridge-night','Twisty Bridge · Night'],['twisty-bridge','Twisty Bridge']];
-  let statusTimer;
+  let statusTimer,topHeightTimer,cardOpacityTimer;
   function status(text){$('settingsStatus').textContent=text;clearTimeout(statusTimer);statusTimer=setTimeout(()=>$('settingsStatus').textContent='',4000);}
   function clamp(value,min,max,fallback){const number=Number(value);return Number.isFinite(number)?Math.round(Math.max(min,Math.min(max,number))):fallback;}
   function syncPair(range,number,value){range.value=String(value);number.value=String(value);}
+  function commitTopHeight(value){value=clamp(value,80,500,176);syncPair($('topBiomeHeight'),$('topBiomeHeightNumber'),value);NOceanDashboardAppearance.setTopBiomeHeight(value);return value;}
+  function commitCardOpacity(value){value=clamp(value,20,100,100);syncPair($('cardOpacity'),$('cardOpacityNumber'),value);NOceanDashboardAppearance.setCardOpacity(value);return value;}
   function saveHomeCopy(){
     const defaults=NOceanStore.defaults.homeCopy,heading=$('homeHeadingSetting').value.trim().slice(0,80)||defaults.heading,subtitle=$('homeSubtitleSetting').value.trim().slice(0,180);
     NOceanStore.saveSettings({homeCopy:{heading,subtitle}});NOceanDashboardAppearance.apply();
@@ -25,12 +27,12 @@
   $('biomeAtmosphere').checked=decorated;$('biomeChoice').value=biomes.some(([key])=>key===biome)?biome:'auto';
   $('biomeAtmosphere').addEventListener('change',event=>{NOceanUI.setTheme(event.target.checked);status(event.target.checked?'Biome atmosphere enabled.':'Biome atmosphere disabled.');});
   $('biomeChoice').addEventListener('change',event=>{try{localStorage.setItem('nocean.biome.v1',event.target.value);}catch{}document.dispatchEvent(new Event('nocean:biome'));status('Biome preference saved.');});
-  $('topBiomeHeight').addEventListener('input',event=>{const value=clamp(event.target.value,80,500,176);syncPair(event.target,$('topBiomeHeightNumber'),value);NOceanDashboardAppearance.setTopBiomeHeight(value);status(`Top biome height saved at ${value}px.`);});
-  $('topBiomeHeightNumber').addEventListener('input',event=>{const value=Number(event.target.value);if(Number.isFinite(value)&&value>=80&&value<=500){$('topBiomeHeight').value=String(Math.round(value));NOceanDashboardAppearance.setTopBiomeHeight(value);}});
-  $('topBiomeHeightNumber').addEventListener('change',event=>{const value=clamp(event.target.value,80,500,176);syncPair($('topBiomeHeight'),event.target,value);NOceanDashboardAppearance.setTopBiomeHeight(value);status(`Top biome height saved at ${value}px.`);});
-  $('cardOpacity').addEventListener('input',event=>{const value=clamp(event.target.value,20,100,100);syncPair(event.target,$('cardOpacityNumber'),value);NOceanDashboardAppearance.setCardOpacity(value);status(`Card opacity saved at ${value}%.`);});
-  $('cardOpacityNumber').addEventListener('input',event=>{const value=Number(event.target.value);if(Number.isFinite(value)&&value>=20&&value<=100){$('cardOpacity').value=String(Math.round(value));NOceanDashboardAppearance.setCardOpacity(value);}});
-  $('cardOpacityNumber').addEventListener('change',event=>{const value=clamp(event.target.value,20,100,100);syncPair($('cardOpacity'),event.target,value);NOceanDashboardAppearance.setCardOpacity(value);status(`Card opacity saved at ${value}%.`);});
+  $('topBiomeHeight').addEventListener('input',event=>{const value=commitTopHeight(event.target.value);status(`Top biome height saved at ${value}px.`);});
+  $('topBiomeHeightNumber').addEventListener('input',event=>{const value=Number(event.target.value);if(Number.isFinite(value)&&value>=80&&value<=500){$('topBiomeHeight').value=String(Math.round(value));NOceanDashboardAppearance.setTopBiomeHeight(value);}clearTimeout(topHeightTimer);topHeightTimer=setTimeout(()=>{const saved=commitTopHeight(event.target.value);status(`Top biome height saved at ${saved}px.`);},350);});
+  $('topBiomeHeightNumber').addEventListener('change',event=>{clearTimeout(topHeightTimer);const value=commitTopHeight(event.target.value);status(`Top biome height saved at ${value}px.`);});
+  $('cardOpacity').addEventListener('input',event=>{const value=commitCardOpacity(event.target.value);status(`Card opacity saved at ${value}%.`);});
+  $('cardOpacityNumber').addEventListener('input',event=>{const value=Number(event.target.value);if(Number.isFinite(value)&&value>=20&&value<=100){$('cardOpacity').value=String(Math.round(value));NOceanDashboardAppearance.setCardOpacity(value);}clearTimeout(cardOpacityTimer);cardOpacityTimer=setTimeout(()=>{const saved=commitCardOpacity(event.target.value);status(`Card opacity saved at ${saved}%.`);},350);});
+  $('cardOpacityNumber').addEventListener('change',event=>{clearTimeout(cardOpacityTimer);const value=commitCardOpacity(event.target.value);status(`Card opacity saved at ${value}%.`);});
   $('homeHeadingSetting').addEventListener('input',saveHomeCopy);$('homeSubtitleSetting').addEventListener('input',saveHomeCopy);
   $('resetHomeCopy').addEventListener('click',()=>{NOceanStore.saveSettings({homeCopy:{...NOceanStore.defaults.homeCopy}});render();NOceanDashboardAppearance.apply();status('Home heading and subtitle restored.');});
   $('cardArtSettings').addEventListener('change',event=>{const select=event.target.closest('[data-card-art-setting]');if(!select)return;NOceanDashboardAppearance.setCard(select.dataset.cardArtSetting,select.value);status(select.value==='none'?'Card restored to its default surface.':'Card background saved.');});
