@@ -30,7 +30,7 @@ function page(file,url){
   $('projectSearch').value='unknown';$('projectSearch').dispatchEvent(new w.Event('input'));assert.match($('projectGrid').textContent,/No matching/);
   $('projectSearch').value='';$('projectSearch').dispatchEvent(new w.Event('input'));
   w.location.hash='p1';w.dispatchEvent(new w.HashChangeEvent('hashchange'));await tick();
-  assert.equal($('projectIndex').hidden,true);assert.match($('projectDetail').textContent,/Baseline test/);
+  assert.equal($('projectIndex').hidden,false);assert.match($('projectDetail').textContent,/Baseline test/);
   assert.match($('projectDetail').innerHTML,/tasks.html\?project=p1&amp;view=all&amp;task=t1/);
   $('editProject').click();$('projectDue').value='2027-01-18';$('projectLifecycle').value='Completed';
   fail=true;$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
@@ -49,7 +49,7 @@ function page(file,url){
   w.location.hash='';w.dispatchEvent(new w.HashChangeEvent('hashchange'));$('newProject').click();
   $('projectName').value='   ';$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.match($('projectError').textContent,/Enter a project name/);
   $('projectName').value='Second goal';$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
-  assert.equal(w.location.hash,'#p2');assert.match($('projectDetail').textContent,/No tasks yet/);
+  assert.equal(w.location.hash,'#p2');assert.match($('projectDetail').textContent,/No task progress yet/);
   assert.equal(records.length,2);assert.equal(task.due,'2026-09-21T15:30:00-04:00');
  }finally{dom.window.close();}
  const td=page('tasks.html','https://nocean.test/tasks.html?project=p1&view=all&task=t1');

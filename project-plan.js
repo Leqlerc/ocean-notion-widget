@@ -7,20 +7,18 @@
  function mount(id){
   if(projectId===id&&$('goalPlan'))return;
   projectId=id;items=[];generation++;editing=null;busy=false;uncertain=false;
-  const host=document.createElement('section');host.id='goalPlan';host.className='card module-card';
-  host.innerHTML='<div class="card-head"><h2>Goal plan</h2><button id="refreshPlan">Refresh plan</button></div><p id="planStatus" role="status">Loading goal plan…</p><div id="goalItems"></div><button id="addGoalItem">Add objective, milestone or note</button>';
-  $('projectDetail').append(host);
+  const host=document.createElement('div');host.id='goalPlan';host.className='goal-plan-shell';
+  host.innerHTML='<div class="goal-plan-actions"><p id="planStatus" role="status">Loading goal plan…</p><button id="refreshPlan" class="quiet">Refresh</button></div><div id="goalItems"></div><button id="addGoalItem">Add objective, milestone or note</button>';
+  ($('projectPlanSlot')||$('projectDetail')).append(host);
   $('refreshPlan').onclick=load;$('addGoalItem').onclick=()=>open();load();
  }
  function render(){
   if(!$('goalItems'))return;
   const objectives=items.filter(x=>x.kind==='objective'),done=objectives.filter(x=>x.done).length;
-  let html=objectives.length?`<p>${done} / ${objectives.length} objectives achieved</p><progress max="${objectives.length}" value="${done}" aria-label="Objective progress"></progress>`:'<p>Define what success looks like, then add milestones toward it.</p>';
-  for(const [kind,title] of [['overview','Overview'],['objective','Objectives'],['milestone','Milestones'],['note','Notes & considerations']]){
-   const entries=items.filter(x=>x.kind===kind).sort((a,b)=>kind==='milestone'?(a.due||'9999').localeCompare(b.due||'9999'):0);
-   if(!entries.length)continue;
-   html+=`<h3>${title}</h3>`+entries.map(item=>`<div class="goal-item">${['objective','milestone'].includes(kind)?`<label><input type="checkbox" data-goal-complete="${esc(item.id)}" ${item.done?'checked':''} ${busy?'disabled':''}><span class="sr-only">Complete ${esc(item.text)}</span></label>`:''}<div><p class="goal-text">${esc(item.text)}</p>${kind==='milestone'?`<small>${item.done?'Achieved · ':''}${esc(dateLabel(item.due))}</small>`:''}</div><button data-goal-edit="${esc(item.id)}" ${busy?'disabled':''}>Edit</button></div>`).join('');
-  }
+  const entry=(item,kind)=>`<div class="goal-item">${['objective','milestone'].includes(kind)?`<label><input type="checkbox" data-goal-complete="${esc(item.id)}" ${item.done?'checked':''} ${busy?'disabled':''}><span class="sr-only">Complete ${esc(item.text)}</span></label>`:''}<div><p class="goal-text">${esc(item.text)}</p>${kind==='milestone'?`<small>${item.done?'Achieved · ':''}${esc(dateLabel(item.due))}</small>`:''}</div><button data-goal-edit="${esc(item.id)}" ${busy?'disabled':''}>Edit</button></div>`;
+  const group=(kind,title,emptyText)=>{const entries=items.filter(x=>x.kind===kind).sort((a,b)=>kind==='milestone'?(a.due||'9999').localeCompare(b.due||'9999'):0);return `<div class="goal-group goal-group-${kind}"><h4>${title}</h4>${entries.map(item=>entry(item,kind)).join('')||`<p class="empty">${emptyText}</p>`}</div>`;};
+  let html=objectives.length?`<div class="objective-progress"><span>${done} / ${objectives.length} objectives achieved</span><progress max="${objectives.length}" value="${done}" aria-label="Objective progress"></progress></div>`:'<p class="section-note">Define what success looks like, then add milestones toward it.</p>';
+  html+=`<div class="goal-plan-grid"><section class="goal-structure" aria-label="Project structure"><h3>Organization</h3>${group('overview','Overview','Add a concise project overview.')}${group('objective','Objectives','Add the outcomes that define success.')}${group('note','Notes & considerations','Add a constraint, subarea, or consideration.')}</section><section class="goal-milestones" aria-label="Project milestones"><h3>Milestones</h3>${group('milestone','Timeline','Add the next major checkpoint.')}</section></div>`;
   $('goalItems').innerHTML=html;
   $('goalItems').querySelectorAll('[data-goal-edit]').forEach(button=>button.onclick=()=>open(items.find(x=>x.id===button.dataset.goalEdit)));
   $('goalItems').querySelectorAll('[data-goal-complete]').forEach(box=>box.onchange=()=>complete(items.find(x=>x.id===box.dataset.goalComplete),box.checked));

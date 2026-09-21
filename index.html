@@ -3,97 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#141719">
-  <title>NOcean · Today</title>
+  <meta name="theme-color" content="#071016">
+  <title>NOcean · Home</title>
   <link rel="stylesheet" href="/nocean.css?v=2">
-  <link rel="stylesheet" href="/nocean-tweaks.css?v=3">
-  <link rel="stylesheet" href="/nocean-decorated.css?v=1">
-  <link rel="stylesheet" href="/nocean-backgrounds.css?v=1">
-  <link rel="stylesheet" href="/nocean-hierarchy.css?v=2">
-  <link rel="stylesheet" href="/nocean-interactions.css?v=1">
-  <link rel="stylesheet" href="/nocean-presets.css?v=2">
-  <script src="/nocean-icons.js?v=1" defer></script>
-<script src="/nocean-shared.js?v=2" defer></script>
-  <script src="/nocean-ui.js?v=4" defer></script>
-  <script src="/time-backgrounds.js?v=2" defer></script>
+  <link rel="stylesheet" href="/nocean-system.css?v=3">
+  <script src="/nocean-shared.js?v=3" defer></script>
+  <script src="/nocean-data.js?v=2" defer></script>
+  <script src="/nocean-store.js?v=2" defer></script>
+  <script src="/nocean-dashboard-appearance.js?v=1" defer></script>
+  <script src="/nocean-ui.js?v=7" defer></script>
+  <script src="/time-backgrounds.js?v=3" defer></script>
+  <script src="/nocean-deadlines.js?v=2" defer></script>
+  <script src="/nocean-planning.js?v=1" defer></script>
   <script src="/calendar-semantics.js?v=2" defer></script>
-  <script src="/nocean-deadlines.js?v=1" defer></script>
-  <script src="/nocean-motion.js?v=1" defer></script>
-  <script src="/nocean-filters.js?v=1" defer></script>
-  <script src="/nocean-data.js?v=1" defer></script><script src="/nocean-planning.js?v=1" defer></script>
-<script src="/nocean.js?v=7" defer></script>
-  <script src="/calendar-labels.js?v=2" defer></script>
-<link rel="stylesheet" href="/nocean-controls.css?v=1">
-<link rel="stylesheet" href="/nocean-appearance.css?v=2">
-<script src="/nocean-appearance.js?v=3" defer></script>
-<link rel="stylesheet" href="/nocean-polish.css?v=3">
-<script src="/nocean-welcome.js?v=2" defer></script>
-<link rel="stylesheet" href="/nocean-status.css?v=1">
-<link rel="preload" as="image" href="/assets/backgrounds/twisty-bridge-night.png">
-<link rel="stylesheet" href="/nocean-modules.css?v=1">
+  <script src="/home.js?v=2" defer></script>
 </head>
 <body data-page="home">
 <div class="app">
   <header class="topbar">
     <h1>NOcean<span class="brand-dot">.</span></h1>
     <div data-app-controls class="app-controls"></div>
-    <div id="clock" class="clock"></div>
     <div class="sync"><span id="syncStatus" role="status">Connecting…</span><button id="refresh" class="quiet">Refresh</button></div>
   </header>
-  <div class="welcome" data-cosmetic="welcome" data-default-art="twisty-bridge-night" data-cosmetic-always="true"><div><h2>Welcome back, Will.</h2><p id="welcomeLine">Trust the process. Own the inputs.</p></div><div class="welcome-clock"><time id="welcomeTime" aria-label="Current local time"></time><small id="welcomeDate"></small></div></div>
-  <main class="dashboard">
-    <section class="card tasks-card" data-cosmetic="today" data-default-art="kelp-day" aria-labelledby="tasksTitle">
-      <div class="card-head"><div><p class="eyebrow">Make room for what matters</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>
-      <form id="quickAdd" class="quick-add">
-        <label class="sr-only" for="taskName">Task name</label>
-        <input id="taskName" name="name" required maxlength="500" placeholder="What’s the next thing to do?" autocomplete="off">
-        <button type="submit" class="primary" id="addButton">+ Add task</button>
-        <div class="capture-options"><label>Project<input id="taskProject" name="project" list="projectOptions" placeholder="Optional" maxlength="100"></label><label>Due date<input id="taskDue" name="due" type="date"></label><label>Time · optional<input id="taskTime" type="time" aria-describedby="dueDefault"></label><label>Difficulty<select id="taskDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><small id="dueDefault">No time selected → 11:59 PM local</small></div>
-      </form>
-      <nav class="tabs" aria-label="Task lists"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="later" aria-pressed="false">Later</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="all" aria-pressed="false">All</button><label class="done-toggle"><input id="showDone" type="checkbox"> Show done</label></nav>
-      <details class="task-filters" id="taskFilters"><summary>Filters <span id="filterCount"></span></summary><div class="filter-strip"><label>Due<select id="filterDue"><option value="all">Any due date</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="tomorrow">Tomorrow</option><option value="week">This week</option><option value="later">Later</option><option value="none">No due date</option></select></label><label>Project<select id="filterProject"><option value="all">All projects</option><option value="none">No project</option></select></label><label>Difficulty<select id="filterDifficulty"><option value="all">Any difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Unrated</option></select></label><button id="clearFilters" class="quiet" type="button">Clear filters</button></div><small>Filters refine the selected view. Use All to search every task. This week = Monday–Sunday.</small></details>
-      <div id="taskMessage" class="panel-message" role="status"></div>
-      <div id="taskList" class="scroll task-list"><p class="empty">Loading your tasks…</p></div>
-      <div class="card-foot"><span id="taskHint">Focus tasks and anything due today or overdue.</span><span id="doneCount"></span></div>
-    </section>
-    <section class="card projects-card" aria-labelledby="projectsTitle">
-      <div class="card-head"><h2 id="projectsTitle">Projects</h2><div class="project-tools"><label><input type="checkbox" id="showInactiveProjects"> Inactive</label><button class="quiet" id="newProject">+ Project</button></div></div>
-      <p id="projectMessage" class="panel-message" role="status"></p>
-      <div id="projects" class="scroll projects-grid"><p class="empty">Loading projects…</p></div>
-    </section>
-    <section class="card campus-card" data-cosmetic="campus" data-default-art="lily-islands" aria-labelledby="campusTitle">
-      <div class="card-head"><h2 id="campusTitle">Campus now</h2><span class="muted">West Lafayette</span></div>
-      <div class="campus-grid"><div id="weather" class="weather"><p class="empty">Loading weather…</p></div><div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div></div>
-    </section>
-    <section class="card dining-card" data-cosmetic="dining" data-default-art="jelly-caves" aria-labelledby="diningTitle">
-      <div class="card-head"><h2 id="diningTitle">Where to eat</h2><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">Full menus ↗</a></div>
-      <div class="meal-controls"><div class="tabs" aria-label="Dining meal"><button data-meal="Lunch">Lunch</button><button data-meal="Dinner">Dinner</button></div><small id="diningDate"></small></div><p class="section-note">Rotating entrées · protein per serving. Crowd status is current, not a meal forecast.</p>
-      <div id="dining" class="scroll dining-list"><p class="empty">Finding macro-efficient picks at five dining courts…</p></div>
-    </section>
-    <section class="card events-card" data-cosmetic="calendar" data-default-art="twisty-bridge" aria-labelledby="eventsTitle">
-      <div class="card-head"><h2 id="eventsTitle">Upcoming & calendar</h2><a href="https://calendar.google.com/" target="_blank" rel="noopener" aria-label="Open Google Calendar">Calendar ↗</a></div>
-      <div class="events-layout"><div class="event-stack"><div id="eventList" class="scroll"><p class="empty">Loading events…</p></div></div>
-        <div class="mini-calendar"><div class="month-nav"><button id="prevMonth" class="quiet" aria-label="Previous month">‹</button><button id="monthTitle" class="quiet" title="Return to this month"></button><button id="nextMonth" class="quiet" aria-label="Next month">›</button></div><div id="calendarGrid" class="calendar-grid"></div><button id="clearDay" class="quiet clear-day" hidden>Show upcoming events</button><div class="calendar-legend" aria-label="Calendar event types"><span class="event-exam">Exam</span><span class="event-quiz">Quiz</span><span class="event-assessment">CFU / Practical</span><span class="event-presentation">Presentation</span><span class="event-personal">Personal</span><span class="event-break">Break</span><span class="event-class">Class</span></div></div>
-      </div>
-      <div id="calendarSource" class="card-foot">Checking event source…</div>
-    </section>
+  <main>
+    <div class="command-intro">
+      <div><p class="eyebrow" id="homeDate">Today</p><h2>What needs your attention today?</h2><p>Work the plan, verify the deadlines, and keep the shape of the day in view.</p></div>
+      <p id="lifeStatus" class="life-status">Loading today’s signal…</p>
+    </div>
+    <div class="dashboard">
+      <section class="card tasks-card" data-card-art="tasks" aria-labelledby="tasksTitle">
+        <div class="card-head"><div><p class="eyebrow">Tasks</p><h2 id="tasksTitle">Today</h2></div><span id="taskCount" class="muted"></span></div>
+        <form id="quickAdd" class="quick-add">
+          <label class="sr-only" for="taskName">Task name</label>
+          <input id="taskName" required maxlength="500" placeholder="What will you actually work on?" autocomplete="off">
+          <button type="submit" class="primary" id="addButton">Add to today</button>
+          <div class="capture-options">
+            <label>Project<input id="taskProject" list="projectOptions" placeholder="Optional" maxlength="100"></label>
+            <label>Due date<input id="taskDue" type="date"></label>
+            <label>Time<input id="taskTime" type="time"></label>
+            <label>Difficulty<select id="taskDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
+          </div>
+        </form>
+        <nav class="tabs" aria-label="Work plan"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="later" aria-pressed="false">Backlog</button></nav>
+        <div id="taskMessage" class="panel-message" role="status"></div>
+        <div id="taskList" class="scroll task-list"><p class="empty">Loading the work plan…</p></div>
+        <div class="card-foot"><span id="taskHint">Only work you deliberately planned or focused appears here.</span><a href="/tasks.html">All tasks →</a></div>
+      </section>
+
+      <section class="card deadlines-card" data-card-art="deadlines" aria-labelledby="radarTitle">
+        <div class="card-head"><div><p class="eyebrow">Academic safety net</p><h2 id="radarTitle">Deadlines</h2></div><span id="academicSummary" class="muted"></span></div>
+        <div id="academicRadar" class="academic-radar"><p class="empty">Loading trusted coursework…</p></div>
+        <p class="section-note">Work completion never clears submission verification.</p>
+      </section>
+
+      <section class="card events-card" data-card-art="events" aria-labelledby="eventsTitle">
+        <div class="card-head"><div><p class="eyebrow">Next on the clock</p><h2 id="eventsTitle">Events</h2></div><a href="https://calendar.google.com/" target="_blank" rel="noopener">Open ↗</a></div>
+        <div id="eventList" class="compact-events"><p class="empty">Loading events…</p></div>
+        <div id="calendarSource" class="card-foot">Checking event source…</div>
+      </section>
+
+      <section class="card campus-card" data-card-art="campus" aria-labelledby="campusTitle">
+        <div class="card-head"><div><p class="eyebrow">Campus signals</p><h2 id="campusTitle">Today in West Lafayette</h2></div></div>
+        <div class="campus-grid">
+          <div id="weather"><p class="empty">Loading the forecast…</p></div>
+          <div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div>
+          <div id="diningBrief" class="dining-brief"><h3>Dining signal</h3><div id="dining"><p class="empty">Finding one useful option…</p></div></div>
+        </div>
+      </section>
+
+      <section class="card calendar-card" data-card-art="calendar" aria-labelledby="calendarTitle">
+        <div class="card-head"><div><p class="eyebrow">Temporal context</p><h2 id="calendarTitle">Calendar</h2></div><div class="calendar-controls"><button id="calendarPrev" class="quiet" type="button" aria-label="Previous month">←</button><span id="calendarLabel" class="muted"></span><button id="calendarNext" class="quiet" type="button" aria-label="Next month">→</button></div></div>
+        <div class="mini-calendar-layout">
+          <div><div class="calendar-weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Month calendar"></div></div>
+          <div id="calendarAgenda" class="calendar-agenda"><p class="empty">Choose a date to see its work and events.</p></div>
+        </div>
+      </section>
+    </div>
   </main>
-  <footer style="padding:8px 16px 18px;text-align:right"><a href="/privacy.html">Privacy</a></footer>
 </div>
 <datalist id="projectOptions"></datalist>
-<dialog id="editDialog">
-  <form id="editTask"><div class="plan-actions"><span>Work plan · keeps deadline</span><button type="button" data-plan="today">Today</button><button type="button" data-plan="tomorrow">Tomorrow</button><button type="button" data-plan="later">Backlog</button><button type="button" data-plan="automatic">Automatic</button></div>
-    <div class="card-head"><h2>Edit task</h2><button type="button" id="closeEdit" class="quiet" aria-label="Close editor">✕</button></div>
+<dialog id="editDialog" aria-labelledby="editTitle">
+  <form id="editTask">
+    <div class="card-head"><h2 id="editTitle">Edit task</h2><button type="button" id="closeEdit" class="quiet" aria-label="Close editor">✕</button></div>
     <input id="editId" type="hidden">
     <label>Task<input id="editName" required maxlength="500"></label>
-    <label>Project<input id="editProject" list="projectOptions" maxlength="100" placeholder="Type or choose a project"></label>
-    <div class="form-pair"><label>Due date<input id="editDue" type="date"></label><label>Time · optional<input id="editTime" type="time"></label></div><p class="section-note">Without a time, due at 11:59 PM local.</p><div class="form-pair"><label>Course<select id="editCourse"><option value="">None</option></select></label></div>
-    <div class="form-pair"><label>Difficulty<select id="editDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><label>Status<select id="editStatus"></select></label><label class="check-label"><input id="editFocus" type="checkbox"> Focus today</label></div>
+    <label>Project<input id="editProject" list="projectOptions" maxlength="100" placeholder="Optional"></label>
+    <div class="form-pair"><label>Due date<input id="editDue" type="date"></label><label>Time<input id="editTime" type="time"></label><label>Course<select id="editCourse"><option value="">None</option></select></label></div>
+    <div class="form-pair"><label>Difficulty<select id="editDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><label class="toggle-row"><input id="editFocus" type="checkbox"> Focus</label></div><label class="toggle-row"><input id="editRadar" type="checkbox"> Verified class assignment · show in Academic Radar</label>
+    <div class="plan-actions"><span>Move the work plan without changing the deadline</span><button type="button" data-plan="today">Today</button><button type="button" data-plan="tomorrow">Tomorrow</button><button type="button" data-plan="later">Backlog</button><button type="button" data-plan="automatic">Automatic</button></div>
     <p id="editError" class="panel-message" role="alert"></p>
-    <div class="dialog-actions"><button type="button" id="archiveTask" class="quiet archive-button">Archive task</button><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save changes</button></div>
+    <div class="dialog-actions"><button type="button" id="archiveTask" class="quiet">Archive</button><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save task</button></div>
   </form>
 </dialog>
-<dialog id="projectDialog" aria-labelledby="newProjectTitle"><form id="projectForm"><div class="card-head"><h2 id="newProjectTitle">New project</h2><button type="button" id="closeProject" class="quiet" aria-label="Close project dialog">✕</button></div><label>Project name<input id="projectName" required maxlength="100" autocomplete="off"></label><label>Project due date<input id="projectDue" type="date"></label><p id="projectError" class="panel-message" role="alert"></p><button id="saveProject" class="primary" type="submit">Create project</button></form></dialog>
 <div id="toast" role="status" class="toast" hidden></div>
 </body>
 </html>
