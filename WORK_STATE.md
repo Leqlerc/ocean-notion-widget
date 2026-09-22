@@ -2,6 +2,24 @@
 
 Updated 2026-09-22. This is the current authoritative checkpoint.
 
+## Usability + visual refinement — verified Preview checkpoint
+
+- Refinement branch: `feature/usability-visual-refinement`.
+- Reviewed implementation commit: `66c669876915c1023c223439dc853796fe3783c9`.
+- READY Vercel Preview: `dpl_BsoGhMK5gwUCmgfiWpg6nDgcGjxZ` at `https://ocean-notion-widget-34jsdtrth-yiqwill-3102.vercel.app` (stable branch alias: `https://ocean-notion-widget-git-feature-usability-v-0365d9-yiqwill-3102.vercel.app`).
+- `main` and Production remain intentionally unchanged at `5f406526549137b06474b863a1ed8fc6456b7826`; the preserved `backup/pre-sketch-ui-production-2026-09-21` branch remains at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`. Do not promote this Preview without explicit approval after review.
+- Home Quick Add now follows the active Today/Tomorrow/Backlog tab while its due-date control remains independent. The responsive form grid no longer overlaps. Completion remains visibly dulled for about three seconds before a fade/collapse, with Undo and failed-write restoration retained and reduced-motion respected.
+- Home uses a local-time `Good morning / afternoon / evening, Will` greeting and one deterministic positive quote per local date. The superseded editable Home heading/subtitle workflow was removed.
+- Settings → Appearance now offers exactly `Current light green`, `Ice blue`, `Lavender`, and `Eclipse`; a separate difficulty treatment offers `Off`, `Solid`, and `Glow border`. Semantic workload/occupancy colors do not change with accent presets.
+- Card opacity is a true surface-alpha control from 20–100%, with 100% as the upgrade-safe default. It changes card backgrounds rather than element opacity, applies no additional blur, keeps text/buttons/inputs fully opaque, and combines image cards with an independent readability overlay.
+- Calendar workload colors are discrete and count active Tasks plus trusted coursework only: 0 neutral, 1 dark green, 2 vivid green, 3 light neutral, 4 vivid pink/red, 5+ burgundy. Ordinary calendar events remain in the agenda but do not raise workload. Today uses an independent cyan inset and selection uses an independent white outline; counts remain exposed in accessible labels.
+- Compact Campus is limited to B&G Gym and Aquatic Center. Compact Dining is limited to Wiley and Windsor. Occupancy is discrete: `<15` dark green, `15–24` bright green, `25–39` yellow, `40–74` pink/red, and `75+` burgundy; unknown is neutral.
+- Live Preview campus/dining snapshot: B&G Gym reported 39% (yellow), Aquatic occupancy was unavailable, Wiley had no qualifying published protein entree, and Windsor showed `Breaded Chicken Breast · 17.1g protein`. The meal and occupancy values are live signals and may change after this checkpoint.
+- Projects slowdown cause: the selector and selected-project detail were gated behind a `Promise.all` of two slow Notion reads, each observed around 5–9 seconds on a cold path. The refinement reuses the successful session cache, starts project/task reads in parallel, renders the selector from project data immediately, and progressively reconciles task-dependent detail while preserving stale-read guards. Preview measurement: selector visible 660 ms after navigation (11 ms internal selector-ready mark) and full warm reconciliation at 1,784 ms.
+- Validation passed for all six calendar levels, event-only dates, today/selection distinction, tab-aware add labels, responsive composer layout, four accent presets, difficulty treatments, 20% and 100% card/image readability, persistence across reload/navigation, local greeting, Home completion motion, compact campus/dining filters, and progressive Projects rendering.
+- Automated verification: all CommonJS browser/DOM suites pass; Python verification reports 72 passed and 6 skipped; `git diff --check` is clean. Live smoke passed on Home, Projects, Athletics, and Settings with exact four-destination navigation. Vercel reported no application runtime errors during the validation window; browser-console errors were isolated to the test browser extension.
+- Production promotion is the only deliberately incomplete action. The reviewed Preview must remain the checkpoint until approval to merge/promote to `main` and Production.
+
 ## Customization + Brightspace activation — Production checkpoint
 
 - The protected pre-sketch production branch is still `backup/pre-sketch-ui-production-2026-09-21` at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`. Do not delete, overwrite, or force-update it.
