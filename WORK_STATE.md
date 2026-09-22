@@ -1,6 +1,41 @@
 # NOcean Work State
 
-Updated 2026-09-21. This is the current authoritative checkpoint.
+Updated 2026-09-22. This is the current authoritative checkpoint.
+
+## Customization + Brightspace activation — Production checkpoint
+
+- The protected pre-sketch production branch is still `backup/pre-sketch-ui-production-2026-09-21` at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`. Do not delete, overwrite, or force-update it.
+- Reviewed refinement branch: `feature/customization-brightspace` at `aa16625ec21fc49b21af7c5167d6f304ec75aa3d`.
+- Final reviewed Preview: `dpl_74SibJ9xrw17K5Cb4J46wLeLgCzZ`, READY at `https://ocean-notion-widget-openb9v2a-yiqwill-3102.vercel.app`.
+- Production implementation promotion: merge commit `94104ff9b651918ecb4d965b2e04d5dcbc66f458`, with the exact reviewed Preview tree. READY deployment: `dpl_2wFBipqAgToYpBQuiXgG21CX5oGP`. Stable URL: `https://ocean-notion-widget.vercel.app`.
+- Home / Projects / Athletics / Settings architecture, Campus placement, full-width Calendar placement, Task semantics, and Outlook/Google behavior were preserved.
+
+### Shipped customization
+
+- The large Home Calendar now applies exact trusted-workload levels: 0 neutral, 1 teal, 2 yellow, 3 orange, 4 red, and 5+ dark red. The count includes active Tasks plus trusted coursework/deadlines and excludes ordinary calendar events. Events still appear in the agenda and get a neutral dot when a date has no workload.
+- Calendar day buttons expose workload and event counts through `aria-label`, `title`, and `data-workload-count`. Today uses an inset accent ring/underline and selection uses an outer white outline, so both remain distinct from heat color.
+- Settings → Appearance now has synchronized range and numeric inputs for Top biome height, clamped to 80–500 px. The default/current compact height is 176 px. It changes the actual visible header/biome height live and persists in the existing lightweight preference store.
+- Settings → Appearance now has synchronized range and numeric inputs for Card opacity, clamped to 20%–100% with 100% as the upgrade-safe default. It changes card surface alpha only; content remains fully opaque. Image-backed cards combine this setting with the readability overlay.
+- Settings → Appearance now owns Home heading (80-character limit) and Home subtitle (180-character limit), with live Home updates, persistence, and Reset to default. NOcean branding and navigation labels are unchanged.
+- Trusted future coursework whose feed record lacks a matchable course label now appears in the existing Academic Radar as an `Other coursework` safety-net card. Permanent configured class cards remain unchanged. This prevents valid Brightspace items from disappearing without inventing a course label or changing the provider/feed architecture.
+
+### Production Brightspace sync
+
+- The existing Purdue Brightspace private calendar feed was already connected. The stored feed and credentials were not changed, exposed, or copied.
+- A real Production `Sync coursework now` run completed in four bounded batches against the existing connection.
+- Aggregate reconciliation: 176 discovered; 30 newly created; 2 existing items adopted/updated; 37 pre-existing items unchanged; 107 skipped because they were past; 0 archived skips; 0 parser/feed skips; 0 remaining; no reconciliation warnings.
+- Brightspace Tasks increased from 81 to 111. All 81 pre-existing Brightspace records were compared before and after: there were zero changes to completion status, project, difficulty, planning mode, scheduled date, or focus. Completed Brightspace count remained 36. No newly created item was past-due.
+- The private feed omitted course labels on the newly created records (29 from the MFET Brightspace space and 1 from the CS space). The Academic Radar safety net now surfaces these records honestly as `Other coursework`; the Calendar workload heatmap counts them as trusted deadlines.
+- Owner access was supplied through the protected browser authentication flow for this run. No further manual authorization is required at this checkpoint.
+
+### Validation
+
+- All CommonJS UI/contract suites pass, including exact 0/1/2/3/4/5+ heat thresholds, selected/today semantics, appearance persistence, card-image compatibility, four-destination architecture, Projects interactions, Tasks, planning, deadlines, and rollback behavior.
+- 26 focused Python integration/project/task tests pass with isolated temporary test dependencies. No repository dependency files were changed.
+- Live Preview data exercised every heat level: 18 neutral dates, 5 teal, 1 yellow, 1 orange, 2 red, and 3 dark red. Seven event-only dates remained neutral. Today and selected state coexisted on the same dark-red date.
+- Live Settings checks confirmed Top biome height 80–500, Card opacity 20–100, synchronized numeric controls, Home copy fields/reset, and current defaults 176 px / 100%. Earlier live checks on the same reviewed feature tree confirmed 500/20 clamping, reload/navigation persistence, immediate Home copy updates, and readable image-backed cards at both low and high opacity.
+- Final Preview showed the five permanent class cards plus `Other coursework` with 70 currently unmatched future trusted items. Home, Projects, Athletics, and Settings all loaded. Browser logs contained no application errors.
+- Final Production smoke passed at the stable URL with the `Other coursework` safety net, 30 calendar day buttons, and Settings navigation present.
 
 ## Refined sketch UI — Production checkpoint
 
