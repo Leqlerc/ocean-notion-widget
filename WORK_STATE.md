@@ -8,7 +8,8 @@ Updated 2026-09-22. This is the current authoritative checkpoint.
 - Promoted the reviewed implementation `66c669876915c1023c223439dc853796fe3783c9` and its Preview handoff `1c5d4abd7cede527a093db6740b644024ff59bbf` over the prior `main` at `5f406526549137b06474b863a1ed8fc6456b7826`. Product source matches the reviewed Preview; this document records the promotion.
 - Scope: tab-aware Quick Add, completion feedback, daily greeting and quote, four appearance accents, card surface opacity, discrete calendar workload colors, compact campus/dining signals, and progressive Projects loading. Home / Projects / Athletics / Settings and existing provider/data paths are preserved. The detailed behavior and visual verification are recorded in the Preview checkpoint below.
 - Release verification: every CommonJS suite in `tests/*.cjs` passed with `jsdom` supplied outside the repository; Python discovery ran 72 tests (66 passed, six disposable-database skips) with `icalendar` supplied outside the repository. JavaScript syntax, Python compile, and `git diff --check` passed. No dependency manifests or application source changed after verification.
-- The protected `backup/pre-sketch-ui-production-2026-09-21` branch remains at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`. Deployment status is recorded after the `main` push below when available.
+- GitHub `main` promotion commit `235baf29db8774dc0dee03eeb2a8ab273dc13e48` has the reviewed product tree plus this release note. Vercel Production deployment `dpl_A1w5WWew7YbmbThDdoMwVEJHn8rC` for that commit reached READY. The stable production URL returned HTTP 200 with the correct titles on Home, Projects, Athletics, and Settings.
+- The protected `backup/pre-sketch-ui-production-2026-09-21` branch remains at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`.
 
 ## Usability + visual refinement — verified Preview checkpoint
 
