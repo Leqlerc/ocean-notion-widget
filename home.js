@@ -31,14 +31,20 @@
     updateLifeStatus();
   }
   function courseKey(value){const m=String(value||'').toUpperCase().match(/([A-Z]{2,5})\s*0*(\d{3,5})/);return m?m[1]+Number(m[2]):String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+  function radarItems(work){
+    return work.slice(0,4).map(t=>{const verification=NOceanStore.verification(t),source=t.sourceId?.startsWith('brightspace:')?'Brightspace':'Verified assignment';return `<div class="coursework-item ${verification==='verified'?'is-verified':''}"><span class="coursework-title">${safeURL(t.sourceUrl)?`<a href="${esc(safeURL(t.sourceUrl))}" target="_blank" rel="noopener">${esc(t.name)}</a>`:esc(t.name)}</span><div class="coursework-meta"><span>${esc(dueText(t.due))} · ${source}${t.status==='done'?' · work done':''}</span><select class="coursework-state" data-verify="${esc(t.id)}" aria-label="Submission state for ${esc(t.name)}"><option value="pending" ${verification==='pending'?'selected':''}>Not submitted</option><option value="submitted" ${verification==='submitted'?'selected':''}>Submitted</option><option value="verified" ${verification==='verified'?'selected':''}>Verified</option></select></div></div>`;}).join('')||'<p class="coursework-empty">No future coursework on the radar.</p>';
+  }
   function renderRadar(){
-    const classes=NOceanStore.settings().classes,today=dayKey();let total=0,open=0;
-    $('academicRadar').innerHTML=classes.map(course=>{
+    const classes=NOceanStore.settings().classes,today=dayKey(),classKeys=new Set(classes.map(courseKey));let total=0,open=0;
+    const cards=classes.map(course=>{
       const key=courseKey(course);
       const work=state.tasks.filter(t=>t.due&&dateDay(t.due)>=today&&courseKey(t.course)===key&&NOceanStore.isRadarItem(t)).sort((a,b)=>a.due.localeCompare(b.due));
       total+=work.length;open+=work.filter(t=>NOceanStore.verification(t)!=='verified').length;
-      return `<article class="class-radar"><div class="class-radar-head"><h3>${esc(course)}</h3><span>${work.length?work.length+' ahead':'Clear'}</span></div>${work.slice(0,4).map(t=>{const verification=NOceanStore.verification(t),source=t.sourceId?.startsWith('brightspace:')?'Brightspace':'Verified assignment';return `<div class="coursework-item ${verification==='verified'?'is-verified':''}"><span class="coursework-title">${safeURL(t.sourceUrl)?`<a href="${esc(safeURL(t.sourceUrl))}" target="_blank" rel="noopener">${esc(t.name)}</a>`:esc(t.name)}</span><div class="coursework-meta"><span>${esc(dueText(t.due))} · ${source}${t.status==='done'?' · work done':''}</span><select class="coursework-state" data-verify="${esc(t.id)}" aria-label="Submission state for ${esc(t.name)}"><option value="pending" ${verification==='pending'?'selected':''}>Not submitted</option><option value="submitted" ${verification==='submitted'?'selected':''}>Submitted</option><option value="verified" ${verification==='verified'?'selected':''}>Verified</option></select></div></div>`;}).join('')||'<p class="coursework-empty">No future coursework on the radar.</p>'}</article>`;
-    }).join('')||'<p class="empty">Add current classes in Settings.</p>';
+      return `<article class="class-radar"><div class="class-radar-head"><h3>${esc(course)}</h3><span>${work.length?work.length+' ahead':'Clear'}</span></div>${radarItems(work)}</article>`;
+    });
+    const unmatched=state.tasks.filter(t=>t.due&&dateDay(t.due)>=today&&!classKeys.has(courseKey(t.course))&&NOceanStore.isRadarItem(t)).sort((a,b)=>a.due.localeCompare(b.due));
+    if(unmatched.length){total+=unmatched.length;open+=unmatched.filter(t=>NOceanStore.verification(t)!=='verified').length;cards.push(`<article class="class-radar"><div class="class-radar-head"><h3>Other coursework</h3><span>${unmatched.length} ahead</span></div>${radarItems(unmatched)}</article>`);}
+    $('academicRadar').innerHTML=cards.join('')||'<p class="empty">Add current classes in Settings.</p>';
     $('academicSummary').textContent=`${classes.length} classes · ${open} to verify`;
     $('academicRadar').dataset.total=String(total);$('academicRadar').dataset.open=String(open);updateLifeStatus();
   }
