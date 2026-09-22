@@ -28,14 +28,17 @@ const NOcean = (() => {
       throw error;
     } finally { clearTimeout(timer); }
   }
-  function facility(name, counter, hours, scope) {
+  function occupancyLevel(percent) {
+    if(percent==null||!Number.isFinite(Number(percent)))return 0;
+    const value=Number(percent);return value<15?1:value<25?2:value<40?3:value<75?4:5;
+  }
+  function facility(name, counter, hours) {
     const percent = counter?.percent;
-    const load = percent == null ? '' : `${percent}% · ${percent < 30 ? 'Quiet' : percent < 60 ? 'Moderate' : percent < 85 ? 'Busy' : 'Very busy'}`;
     const closed = hours?.closed ?? counter?.closed;
     const status = closed == null ? 'Status unavailable' : closed ? 'Closed' : 'Open';
-    const level = closed !== false ? (closed ? 'closed' : 'unknown') : percent == null ? 'open' : percent < 30 ? 'low' : percent < 60 ? 'moderate' : percent < 85 ? 'busy' : 'very-busy';
-    return `<div class="facility-status status-${level}"><div class="facility-title"><a href="https://www.purdue.edu/recwell/" target="_blank" rel="noopener">${esc(name)}</a><span class="badge crowd-badge crowd-${level}" title="${esc(counter?.updated ? 'Latest count: '+counter.updated : 'No occupancy counter available')}">● ${status}${closed === false && load ? ' · '+esc(load) : ''}</span></div><div class="facility-meta">${esc(hours?.hours || 'Hours unavailable')} · ${esc(percent == null ? 'occupancy unavailable' : scope)}</div></div>`;
+    const level=closed===false?occupancyLevel(percent):0;
+    return `<div class="facility-status occupancy-${level}"><div class="facility-title"><a href="https://www.purdue.edu/recwell/" target="_blank" rel="noopener">${esc(name)}</a><span class="facility-state">${esc(status)}</span></div><div class="facility-meta"><span>${esc(hours?.hours||'Hours unavailable')}</span><span title="${esc(counter?.updated?'Latest count: '+counter.updated:'No occupancy counter available')}">${percent==null?'Occupancy unavailable':esc(percent)+'%'}</span></div></div>`;
   }
-  const renderFacilities = data => facility('B&G Gym', data.spaces?.corec_lower, data.corec_hours, 'CoRec hours · B&G count') + facility('Aquatic Center', data.spaces?.aquatic, data.aquatic_hours, 'pool count');
-  return {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,renderFacilities};
+  const renderFacilities = data => facility('B&G Gym', data.spaces?.corec_lower, data.corec_hours) + facility('Aquatic Center', data.spaces?.aquatic, data.aquatic_hours);
+  return {CONFIG,$,esc,safeURL,dayKey,dateDay,dateObject,shortDate,timeLabel,empty,request,occupancyLevel,renderFacilities};
 })();

@@ -6,11 +6,13 @@
  const dateLabel=date=>date?new Date(date+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'No date';
  function mount(id){
   if(projectId===id&&$('goalPlan'))return;
-  projectId=id;items=[];generation++;editing=null;busy=false;uncertain=false;
+  const sameProject=projectId===id;
+  projectId=id;if(!sameProject){items=[];generation++;editing=null;busy=false;uncertain=false;}
   const host=document.createElement('div');host.id='goalPlan';host.className='goal-plan-shell';
   host.innerHTML='<div class="goal-plan-actions"><p id="planStatus" role="status">Loading goal plan…</p><button id="refreshPlan" class="quiet">Refresh</button></div><div id="goalItems"></div><button id="addGoalItem">Add objective, milestone or note</button>';
   ($('projectPlanSlot')||$('projectDetail')).append(host);
-  $('refreshPlan').onclick=load;$('addGoalItem').onclick=()=>open();load();
+  $('refreshPlan').onclick=load;$('addGoalItem').onclick=()=>open();
+  if(sameProject){render();$('planStatus').textContent='Goal plan saved in your project.';}else load();
  }
  function render(){
   if(!$('goalItems'))return;

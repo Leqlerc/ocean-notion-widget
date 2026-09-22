@@ -24,6 +24,13 @@ assert.equal(document.body.dataset.cardOpacity,'40');
 assert.equal(context.store.settings().appearance.cardOpacity,40);
 assert.equal(context.appearance.setCardOpacity(1),true);
 assert.equal(context.store.settings().appearance.cardOpacity,20);
+assert.match(rootStyles.get('--card-surface-strong'),/^rgba\(17,37,44,0\.168\)$/);
+
+assert.equal(context.appearance.setAccent('lavender'),true);
+assert.equal(document.body.dataset.accent,'lavender');
+assert.equal(rootStyles.get('--accent'),'#c7adff');
+assert.equal(context.appearance.setDifficultyColors('glow'),true);
+assert.equal(document.body.dataset.difficultyColors,'glow');
 
 assert.equal(context.appearance.setCard('tasks','kelp-day'),true);
 assert.equal(classes.has('has-card-art'),true);
@@ -42,12 +49,16 @@ const page=source('index.html'),styles=source('nocean-system.css'),settings=sour
 assert.ok(page.indexOf('class="card campus-card"')<page.indexOf('class="card calendar-card"'));
 assert.match(styles,/"tasks campus campus" "calendar calendar calendar"/);
 assert.match(styles,/\.calendar-card\{min-height:470px\}/);
-for(const id of ['topBiomeHeight','topBiomeHeightNumber','cardOpacity','cardOpacityNumber','homeHeadingSetting','homeSubtitleSetting','resetHomeCopy'])assert.match(settings,new RegExp(`id="${id}"`));
+for(const id of ['topBiomeHeight','topBiomeHeightNumber','cardOpacity','cardOpacityNumber','accentColor','difficultyColors'])assert.match(settings,new RegExp(`id="${id}"`));
+for(const removed of ['homeHeadingSetting','homeSubtitleSetting','resetHomeCopy'])assert.doesNotMatch(settings,new RegExp(`id="${removed}"`));
 assert.match(styles,/var\(--top-biome-height,176px\)/);
 assert.match(styles,/--card-surface-strong/);
 assert.match(source('home.js'),/workload=items\.deadlines\.length\+items\.work\.length/);
 for(const level of [1,2,3,4,5])assert.match(styles,new RegExp(`calendar-day\\.workload-${level}`));
+assert.doesNotMatch(styles,/calendar-day\.workload-[1-5]\{background:linear-gradient/);
+assert.match(styles,/\.card\{background-color:[^}]+backdrop-filter:none/);
 assert.match(styles,/\.calendar-day\.is-today\{box-shadow:/);assert.match(styles,/\.calendar-day\.is-selected\{outline:/);
+assert.match(source('home.js'),/Good \$\{period\}, Will/);assert.match(source('home.js'),/Added to \$\{/);
 for(const key of ['tasks','deadlines','events','campus','calendar'])assert.match(page,new RegExp(`data-card-art="${key}"`));
 
 console.log('Dashboard appearance passed: numeric biome height, global card opacity, and per-card art persist safely without changing the Campus/Calendar layout.');

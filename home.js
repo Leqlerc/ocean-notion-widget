@@ -1,33 +1,48 @@
 'use strict';
 (() => {
-  const {CONFIG,$,esc,safeURL,dayKey,dateDay,timeLabel,empty,request,renderFacilities}=NOcean;
-  const state={tasks:[],projects:[],courses:[],statuses:[],tab:'today',pending:new Set(),loading:new Set(),events:[],selectedDay:dayKey(),calendarMonth:dayKey().slice(0,7)};
+  const {CONFIG,$,esc,safeURL,dayKey,dateDay,timeLabel,empty,request,occupancyLevel,renderFacilities}=NOcean;
+  const state={tasks:[],projects:[],courses:[],statuses:[],tab:'today',pending:new Set(),loading:new Set(),events:[],selectedDay:dayKey(),calendarMonth:dayKey().slice(0,7),lingering:new Set(),lingerTabs:new Map(),rowPositions:new Map(),removalTimers:new Map()};
   const tasks=NOceanData.tasks,projects=NOceanData.projects;
   let editingPlan=null,toastTimer;
   const tomorrow=()=>TaskPlanning.add(dayKey(),1);
   const dateFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'long',month:'long',day:'numeric'});
   $('homeDate').textContent=dateFmt.format(new Date());
+  const quotes=['Take the next clear step.','Steady work makes room for good days.','A little progress still changes the shape of the day.','Make it simple, then make it real.','Attention is a direction—choose it kindly.','Start where your feet are.','Good work can be quiet and still count.','Leave a little room for wonder.','One useful thing is enough to begin.','Move with purpose, not pressure.'];
+  function renderGreeting(now=new Date()){
+    const hour=now.getHours(),period=hour>=5&&hour<12?'morning':hour>=12&&hour<17?'afternoon':'evening';
+    const localDay=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    let hash=0;for(const char of localDay)hash=(hash*31+char.charCodeAt(0))>>>0;
+    $('homeHeading').textContent=`Good ${period}, Will`;$('homeSubtitle').textContent=quotes[hash%quotes.length];
+  }
+  renderGreeting();
 
-  function notify(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
+  function notify(text,undo){const node=$('toast');node.replaceChildren(document.createTextNode(text));if(undo){const button=document.createElement('button');button.type='button';button.className='quiet';button.textContent='Undo';button.onclick=()=>{node.hidden=true;undo();};node.append(button);}node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.hidden=true,7000);}
   function setLoading(name,on){if(on)state.loading.add(name);else state.loading.delete(name);$('syncStatus').textContent=state.loading.size?'Refreshing…':'Up to date';}
   function dueText(value){return value?Deadlines.label(value):'';}
   function plannedFor(task,tab){
-    if(task.status==='done')return false;
+    if(task.status==='done')return state.lingering.has(task.id)&&state.lingerTabs.get(task.id)===tab;
     if(tab==='today')return task.status==='doing'||task.focus||(task.planningMode==='planned'&&task.scheduledFor===dayKey());
     if(tab==='tomorrow')return task.planningMode==='planned'&&task.scheduledFor===tomorrow();
     return task.planningMode==='backlog';
   }
   function taskRow(task){
-    const busy=state.pending.has(task.id),due=dueText(task.due);
-    return `<article class="task-row" data-task-id="${esc(task.id)}"><input type="checkbox" data-complete="${esc(task.id)}" ${busy?'disabled':''} aria-label="Complete ${esc(task.name)}"><div class="task-text"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${task.difficulty&&task.difficulty!=='Unrated'?`<span>${esc(task.difficulty)}</span>`:''}${due?`<span>Due ${esc(due)}</span>`:''}</div></div>${task.focus?'<span class="focus-button on">● Focus</span>':''}</article>`;
+    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',difficulty=String(task.difficulty||'Unrated').toLowerCase();
+    return `<article class="task-row difficulty-${esc(difficulty)} ${done?'done':''}" data-task-id="${esc(task.id)}"><input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${task.difficulty&&task.difficulty!=='Unrated'?`<span class="difficulty-indicator difficulty-${esc(difficulty)}">${esc(task.difficulty)}</span>`:''}${due?`<span>Due ${esc(due)}</span>`:''}</div></div>${task.focus&&!done?'<span class="focus-button on">● Focus</span>':''}</article>`;
+  }
+  function visibleTasks(tab=state.tab){
+    const visible=state.tasks.filter(t=>plannedFor(t,tab)).sort((a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999'));
+    for(const id of state.lingering)if(state.lingerTabs.get(id)===tab){const at=visible.findIndex(t=>t.id===id);if(at>=0){const [task]=visible.splice(at,1);visible.splice(Math.min(state.rowPositions.get(id)??at,visible.length),0,task);}}
+    return visible;
   }
   function renderTasks(){
     document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===state.tab);b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab));});
-    const visible=state.tasks.filter(t=>plannedFor(t,state.tab)).sort((a,b)=>Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999'));
+    const visible=visibleTasks();
     $('tasksTitle').textContent={today:'Today',tomorrow:'Tomorrow',later:'Backlog'}[state.tab];
-    $('taskCount').textContent=`${visible.length} planned`;
-    $('taskList').innerHTML=visible.map(taskRow).join('')||empty(state.tab==='today'?'No deliberate work yet. Add the next thing you will actually do.':'Nothing planned here.');
+    $('taskCount').textContent=`${visible.filter(t=>t.status!=='done').length} planned`;
+    const blank=empty(state.tab==='today'?'No deliberate work yet. Add the next thing you will actually do.':'Nothing planned here.');
+    if(typeof TaskMotion!=='undefined')TaskMotion.render($('taskList'),visible,taskRow,blank);else $('taskList').innerHTML=visible.map(taskRow).join('')||blank;
     $('taskHint').textContent={today:'Focused, doing, or explicitly planned for today — deadlines stay separate.',tomorrow:'A deliberate plan for tomorrow; moving work never changes its deadline.',later:'Work intentionally held in the backlog.'}[state.tab];
+    $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',later:'Add to backlog'}[state.tab];
     updateLifeStatus();
   }
   function courseKey(value){const m=String(value||'').toUpperCase().match(/([A-Z]{2,5})\s*0*(\d{3,5})/);return m?m[1]+Number(m[2]):String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
@@ -91,11 +106,17 @@
     if(projectResult.status==='fulfilled'){state.projects=projectResult.value.projects;$('projectOptions').innerHTML=state.projects.filter(p=>p.status==='Active').map(p=>`<option value="${esc(p.name)}"></option>`).join('');}
     setLoading('core',false);
   }
-  async function updateTask(id,changes){
+  async function updateTask(id,changes,allowUndo=true){
     if(state.pending.has(id))return false;const original=state.tasks.find(t=>t.id===id);if(!original)return false;
-    state.pending.add(id);state.tasks=state.tasks.map(t=>t.id===id?{...t,...changes}:t);renderTasks();renderRadar();renderCalendar();
-    try{const result=await tasks.update({id,...changes});state.tasks=state.tasks.map(t=>t.id===id?result.task:t);renderTasks();renderRadar();renderCalendar();return true;}
-    catch(error){state.tasks=state.tasks.map(t=>t.id===id?original:t);$('taskMessage').textContent=error.message;renderTasks();renderRadar();renderCalendar();return false;}
+    clearTimeout(state.removalTimers.get(id));state.removalTimers.delete(id);
+    const completing=changes.status==='done'&&original.status!=='done',started=Date.now();
+    if(completing){state.rowPositions.set(id,visibleTasks().findIndex(t=>t.id===id));state.lingering.add(id);state.lingerTabs.set(id,state.tab);}
+    if(changes.status!=='done'){state.lingering.delete(id);state.lingerTabs.delete(id);state.rowPositions.delete(id);}
+    state.pending.add(id);state.tasks=state.tasks.map(t=>t.id===id?{...t,...changes,...('status' in changes?{completedOn:changes.status==='done'?dayKey():null}:{})}:t);renderTasks();renderRadar();renderCalendar();
+    try{const result=await tasks.update({id,...changes});state.tasks=state.tasks.map(t=>t.id===id?result.task:t);
+      if(completing){const remove=()=>{state.lingering.delete(id);state.lingerTabs.delete(id);state.rowPositions.delete(id);state.removalTimers.delete(id);renderTasks();};state.removalTimers.set(id,setTimeout(remove,Math.max(0,3000-(Date.now()-started))));notify('Task completed.',allowUndo?()=>updateTask(id,{status:original.status},false):null);}
+      renderTasks();renderRadar();renderCalendar();return true;}
+    catch(error){state.lingering.delete(id);state.lingerTabs.delete(id);state.rowPositions.delete(id);state.tasks=state.tasks.map(t=>t.id===id?original:t);$('taskMessage').textContent=error.message;notify('Save failed. The task was restored.');renderTasks();renderRadar();renderCalendar();return false;}
     finally{state.pending.delete(id);renderTasks();}
   }
   function openEditor(id){
@@ -121,8 +142,8 @@
   }
   function renderDining(data){
     if(!NOceanStore.settings().dashboard.showDining){$('diningBrief').hidden=true;return;}$('diningBrief').hidden=false;
-    const meal=new Date().getHours()<15?'Lunch':'Dinner',courts=data.meals?.[meal]||[],court=courts.find(x=>x.open&&x.picks?.length)||courts.find(x=>x.picks?.length),pick=court?.picks?.[0];
-    $('dining').innerHTML=court&&pick?`<p class="dining-tip"><strong>${esc(court.name)}:</strong> ${esc(pick.name)}${pick.protein!=null?` · ${esc(pick.protein)}g protein`:''}. <a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">Menus ↗</a></p>`:empty('No useful dining signal right now.');
+    const meal=new Date().getHours()<15?'Lunch':'Dinner',courts=data.meals?.[meal]||[],format=value=>value?new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(value)):'',names=['Wiley','Windsor'];
+    $('dining').innerHTML=names.map(name=>{const court=courts.find(x=>String(x.name||'').toLowerCase().includes(name.toLowerCase())),pick=court?.picks?.[0],percent=court?.crowd?.percent,level=court?.open===true?occupancyLevel(percent):0,hours=court?.start&&court?.end?`${format(court.start)}–${format(court.end)}`:`${meal} hours unavailable`,stateLabel=court?.open===true?'Open':court?.open===false?'Closed':'Status unavailable',food=pick?`${esc(pick.name)}${pick.protein!=null?` · ${esc(pick.protein)}g protein`:' · protein unavailable'}`:esc(court?.message||'Protein-forward item unavailable');return `<article class="facility-status dining-court occupancy-${level}"><div class="facility-title"><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">${name}</a><span class="facility-state">${stateLabel}</span></div><div class="facility-meta"><span>${esc(hours)}</span><span>${percent==null?'Occupancy unavailable':esc(percent)+'%'}</span></div><strong class="dining-pick">${food}</strong></article>`;}).join('');
   }
   async function loadCampus(){
     setLoading('campus',true);const [w,r,d]=await Promise.allSettled([request(CONFIG.weather),request('/api/recwell'),request('/api/dining')]);
@@ -139,10 +160,10 @@
     }catch{$('eventList').innerHTML=empty('Calendar unavailable.');$('calendarSource').textContent='Use Open calendar to check directly.';}finally{setLoading('events',false);}
   }
   function refresh(){loadCore();loadCampus();loadEvents();}
-  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim();if(!name)return;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:true,...TaskPlanning.change('today')});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify('Added to today.');}catch(error){$('taskMessage').textContent=error.message;}finally{$('addButton').disabled=false;}});
+  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim(),plan=state.tab;if(!name)return;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:plan==='today',...TaskPlanning.change(plan)});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify(`Added to ${{today:'today',tomorrow:'tomorrow',later:'backlog'}[plan]}.`);}catch(error){$('taskMessage').textContent=error.message;}finally{$('addButton').disabled=false;}});
   document.querySelector('.tabs').addEventListener('click',event=>{const button=event.target.closest('[data-tab]');if(button){state.tab=button.dataset.tab;renderTasks();}});
   $('taskList').addEventListener('click',event=>{const button=event.target.closest('[data-edit]');if(button)openEditor(button.dataset.edit);});
-  $('taskList').addEventListener('change',event=>{if(event.target.dataset.complete)updateTask(event.target.dataset.complete,{status:'done'});});
+  $('taskList').addEventListener('change',event=>{if(event.target.dataset.complete)updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'});});
   $('academicRadar').addEventListener('change',event=>{const select=event.target.closest('[data-verify]');if(!select)return;const task=state.tasks.find(t=>t.id===select.dataset.verify);if(task){NOceanStore.setVerification(task,select.value);renderRadar();notify(select.value==='verified'?'Submission verified.':'Submission state saved.');}});
   $('calendarGrid').addEventListener('click',event=>{const button=event.target.closest('[data-calendar-day]');if(!button)return;state.selectedDay=button.dataset.calendarDay;renderCalendar();});
   $('calendarPrev').addEventListener('click',()=>moveCalendar(-1));$('calendarNext').addEventListener('click',()=>moveCalendar(1));
