@@ -142,7 +142,7 @@ async function updateTask(id, changes) {
     $('taskMessage').textContent = '';
     if(completing || unfocusing){
       toast(completing?'Task completed':'Removed from Focus',()=>updateTask(id,completing?{status:original.status}:{focus:original.focus}));
-      state.removalTimers.set(id,setTimeout(()=>{state.lingering.delete(id);state.rowPositions.delete(id);state.removalTimers.delete(id);renderTasks();},300));
+      state.removalTimers.set(id,setTimeout(()=>{state.lingering.delete(id);state.rowPositions.delete(id);state.removalTimers.delete(id);renderTasks();},3000));
     } else state.lingering.delete(id);
     return true;
   } catch (error) {
