@@ -53,6 +53,9 @@
       if(!task.due||!NOceanStore.isRadarItem(task))continue;
       const submitted=NOceanStore.verification(task)==='submitted';
       if(submitted&&dateDay(task.due)<TaskPlanning.add(today,-2))continue;
+      // Old completed work remains in Tasks, without crowding the daily deadline view.
+      // This display horizon never changes its submission confirmation.
+      if(task.status==='done'&&dateDay(task.due)<TaskPlanning.add(today,-14))continue;
       const course=task.course||'Other coursework',key=courseKey(course);
       if(!groups.has(key))groups.set(key,{course,work:[]});
       groups.get(key).work.push(task);total++;if(!submitted)open++;

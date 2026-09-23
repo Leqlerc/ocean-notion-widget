@@ -23,7 +23,9 @@ async function boot(){
 }
 (async()=>{
  records=[{...base,id:'due',name:'Today assignment',due:'2026-09-22T23:00:00-04:00'}, {...base,id:'up',sourceId:'brightspace:up',name:'Friday assignment',due:'2026-09-25T23:00:00-04:00'}, {...base,id:'old',sourceId:'brightspace:old',name:'Overdue assignment',due:'2026-09-21T23:00:00-04:00'}];
+ records.push({...base,id:'historic',name:'Historical completed coursework',status:'done',due:'2026-02-06T23:59:00-05:00'});
  let {dom,w,$}=await boot();
+ assert.doesNotMatch($('academicRadar').textContent,/Historical completed coursework/);
  assert.match($('taskList').textContent,/Today assignment/);assert.match($('taskList').textContent,/Overdue assignment/);
  w.document.querySelector('[data-tab="upcoming"]').click();assert.match($('taskList').textContent,/Friday assignment/);
  for(const tab of ['today','tomorrow','later']){
@@ -44,7 +46,7 @@ async function boot(){
  for(let i=0;i<w.localStorage.length;i++){const k=w.localStorage.key(i);saved[k]=w.localStorage.getItem(k);}dom.window.close();
  ({dom,w,$}=await boot());assert.equal(w.document.querySelector('[data-verify="due"]').getAttribute('aria-pressed'),'true');
  w.document.querySelector('[data-tab="tomorrow"]').click();assert.match($('taskList').textContent,/Edited Friday assignment/);
- $('refresh').click();await tick();assert.equal(records.length,6);
+ $('refresh').click();await tick();assert.equal(records.length,7);
  w.document.querySelector('[data-verify="due"]').click();await tick();assert.equal(w.document.querySelector('[data-verify="due"]').getAttribute('aria-pressed'),'false');
  fail=true;w.document.querySelector('[data-verify="up"]').click();await tick();assert.equal(w.document.querySelector('[data-verify="up"]').getAttribute('aria-pressed'),'false');assert.equal(records.find(t=>t.id==='up').status,'next');
  dom.window.close();console.log('Daily-use loop passed: single capture, planning, reload, completion, independent submission, Undo, and failed submission rollback.');
