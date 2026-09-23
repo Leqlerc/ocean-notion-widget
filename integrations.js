@@ -2,6 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   let csrf = '', editing = null, operationId = crypto.randomUUID(), busy = false, lastRequest = '';
+  let reviewedDuplicates=null;
   const message = value => { $('message').textContent = value; };
   async function request(path, data, method = 'POST') {
     const response = await fetch(path, { method: data ? method : 'GET', credentials: 'same-origin',
@@ -33,7 +34,9 @@
     if (!data.ready) { message(data.error); return; }
     for (const provider of ['outlook','brightspace']) {
       const account = data.accounts.find(a => a.provider === provider);
-      $(provider + 'Status').textContent = account ? `${account.label} · ${account.sync_status} · Last sync: ${account.last_sync_at ? new Date(account.last_sync_at).toLocaleString() : 'not yet'}${account.sync_error ? ' · ' + account.sync_error : ''}` : 'Not connected';
+      const remaining=Number(account?.progress?.remaining)||0;
+      $(provider + 'Status').textContent = account ? `Connected · ${account.label} · ${account.sync_status}${remaining?' · Incomplete: '+remaining+' remaining':''} · Last successful sync: ${account.last_sync_at ? new Date(account.last_sync_at).toLocaleString() : 'not yet'}${account.sync_error ? ' · ' + account.sync_error : ''}` : 'Not connected';
+      if(account?.scheduled)$(provider+'Status').textContent+=` · Last cron-route completion: ${new Date(account.scheduled.at).toLocaleString()}${account.scheduled.result?.remaining?' (partial)':''}`;
     }
     if (!data.outlookConfigured) $('outlookStatus').textContent += ' · Microsoft app setup required';
     $('events').replaceChildren();
@@ -85,6 +88,21 @@
     const discovered=created+updated+unchanged+archived+remaining+skippedPast;
     const skipped=archived+skippedPast+skippedFeed;
     message(`${discovered} discovered · ${created} created · ${updated} adopted/updated · ${unchanged} unchanged · ${skipped} skipped (${skippedPast} past, ${archived} archived, ${skippedFeed} feed entries). ${remaining ? remaining + ' remain; sync again to continue.' : 'Coursework sync complete · no reconciliation warnings.'}`);
+  }));
+  const reviewButton=document.createElement('button');reviewButton.type='button';reviewButton.id='reviewBrightspace';reviewButton.textContent='Review duplicate coursework';
+  const reviewReport=document.createElement('div');reviewReport.id='brightspaceReview';
+  const applyButton=document.createElement('button');applyButton.type='button';applyButton.id='applyBrightspaceReview';applyButton.textContent='Archive reviewed redundant imports';applyButton.hidden=true;
+  $('syncBrightspace').after(reviewButton,reviewReport,applyButton);
+  reviewButton.addEventListener('click',()=>run(async()=>{
+    reviewedDuplicates=await request('/api/integrations',{action:'brightspace-review'});
+    reviewReport.replaceChildren();const summary=document.createElement('p');summary.textContent=`${reviewedDuplicates.pairs.length} deterministic duplicates · ${reviewedDuplicates.conflicts.length} conflicts preserved.`;reviewReport.append(summary);
+    for(const pair of reviewedDuplicates.pairs){const row=document.createElement('p');row.textContent=`${pair.name} → retain ${pair.keep}`;reviewReport.append(row);}
+    applyButton.hidden=!reviewedDuplicates.pairs.length;
+  }));
+  applyButton.addEventListener('click',()=>run(async()=>{
+    if(!reviewedDuplicates)return;
+    const result=await request('/api/integrations',{action:'brightspace-reconcile',digest:reviewedDuplicates.digest});
+    reviewedDuplicates=null;applyButton.hidden=true;reviewReport.textContent=`${result.archived} redundant imports archived; ${result.remaining} remain. Review again for the next batch.`;await load();
   }));
   const result = new URLSearchParams(location.search).get('outlook');
   if (result) { history.replaceState({},'',location.pathname); message(result === 'connected' ? 'Outlook connected. Sync now to load events.' : 'Microsoft connection failed or was cancelled. Check setup and try again.'); }

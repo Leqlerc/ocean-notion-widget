@@ -16,11 +16,11 @@ class Meals(unittest.TestCase):
  def test_crowd_failure_is_unknown(self):
   with patch('lib.dining.fetch',side_effect=RuntimeError('down')):
    self.assertTrue(all(not c['available'] for c in load_crowds(datetime.now(TZ)).values()))
- def test_rotating_beats_staple_and_protein_beats_ratio(self):
+ def test_ratio_beats_raw_protein_and_rotation(self):
   def item(name,p,f,rotating):return {'name':name,'protein':p,'fat':f,'rotating':rotating}
   picks=rank_macro_picks([item('Grilled Chicken Breast',50,1,False),item('Turkey Meatballs',30,10,True),item('Fish',20,1,True)])
-  self.assertEqual([p['name'] for p in picks],['Turkey Meatballs','Fish','Grilled Chicken Breast'])
+  self.assertEqual([p['name'] for p in picks],['Grilled Chicken Breast','Fish','Turkey Meatballs'])
 
  def test_hall_order_uses_food_not_crowds(self):
   courts=[{'name':'Alpha','picks':[{'name':'Fish','protein':20,'fat':1,'rotating':True}],'crowd':{'level':'low'}},{'name':'Zulu','picks':[{'name':'Chicken','protein':35,'fat':10,'rotating':True}],'crowd':{'level':'very-busy'}},{'name':'Empty','picks':[]}]
-  self.assertEqual([c['name'] for c in sorted(courts,key=hall_score)],['Zulu','Alpha','Empty'])
+  self.assertEqual([c['name'] for c in sorted(courts,key=hall_score)],['Alpha','Zulu','Empty'])

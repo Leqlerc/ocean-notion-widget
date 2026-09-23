@@ -31,6 +31,14 @@ assert.equal(document.body.dataset.accent,'lavender');
 assert.equal(rootStyles.get('--accent'),'#c7adff');
 assert.equal(context.appearance.setDifficultyColors('glow'),true);
 assert.equal(document.body.dataset.difficultyColors,'glow');
+for(const mode of ['off','solid','outline']){
+ assert.equal(context.appearance.setCalendarWorkload(mode),true);
+ assert.equal(document.body.dataset.calendarWorkload,mode);
+ assert.equal(context.store.settings().appearance.calendarWorkload,mode);
+ assert.equal(JSON.parse(memory.get('nocean.command.settings.v1')).appearance.calendarWorkload,mode);
+ assert.equal(context.store.settings().appearance.difficultyColors,'glow');
+}
+context.appearance.setCalendarWorkload('invalid');assert.equal(context.store.settings().appearance.calendarWorkload,'solid');
 
 assert.equal(context.appearance.setCard('tasks','kelp-day'),true);
 assert.equal(classes.has('has-card-art'),true);

@@ -51,16 +51,24 @@ def nutrition(item):
 
 
 def rank_macro_picks(items, limit=3):
-    """Measured rotating entrees first, then protein per serving and protein/fat."""
+    """Protein/fat efficiency first among useful protein-containing entrees."""
     eligible=[i for i in items if not EXCLUDE.search(i['name']) and not HARD_EXCLUDE.search(i['name'])
               and PROTEIN.search(i['name']) and (i['protein'] is None or i['protein']>=15)]
-    return sorted(eligible,key=protein_score)[:limit]
+    return [{**item,'proteinFatRatio':protein_fat_ratio(item)} for item in sorted(eligible,key=protein_score)[:limit]]
+
+
+def protein_fat_ratio(item):
+    protein,fat=item.get('protein'),item.get('fat')
+    if protein is None or fat is None or fat<=0:
+        return None
+    return round(protein/fat,1)
 
 
 def protein_score(i):
-    rotating=i.get('rotating',not bool(STAPLE.search(i['name'])))
     protein=i['protein'];fat=i['fat']
-    return (protein is None,not rotating,-(protein or 0),-(protein/max(fat,1) if protein is not None and fat is not None else 0),i['name'])
+    # Published zero fat can be rounded; use a 1g ranking floor, never infinity.
+    # Missing macros sort after measured food and remain visibly unavailable.
+    return (protein is None or fat is None,-(protein/max(fat,1) if protein is not None and fat is not None else 0),-(protein or 0),i['name'])
 
 
 def hall_score(court):
@@ -182,4 +190,4 @@ def load_dining():
     for courts in meals.values():courts.sort(key=hall_score)
     return {'meals':meals,'courts':meals['Lunch' if now.hour<15 else 'Dinner'],'date':now.date().isoformat(),'updatedAt':now.isoformat(),
             'source':'Purdue Mobile Menus','crowdSource':'Waitz; Purdue Mobile Menus wait estimates when fresh',
-            'ranking':'Rotating entrees first; higher protein, then protein-to-fat efficiency per serving. Rotating inferred from station and staple exclusions.'}
+            'ranking':'Protein-to-fat efficiency first, then protein per serving. Zero-fat ranking uses a 1g floor; missing macros remain unavailable.'}

@@ -45,7 +45,7 @@
             <label>Difficulty<select id="taskDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
           </div>
         </form>
-        <nav class="tabs" aria-label="Work plan"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="later" aria-pressed="false">Backlog</button></nav>
+        <nav class="tabs" aria-label="Work plan"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="later" aria-pressed="false">Backlog</button></nav>
         <div id="taskMessage" class="panel-message" role="status"></div>
         <div id="taskList" class="scroll task-list"><p class="empty">Loading the work plan…</p></div>
         <div class="card-foot"><span id="taskHint">Only work you deliberately planned or focused appears here.</span><a href="/tasks.html">All tasks →</a></div>
@@ -66,9 +66,9 @@
       <section class="card campus-card" data-card-art="campus" aria-labelledby="campusTitle">
         <div class="card-head"><div><p class="eyebrow">Campus signals</p><h2 id="campusTitle">Today in West Lafayette</h2></div></div>
         <div class="campus-grid">
-          <div id="weather"><p class="empty">Loading the forecast…</p></div>
-          <div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div>
-          <div id="diningBrief" class="dining-brief"><h3>Wiley and Windsor</h3><div id="dining" class="dining-courts"><p class="empty">Finding today’s protein-forward options…</p></div></div>
+          <div class="campus-column"><h3>Weather</h3><div id="weather"><p class="empty">Loading the forecast…</p></div>
+          </div><div class="campus-column"><h3>Training Facilities</h3><div id="recreation" class="recreation"><p class="empty">Loading facilities…</p></div>
+          </div><div id="diningBrief" class="dining-brief"><h3>Dining Options</h3><div id="dining" class="dining-courts"><p class="empty">Finding today’s protein-forward options…</p></div></div>
         </div>
       </section>
 

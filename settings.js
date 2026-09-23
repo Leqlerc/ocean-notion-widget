@@ -16,6 +16,7 @@
     syncPair($('topBiomeHeight'),$('topBiomeHeightNumber'),settings.appearance.topBiomeHeight);
     syncPair($('cardOpacity'),$('cardOpacityNumber'),settings.appearance.cardOpacity);
     $('accentColor').value=settings.appearance.accent;$('difficultyColors').value=settings.appearance.difficultyColors;
+    $('calendarWorkload').value=settings.appearance.calendarWorkload;
     $('cardArtSettings').innerHTML=Object.entries(NOceanDashboardAppearance.cards).map(([key,label])=>`<label>${esc(label)}<select data-card-art-setting="${esc(key)}">${Object.entries(NOceanDashboardAppearance.assets).map(([image,name])=>`<option value="${esc(image)}" ${settings.appearance.cardArt[key]===image?'selected':''}>${esc(name)}</option>`).join('')}</select></label>`).join('');
   }
   $('biomeChoice').innerHTML=biomes.map(([key,label])=>`<option value="${key}">${label}</option>`).join('');
@@ -25,6 +26,7 @@
   $('biomeChoice').addEventListener('change',event=>{try{localStorage.setItem('nocean.biome.v1',event.target.value);}catch{}document.dispatchEvent(new Event('nocean:biome'));status('Biome preference saved.');});
   $('accentColor').addEventListener('change',event=>{NOceanDashboardAppearance.setAccent(event.target.value);status('Accent color saved.');});
   $('difficultyColors').addEventListener('change',event=>{NOceanDashboardAppearance.setDifficultyColors(event.target.value);status('Difficulty color treatment saved.');});
+  $('calendarWorkload').addEventListener('change',event=>{NOceanDashboardAppearance.setCalendarWorkload(event.target.value);status('Calendar workload treatment saved.');});
   $('topBiomeHeight').addEventListener('input',event=>{const value=commitTopHeight(event.target.value);status(`Top biome height saved at ${value}px.`);});
   $('topBiomeHeightNumber').addEventListener('input',event=>{const value=Number(event.target.value);if(Number.isFinite(value)&&value>=80&&value<=500){$('topBiomeHeight').value=String(Math.round(value));NOceanDashboardAppearance.setTopBiomeHeight(value);}clearTimeout(topHeightTimer);topHeightTimer=setTimeout(()=>{const saved=commitTopHeight(event.target.value);status(`Top biome height saved at ${saved}px.`);},350);});
   $('topBiomeHeightNumber').addEventListener('change',event=>{clearTimeout(topHeightTimer);const value=commitTopHeight(event.target.value);status(`Top biome height saved at ${value}px.`);});

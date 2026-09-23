@@ -1,5 +1,7 @@
 import os
 import hmac
+import json
+from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlsplit
 from lib.http import JsonHandler
 from lib.integrations import store, outlook, brightspace
@@ -19,7 +21,12 @@ class handler(JsonHandler):
                 linked=store.account(db,provider)
             if not linked:
                 self.send_json(200,{'skipped':'Provider not connected.'}); return
-            self.send_json(200,outlook.sync() if provider=='outlook' else brightspace.sync())
+            result=outlook.sync() if provider=='outlook' else brightspace.sync()
+            with store.connection() as db:
+                db.execute("UPDATE nocean.provider_accounts SET metadata=metadata || %s::jsonb WHERE owner_id=%s AND provider=%s",
+                           (json.dumps({'scheduledSync':{'at':datetime.now(timezone.utc).isoformat(),'result':result}}),owner_id(),provider))
+            print(json.dumps({'scheduledProvider':provider,'remaining':result.get('remaining',0),'success':True}))
+            self.send_json(200,result)
         except Exception: self.send_json(502,{'error':'Sync failed; saved data retained.'})
 
     def do_GET(self):
@@ -31,7 +38,7 @@ class handler(JsonHandler):
             if not store.configured():
                 self.send_json(200,{'ready':False,'accounts':[],'error':'Database setup is required before connecting providers.'}); return
             with store.connection() as db:
-                accounts=db.execute('SELECT provider,label,last_sync_at,sync_status,sync_error FROM nocean.provider_accounts WHERE owner_id=%s',(owner_id(),)).fetchall()
+                accounts=db.execute("SELECT provider,label,last_sync_at,sync_status,sync_error,metadata->'syncProgress' AS progress,metadata->'scheduledSync' AS scheduled FROM nocean.provider_accounts WHERE owner_id=%s",(owner_id(),)).fetchall()
                 for row in accounts: row['last_sync_at']=str(row['last_sync_at'] or '')
                 events=[x['payload'] for x in store.items(db,'outlook')]
             self.send_json(200,{'ready':True,'accounts':accounts,'events':events,'outlookConfigured':outlook.configured()})
@@ -52,6 +59,15 @@ class handler(JsonHandler):
             elif action=='outlook-save': provider='outlook'; result=outlook.save_event(data,editing=editing)
             elif action=='brightspace-connect': result=brightspace.connect(data.get('url'))
             elif action=='brightspace-sync': provider='brightspace'; result=brightspace.sync()
+            elif action in ('brightspace-review','brightspace-reconcile'):
+                from lib.integrations.reconciliation import plan, apply_plan
+                from lib.tasks import normalize
+                from lib import notion
+                reviewed=plan([normalize(page) for page in notion.query(notion.TASKS)])
+                if action=='brightspace-review': result=reviewed
+                else:
+                    if data.get('digest')!=reviewed['digest']: raise ValueError('Tasks changed. Review duplicates again.')
+                    result=apply_plan(reviewed)
             else: raise ValueError('Unknown integration action.')
             self.send_json(200,result)
         except PermissionError as exc: self.send_json(403,{'error':str(exc)})

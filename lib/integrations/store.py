@@ -70,6 +70,12 @@ def synced(db, provider):
     db.execute("UPDATE nocean.provider_accounts SET last_sync_at=now(),sync_status='ok',sync_error=NULL WHERE owner_id=%s AND provider=%s", (owner_id(),provider))
 
 
+def sync_progress(db, provider, result):
+    # Existing metadata avoids changing the deployed status enum/schema.
+    db.execute("UPDATE nocean.provider_accounts SET metadata=metadata || %s::jsonb, sync_status=CASE WHEN %s THEN 'connected' ELSE sync_status END, sync_error=NULL WHERE owner_id=%s AND provider=%s",
+               (json.dumps({'syncProgress':result}),bool(result['remaining']),owner_id(),provider))
+
+
 def failed(provider):
     # Separate transaction: retain the last complete snapshot on upstream failure.
     with connection() as db:

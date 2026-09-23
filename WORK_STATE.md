@@ -1,49 +1,33 @@
 # NOcean Work State
 
-- Last verified: 2026-09-22
-- Verified against commit: `2e89249de39db9fca237571035d76eefa569b19c`
-- Current branch: `main`
+## Current release checkpoint — 2026-09-23
 
-## Current Product State
+Daily-use sprint implemented from GitHub `main` at `9635efc839ce51df1818d85672eb68ab9c54df74`. Candidate is entering Preview verification; Production still runs that base commit (`dpl_wkSq8WSxF1DTJCjGoAMDBSFmYHi4`, READY). Do not describe the candidate as shipped until promotion is verified.
 
-NOcean is a production-deployed, framework-free HTML/CSS/JavaScript dashboard with Python Vercel functions. Primary navigation is exactly Home / Projects / Athletics / Settings.
+## Implemented
 
-- Home provides task planning, trusted coursework/deadlines, events and calendar workload, compact campus/dining signals, and device-local appearance preferences.
-- Projects provides Notion-backed project selection, lifecycle, goals/milestones, task progress, and progressive loading.
-- Athletics is intentionally a placeholder shell linking to the preserved `/machine.html` tracker for training, nutrition, sleep, habits, maintenance, and reflection.
-- Settings owns appearance, dashboard preferences, class/maintenance configuration, and Outlook/Brightspace connections.
-- Notion remains authoritative for Tasks, Projects, training records, and existing calendar data. Google/Notion calendar behavior is preserved. Outlook and Brightspace use the implemented integration boundary and encrypted server-side storage.
+- Home uses shared TaskPlanning Today / Tomorrow / Upcoming / Backlog buckets, with capture and stale-refresh guards. Planning preserves actual deadlines.
+- Deadlines use explicit pending/submitted confirmation, reversible on the same device. Submission completes an open task; task completion never claims submission. Submitted items remain visible and leave the confirmation count.
+- Calendar has five progressively darker reds, independent Today/selection/event indicators, and persisted Off / Solid fill / Outline only control separate from task difficulty.
+- Campus captions and content rows align in three desktop columns; mobile stacks. Dining ranks official measured protein:fat efficiency, then protein; missing macros remain missing and zero-fat ranking uses a 1g floor.
+- Canonical Grand Reef, Jelly Caves, and Mushroom Forest assets are replaced byte-for-byte with supplied artwork (Grand Reef 3).
+- Brightspace applies deterministic org-unit mappings: 1640342 MFET 163, 1631262 CS 159, 1636988 HONR 19901, 1634573 ENGR 161, 36061 COM 114; 1134648 is Purdue requirements. Generic 6824 gets no invented class.
+- Exact course/title/due-time deduplication preserves planning/completion/focus/difficulty/projects. Matching lifecycle notifications and explicit weekly availability containers are filtered. Lone potentially actionable availability records are retained conservatively.
+- Settings exposes persistent incomplete-sync counts, last success, errors, cron-route completion evidence, and bounded owner-authenticated duplicate review/reconciliation. Reconciliation repoints mappings before recoverable archive and refuses tasks with notes or conflicting tracked state.
 
-The reviewed usability refinement is on `main`. Production deployment `dpl_A1w5WWew7YbmbThDdoMwVEJHn8rC` reached READY for commit `235baf29db8774dc0dee03eeb2a8ab273dc13e48`; the current commit only records that verified promotion. The pre-sketch production state remains protected on `backup/pre-sketch-ui-production-2026-09-21` at `ef321263fc7d7d0c689e6999ace9a63f48af3cdf`.
+## Verification and live state
 
-## Active Work
+- Backend: 82 tests, 76 passed, six disposable-database tests skipped. Includes Google moved-event regression (existing implementation unchanged), coursework identity, lifecycle, partial sync and field preservation.
+- Targeted DOM tests passed: daily-use task/submission loop, Home, appearance preferences, integration UI, task interactions and shared frontend contracts.
+- Local desktop/mobile layout fixture measured aligned Campus captions and first/second rows, no horizontal page overflow at 390px. Visual inspection caught compressed Deadline sections; grid tracks now preserve their content height.
+- Read-only Production snapshot reconciliation found 22 deterministic duplicate pairs with no tracked-state conflicts before final canonical-priority refinement. No live task archive has been performed yet.
+- Production Brightspace was connected, with last recorded success September 21 at 3:16 PM local. Outlook is not connected and is non-blocking.
+- Production was missing CRON_SECRET. A new random secret was added through Vercel without exposing its value; it takes effect on the next deployment. Timed scheduled execution is not yet proven. Existing schedule remains 11:15 UTC daily.
 
-None. Start new product work from observed usage and an explicit task, not from the historical plans removed from this file.
+## Next action
 
-## Remaining Known Work
+Verify candidate Preview, push the verified tree to main, verify its READY Production deployment, then use owner-authenticated duplicate review/reconciliation and bounded sync. Record exact deployed commit and results here. Preserve the existing four-destination UI and Notion/provider boundaries; no database migration or architecture cutover is part of this sprint.
 
-- Shape the Athletics dashboard before introducing new records or workflows; the existing Machine tracker remains the working system.
-- The SQL Goals foundation and import tooling are additive but inactive. Hosted Preview verification, a server-verified owner identity boundary, authenticated Goals APIs, and an explicit cutover decision are still required before SQL can become authoritative.
-- Nutrition, sleep, maintenance, reflections, coursework verification, and appearance preferences remain device-local; cross-device persistence is not implemented.
+## Remaining limitations
 
-## Known Bugs
-
-No confirmed current application bugs are recorded at this checkpoint.
-
-## Important Architecture
-
-- Keep browser modules static and API handlers thin; domain and provider behavior belongs in `lib/`.
-- Preserve task planning dates independently from deadlines, existing provider normalization, partial-failure reporting, and conservative/idempotent integration reconciliation.
-- Existing integration credentials and private feed URLs stay server-side. Never infer coursework completion from a calendar feed or mutate user planning/completion/project/difficulty during reconciliation.
-- The SQL migrations and operator scripts do not authorize a production cutover. Notion remains authoritative until a separately verified migration and rollback plan is approved.
-
-## Recent Decisions
-
-- The four-destination navigation and current product boundaries are intentional.
-- The Athletics shell must reuse the working Machine tracker until real usage defines a replacement.
-- Calendar heat counts active Tasks plus trusted coursework, not ordinary events. Appearance accents must not change semantic workload or occupancy colors.
-- Prefer progressive rendering and cached successful reads for slow Notion-backed Projects paths.
-
-## Verification
-
-For the promoted product tree, every CommonJS suite passed with `jsdom` supplied outside the repository. Python discovery ran 72 tests: 66 passed and six disposable-database tests skipped. JavaScript syntax checks, Python compilation, and `git diff --check` passed. The stable production routes for Home, Projects, Athletics, and Settings returned HTTP 200. These are checkpoint results, not a substitute for rerunning focused checks after future changes.
+Submission confirmation and appearance preferences remain device-local. Some availability-only feed records lack a matching real deadline and are deliberately retained. Preview has no private Brightspace configuration; use mocked write/retry tests and read-only live task checks there. Scheduled timing needs a real timed invocation after the secret-enabled deployment. Athletics remains the existing placeholder linked to the working Machine tracker; SQL Goals remains inactive.

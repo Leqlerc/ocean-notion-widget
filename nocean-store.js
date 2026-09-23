@@ -20,7 +20,7 @@ const NOceanStore = (() => {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
     dashboard: {showDining:true,rainThreshold:35,eventCount:6},
-    appearance: {topBiomeHeight:176,cardOpacity:100,accent:'green',difficultyColors:'off',cardArt:{}}
+    appearance: {topBiomeHeight:176,cardOpacity:100,accent:'green',difficultyColors:'off',calendarWorkload:'solid',cardArt:{}}
   };
   const clone = value => JSON.parse(JSON.stringify(value));
   const clamp = (value,min,max,fallback) => {
@@ -52,6 +52,7 @@ const NOceanStore = (() => {
         cardOpacity:clamp(rawAppearance.cardOpacity,20,100,defaults.appearance.cardOpacity),
         accent:accentPresets.has(rawAppearance.accent)?rawAppearance.accent:defaults.appearance.accent,
         difficultyColors:difficultyModes.has(rawAppearance.difficultyColors)?rawAppearance.difficultyColors:defaults.appearance.difficultyColors,
+        calendarWorkload:['off','solid','outline'].includes(rawAppearance.calendarWorkload)?rawAppearance.calendarWorkload:defaults.appearance.calendarWorkload,
         cardArt
       }
     };
@@ -70,7 +71,7 @@ const NOceanStore = (() => {
   }
   function verification(task) {
     const item=read(VERIFY_KEY,{})[verificationId(task)];
-    return ['submitted','verified'].includes(item?.state) ? item.state : 'pending';
+    return ['submitted','verified'].includes(item?.state) ? 'submitted' : 'pending';
   }
   function setVerification(task,state) {
     if (!['pending','submitted','verified'].includes(state) || !verificationId(task)) return false;

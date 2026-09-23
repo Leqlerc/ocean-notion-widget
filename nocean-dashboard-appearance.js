@@ -61,6 +61,7 @@ const NOceanDashboardAppearance = (() => {
     document.body.dataset.cardOpacity=String(appearance.cardOpacity);
     document.body.dataset.accent=appearance.accent;
     document.body.dataset.difficultyColors=appearance.difficultyColors;
+    document.body.dataset.calendarWorkload=appearance.calendarWorkload||'solid';
     document.querySelectorAll('[data-card-art]').forEach(card=>{
       const key=card.dataset.cardArt,image=Object.hasOwn(assets,appearance.cardArt[key])?appearance.cardArt[key]:'none';
       if(image==='none'){
@@ -102,7 +103,10 @@ const NOceanDashboardAppearance = (() => {
     const appearance=current(),safe=Object.hasOwn(assets,image)?image:'none';
     return save({...appearance,cardArt:{...appearance.cardArt,[key]:safe}});
   }
+  function setCalendarWorkload(value) {
+    return save({...current(),calendarWorkload:['off','solid','outline'].includes(value)?value:'solid'});
+  }
   document.addEventListener('DOMContentLoaded',apply,{once:true});
   window.addEventListener('storage',event=>{if(event.key==='nocean.command.settings.v1')apply();});
-  return {assets,cards,accents,apply,setTopBiomeHeight,setCardOpacity,setAccent,setDifficultyColors,setCard,current};
+  return {assets,cards,accents,apply,setTopBiomeHeight,setCardOpacity,setAccent,setDifficultyColors,setCalendarWorkload,setCard,current};
 })();

@@ -64,7 +64,9 @@ def validate(data, creating=False):
 
 class NotionTaskStore:
     def list(self):
+        from lib.integrations.coursework import visible_tasks
         tasks = [normalize(p) for p in notion.query(notion.TASKS)]
+        tasks = visible_tasks(tasks)
         schema = notion.request('GET', '/data_sources/' + notion.TASKS)['properties']
         courses = [x['name'] for x in schema.get('Course', {}).get('select', {}).get('options', [])]
         return {'tasks': tasks, 'courses': courses, 'statuses': list(STATUSES),

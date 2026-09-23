@@ -24,7 +24,7 @@ const source=name=>fs.readFileSync(name,'utf8'),tick=()=>new Promise(resolve=>se
  };
  w.eval(['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean-planning.js','calendar-semantics.js','nocean-store.js','home.js'].map(source).join('\n'));
  await tick();
- assert.match($('taskList').textContent,/Draft project notes/);assert.doesNotMatch($('taskList').textContent,/CS 159 Homework/);
+ assert.match($('taskList').textContent,/Draft project notes/);assert.match($('taskList').textContent,/CS 159 Homework/);
  assert.match($('academicRadar').textContent,/CS 159 Homework/);assert.doesNotMatch($('academicRadar').textContent,/Draft project notes/);
  assert.match($('academicRadar').textContent,/Other coursework/);assert.match($('academicRadar').textContent,/Feed item without course metadata/);
  assert.match($('eventList').textContent,/ENGR team meeting/);assert.ok($('calendarGrid').querySelectorAll('[data-calendar-day]').length>=28);

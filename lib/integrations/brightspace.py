@@ -14,6 +14,7 @@ from lib import notion
 from lib.tasks import NotionTaskStore, normalize
 from lib.integrations import store
 from lib.integrations.security import owner_id
+from lib.integrations.coursework import course_for, identity, actionable, canonical_rank, title_key, compatible, org_unit, ORG_COURSES
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -63,14 +64,22 @@ def parse_feed(body):
             description=str(event.get('DESCRIPTION',''))
             match=re.search(r'https://purdue\.brightspace\.com/[^\s<>"\]]+',description)
             url=match.group(0) if match else 'https://purdue.brightspace.com/d2l/le/calendar/6824'
-        course_match=re.search(r'\b([A-Z]{2,5})\s*(\d{3,5})\b',title)
-        course=' '.join(course_match.groups()) if course_match else ''
+        course=course_for(title,url,str(event.get('X-COURSE','')))
         # Sequence wins over stale duplicate VEVENT entries with the same UID.
         sequence=int(event.get('SEQUENCE',0))
         record={'externalId':external,'sourceId':source_id,'name':title[:500],
                 'course':course,'due':due.isoformat(),'url':url,'sequence':sequence}
         if external not in records or sequence>=records[external]['sequence']: records[external]=record
-    return {'items':list(records.values()),'skipped':skipped,'completionAvailable':False}
+    filtered=actionable(list(records.values()))
+    skipped+=len(records)-len(filtered)
+    groups={}
+    for record in filtered:
+        key=identity(record) or record['externalId']
+        if key in groups:
+            groups[key].setdefault('aliases',[]).append(record['externalId'])
+            skipped+=1
+        else: groups[key]=record
+    return {'items':list(groups.values()),'skipped':skipped,'completionAvailable':False}
 
 
 def connect(url):
@@ -85,35 +94,21 @@ def connect(url):
 def task_key(name,due):
     # Conservative manual-task dedupe: same local due day + same title after
     # punctuation/spacing normalization, with an optional leading course code removed.
-    title=(name or '').casefold()
-    title=re.sub(r'^\\s*[a-z]{2,5}\\s*[- ]?\\s*\\d{3,5}\\s*[:\\-–—]?\\s*','',title)
-    title=re.sub(r'[^a-z0-9]+','',title)
-    return (notion.local_day(due),title)
+    return (notion.local_day(due),title_key(name))
 
 
 def existing_match(record,pages):
     normalized=[(page,normalize(page)) for page in pages]
-    source=[page for page,item in normalized
-            if item.get('sourceId') in (record['sourceId'],record['externalId'])
-            or (item.get('sourceUrl')==record['url'] and '/calendar/6824' not in record['url'])]
-    if len(source)>1:
-        raise ValueError('Multiple tasks match this Brightspace item. Reconcile before sync.')
-    if source:
-        return source[0]
+    exact=[(page,item) for page,item in normalized if identity(record) and identity(record)==identity(item)]
+    if exact:
+        exact.sort(key=lambda pair:canonical_rank(pair[1]))
+        if all(compatible(exact[0][1],item) for _,item in exact[1:]): return exact[0][0]
+        raise ValueError('Conflicting user state on duplicate coursework. Reconcile before sync.')
+    source=[page for page,item in normalized if item.get('sourceId') in (record['sourceId'],record['externalId'])]
+    if len(source)>1: raise ValueError('Multiple tasks match this Brightspace source marker.')
+    if source: return source[0]
 
-    # Adopt a manually-created task instead of creating a duplicate when the
-    # title and local due day clearly match. Existing user-owned fields survive.
-    key=task_key(record['name'],record['due'])
-    manual=[]
-    for page,item in normalized:
-        if item.get('sourceId'):
-            continue
-        if task_key(item.get('name',''),item.get('due'))!=key:
-            continue
-        if record.get('course') and item.get('course') and item['course'].casefold()!=record['course'].casefold():
-            continue
-        manual.append(page)
-    return manual[0] if len(manual)==1 else None
+    return None
 
 
 def source_matches(record):
@@ -121,8 +116,6 @@ def source_matches(record):
     # A SQL commit/network failure cannot make a retry create another task.
     filters=[{'property':'Source ID','rich_text':{'equals':record['sourceId']}},
              {'property':'Source ID','rich_text':{'equals':record['externalId']}}]
-    if '/calendar/6824' not in record['url']:
-        filters.append({'property':'Source','url':{'equals':record['url']}})
     matches=notion.query(notion.TASKS,{'or':filters})
     if len(matches)>1: raise ValueError('Multiple tasks match this Brightspace item. Reconcile before sync.')
     return matches
@@ -135,6 +128,9 @@ def sync_task(record, local_id=None, allow_create=True, existing_pages=None):
         except ValueError:
             # Respect user archive. Never recreate an explicitly archived imported task.
             return local_id,'archived'
+        if existing_pages is not None:
+            canonical=existing_match(record,existing_pages)
+            if canonical: page=canonical
     else:
         if existing_pages is not None:
             page=existing_match(record,existing_pages)
@@ -142,8 +138,9 @@ def sync_task(record, local_id=None, allow_create=True, existing_pages=None):
             matches=source_matches(record)
             page=matches[0] if matches else None
 
-    properties=tasks.properties({'name':record['name'],'due':record['due'],**({'course':record['course']} if record['course'] else {})})
-    properties.update({'Source ID':{'rich_text':[{'text':{'content':record['sourceId']}}]},
+    existing=normalize(page) if page else {}
+    properties=tasks.properties({**({} if page else {'name':record['name']}),'due':record['due'],**({'course':record['course']} if record['course'] and (not existing.get('course') or org_unit(record['url']) in ORG_COURSES) else {})})
+    properties.update({'Source ID':{'rich_text':[{'text':{'content':existing.get('sourceId') or record['sourceId']}}]},
                        'Source':{'url':record['url']}})
     if page:
         # Keep completion, planning, focus, project, difficulty and all user-owned fields.
@@ -203,10 +200,26 @@ def sync(limit=8):
                 local,action=sync_task(record,old['local_id'] if old else (previous['external_id'] if previous else None),
                                        allow_create=allow_create,existing_pages=existing_pages)
                 store.put_item(db,'brightspace',account['account_id'],record['externalId'],record,local)
+                for alias in record.get('aliases',[]):
+                    store.put_item(db,'brightspace',account['account_id'],alias,record,local)
                 db.execute('UPDATE nocean.provider_operations SET external_id=%s WHERE owner_id=%s AND provider=%s AND operation_id=%s',(local,owner_id(),'brightspace',operation))
                 result[action]+=1; processed+=1
+                # Include the accepted create in this run's recovery snapshot.
+                if action=='created': existing_pages.append(tasks_page(local,record))
         with store.connection() as db:
+            store.sync_progress(db,'brightspace',result)
             if result['remaining']==0: store.synced(db,'brightspace')
         return result
     except Exception:
         store.failed('brightspace'); raise
+
+
+def tasks_page(local,record):
+    properties=NotionTaskStore().properties({'name':record['name'],'course':record['course'],'due':record['due']})
+    # normalize() expects the Notion response's typed properties and plain_text.
+    for prop in properties.values():
+        kind=next(iter(prop));prop['type']=kind
+        if kind=='title':
+            for text in prop[kind]: text['plain_text']=text['text']['content']
+    properties['Source ID']={'type':'rich_text','rich_text':[{'plain_text':record['sourceId']}]}
+    return {'id':local,'properties':properties}
