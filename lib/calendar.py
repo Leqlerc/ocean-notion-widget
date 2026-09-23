@@ -50,27 +50,16 @@ class DirectGoogleCalendarProvider:
         return self._token
 
     def calendar_ids(self, token):
-        calendars = list(dict.fromkeys(c.strip() for c in os.getenv('GOOGLE_CALENDAR_IDS', 'primary').split(',') if c.strip())) or ['primary']
-        warnings = []
-        try:
-            page = None
-            while True:
-                params = {'maxResults': 250}
-                if page:
-                    params['pageToken'] = page
-                url = 'https://www.googleapis.com/calendar/v3/users/me/calendarList?' + urlencode(params)
-                with urlopen(Request(url, headers={'Authorization': 'Bearer ' + token}), timeout=10) as response:
-                    data = json.load(response)
-                for calendar in data.get('items', []):
-                    name = str(calendar.get('summary', '')).strip().casefold()
-                    if name in ('purdue classes', 'class deadlines') and calendar.get('id') not in calendars:
-                        calendars.append(calendar['id'])
-                page = data.get('nextPageToken')
-                if not page:
-                    break
-        except Exception:
-            warnings.append('Google calendar discovery unavailable; using configured calendars.')
-        return calendars, warnings
+        # Known NOcean calendars, recovered from existing Google source links.
+        # IDs are identifiers, not credentials. Explicit configuration remains authoritative.
+        # Reading event collections works without the additional CalendarList scope.
+        defaults = ','.join([
+            'primary',
+            'da1ec3a7497df0aab99e9ea899f0abf2abcfc93aca5d19eb4f950bab8527d4a3@group.calendar.google.com',  # Purdue Classes
+            'f1df9996bae26c015e6d86aab12d11afccd600f6732ddf4e4fb1a9b0af55e384@group.calendar.google.com',  # Class Deadlines
+        ])
+        calendars = list(dict.fromkeys(c.strip() for c in os.getenv('GOOGLE_CALENDAR_IDS', defaults).split(',') if c.strip()))
+        return calendars or defaults.split(','), []
 
     def load(self):
         token = self.access_token()

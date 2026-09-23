@@ -26,22 +26,23 @@ class Calendar(unittest.TestCase):
 
     def test_google_pagination_and_cancelled_events(self):
         responses=[{'items':[{'id':'a','summary':'MA 261 Lecture','recurringEventId':'series','start':{'date':'2026-09-14'},'end':{'date':'2026-09-15'}},{'id':'b','status':'cancelled'},{'id':'c'}],'nextPageToken':'next'}, {'items':[{'id':'d','summary':'MA 261 Quiz','recurringEventId':'series','start':{'dateTime':'2026-09-15T10:00:00-04:00'}}]}]
-        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':' primary, primary, '}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps(r).encode()) for r in [{'items':[]},*responses]]) as http:
+        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':' primary, primary, '}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps(r).encode()) for r in responses]]) as http:
             result=DirectGoogleCalendarProvider().load();self.assertEqual(len(result['events']),2);self.assertEqual(result['events'][0]['type'],'Class');self.assertEqual(result['events'][1]['type'],'Other');self.assertIn('pageToken=next',http.call_args.args[0].full_url)
 
     def test_both_calendars_and_exact_rfc3339(self):
         event={'id':'a','summary':'Class','recurringEventId':'series','start':{'dateTime':'2026-09-18T15:30:17-04:00'},'end':{'dateTime':'2026-09-18T16:20:17-04:00'}}
-        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary,classes@group.calendar.google.com'}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(b'{"items":[]}')]+[io.BytesIO(json.dumps({'items':[event]}).encode()) for _ in range(2)]) as http:
+        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary,classes@group.calendar.google.com'}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps({'items':[event]}).encode()) for _ in range(2)]) as http:
             result=DirectGoogleCalendarProvider().load()['events'];self.assertEqual(len(result),2)
             self.assertEqual(result[0]['at'],event['start']['dateTime']);self.assertEqual(result[0]['end'],event['end']['dateTime'])
-            for call in http.call_args_list[1:]:self.assertIn('singleEvents=true',call.args[0].full_url)
+            for call in http.call_args_list:self.assertIn('singleEvents=true',call.args[0].full_url)
             self.assertTrue(result[1]['id'].startswith('classes@group.calendar.google.com:'))
 
-    def test_named_calendar_discovery_and_partial_failure(self):
-        calendars={'items':[{'id':'classes','summary':'Purdue Classes'},{'id':'deadlines','summary':'Class Deadlines'},{'id':'unrelated','summary':'Other'}]}
-        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary'}),patch('lib.calendar.urlopen',return_value=io.BytesIO(json.dumps(calendars).encode())):
+    def test_known_calendar_defaults_and_partial_failure(self):
+        with patch.dict('os.environ',{},clear=True):
             ids,warnings=DirectGoogleCalendarProvider().calendar_ids('token')
-        self.assertEqual(ids,['primary','classes','deadlines']);self.assertEqual(warnings,[])
+        self.assertEqual(len(ids),3);self.assertEqual(ids[0],'primary');self.assertEqual(warnings,[])
+        self.assertTrue(all(i.endswith('@group.calendar.google.com') for i in ids[1:]))
+        ids=['primary','classes','deadlines']
         def events(token,calendar,now):
             if calendar=='deadlines': raise RuntimeError('unavailable')
             return [{'id':calendar,'at':'2099-01-01','name':'Lecture'}]
