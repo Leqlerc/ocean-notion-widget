@@ -1,33 +1,38 @@
 # NOcean Work State
 
-## Current release checkpoint — 2026-09-23
+## Release checkpoint — 2026-09-23
 
-Daily-use sprint implemented from GitHub `main` at `9635efc839ce51df1818d85672eb68ab9c54df74`. Candidate is entering Preview verification; Production still runs that base commit (`dpl_wkSq8WSxF1DTJCjGoAMDBSFmYHi4`, READY). Do not describe the candidate as shipped until promotion is verified.
+Targeted Home/Athletics sprint is implemented on `main`, based on `a9b1db36cf7e6f9d7a02ae50b794924c4cf234af` (verified READY Production deployment `dpl_EP9LKnCKNwPaWNEVQXeLr8fAtXUu`). This commit is the release candidate; replace this checkpoint after GitHub → Vercel deployment verification.
 
 ## Implemented
 
-- Home uses shared TaskPlanning Today / Tomorrow / Upcoming / Backlog buckets, with capture and stale-refresh guards. Planning preserves actual deadlines.
-- Deadlines use explicit pending/submitted confirmation, reversible on the same device. Submission completes an open task; task completion never claims submission. Submitted items remain visible and leave the confirmation count.
-- Calendar has five progressively darker reds, independent Today/selection/event indicators, and persisted Off / Solid fill / Outline only control separate from task difficulty.
-- Campus captions and content rows align in three desktop columns; mobile stacks. Dining ranks official measured protein:fat efficiency, then protein; missing macros remain missing and zero-fat ranking uses a 1g floor.
-- Canonical Grand Reef, Jelly Caves, and Mushroom Forest assets are replaced byte-for-byte with supplied artwork (Grand Reef 3).
-- Brightspace applies deterministic org-unit mappings: 1640342 MFET 163, 1631262 CS 159, 1636988 HONR 19901, 1634573 ENGR 161, 36061 COM 114; 1134648 is Purdue requirements. Generic 6824 gets no invented class.
-- Exact course/title/due-time deduplication preserves planning/completion/focus/difficulty/projects. Matching lifecycle notifications and explicit weekly availability containers are filtered. Lone potentially actionable availability records are retained conservatively.
-- Settings exposes persistent incomplete-sync counts, last success, errors, cron-route completion evidence, and bounded owner-authenticated duplicate review/reconciliation. Reconciliation repoints mappings before recoverable archive and refuses tasks with notes or conflicting tracked state.
+- Settings → Home Layout independently controls Tasks, Deadlines, Events, Dragonair Habitat, Campus, Calendar, Weather, Training Facilities, and Dining. Preferences save immediately on this device; hidden cards leave layout flow and remaining columns expand.
+- Deadlines has a wider, bounded card with locally persisted course accordions, pending counts, nearest dates and overdue summaries. Expanded courses default to three items; Today only / 1 / 3 / 5 / All are available. All scrolls within each course. Pending items precede submitted items. Submission confirmation remains separate from task completion.
+- Home task rows provide direct Focus and + Today controls, including on mobile. Today planning preserves the actual due date. Right-side due badges distinguish overdue, today, tomorrow, and future dates.
+- One Events card contains chronological Next (1 / 3 / 5 / 8; default 3) and three significant On the Clock entries. Routine classes never outrank earlier events or fill the significance list.
+- Home excludes Notion Google mirrors and unknown-origin Notion events even during outages. Google discovers Purdue Classes and Class Deadlines in addition to configured calendars. Explicit HTTPS Purdue academic sources remain eligible from Notion (11 independent academic entries were identified in the live snapshot). Provider/calendar partial failures report warnings. Legacy standalone widgets/endpoints are retained, not used by Home.
+- Accent settings now use 24 swatches, organized into six hue columns from pastel to dark; include light green, ice, lavender, Eclipse black, true black, gray and white. Semantic workload/status colors remain independent; dark accents retain readable text.
+- Dragonair Habitat is a small lagoon below Events with gentle motion, hover treatment, reduced-motion support, and no interaction overlay. It uses an intentional temporary star visual; replacing it with supplied Dragonair artwork is the only remaining art task.
+- Athletics now opens the existing complete Machine tracker directly, preserving all provider behavior. Week/date selection also updates nutrition, sleep, and habits consistently. Existing `/machine.html` remains available.
+- Existing conservative Brightspace identity/lifecycle filtering, historical completed-coursework hiding, and bounded owner-authenticated duplicate reconciliation are reused. No uncertain work, real overdue work, notes, or user state was archived or deleted.
 
-## Verification and live state
+## Checks actually run
 
-- Backend: 82 tests, 76 passed, six disposable-database tests skipped. Includes Google moved-event regression (existing implementation unchanged), coursework identity, lifecycle, partial sync and field preservation.
-- Targeted DOM tests passed: daily-use task/submission loop, Home, appearance preferences, integration UI, task interactions and shared frontend contracts.
-- Local desktop/mobile layout fixture measured aligned Campus captions and first/second rows, no horizontal page overflow at 390px. Visual inspection caught compressed Deadline sections; grid tracks now preserve their content height.
-- Read-only Production snapshot reconciliation found 22 deterministic duplicate pairs with no tracked-state conflicts before final canonical-priority refinement. No live task archive has been performed yet.
-- Production Brightspace was connected, with last recorded success September 21 at 3:16 PM local. Outlook is not connected and is non-blocking.
-- Production was missing CRON_SECRET. A new random secret was added through Vercel without exposing its value; it takes effect on the next deployment. Timed scheduled execution is not yet proven. Existing schedule remains 11:15 UTC daily.
+- 23 Python tests passed: `tests.test_iteration`, `tests.test_coursework` (calendar discovery/pagination/deletions/partial failure, independent-source allowlist, Athletics provider guards, coursework filtering/state preservation).
+- Node suites passed: Home sprint, Athletics page, daily-use loop, Home sketch UI, dashboard appearance, product reset, deadlines across five time zones, shared frontend and UI contracts.
+- Changed JavaScript syntax checks and `python -m compileall -q api lib` passed. Final `git diff --check` required before commit.
+- Browser: inspected Home at desktop and 390px; `tests/layout.html` measured no overflow at 1440, 1536 and 390px. Hidden Tasks/Events/Habitat gave Deadlines full width; a single Campus detail filled the Campus width. Accent change left computed workload red unchanged. Athletics loaded live read-only data with set controls enabled and no mobile overflow. Browser reported no script errors. Write interactions used disposable fixtures only.
+- Production before this release: Google returned 31 events; Notion contributed stale Google copies, including Deload week. Post-release verification must confirm additional class calendars and absence of that stale event.
 
-## Next action
+## Boundaries and remaining limitations
 
-Verify candidate Preview, push the verified tree to main, verify its READY Production deployment, then use owner-authenticated duplicate review/reconciliation and bounded sync. Record exact deployed commit and results here. Preserve the existing four-destination UI and Notion/provider boundaries; no database migration or architecture cutover is part of this sprint.
+- Notion still backs Tasks, Projects, Athletics Daily logs, Training Sets, Exercises, and Daily-log habits. Eleven independently sourced academic Events are retained for now. Nutrition, sleep, maintenance, reflections, layout/appearance and submission confirmation retain existing device-local storage. No Neon cutover, schema migration, or broad provider rewrite.
+- Recoverable live duplicate archiving was not executed: locally exported production credentials are redacted, so an owner-authenticated cleanup session is unavailable. Existing Settings review/reconcile remains the safe continuation path; the prior handoff reported 22 deterministic duplicate pairs, not a fresh verified archive count. Active views already suppress compatible duplicates and known generated lifecycle noise.
+- Unknown-source Notion-only events are excluded rather than guessed to be independent. Calendar discovery requires the existing Google calendar.readonly scope; inspect deployed warnings if scope or calendar access differs.
+- Scheduled Brightspace execution timing remains unproven; this sprint does not expand LMS ingestion or alter schedules.
 
-## Remaining limitations
+## Next recommended sprint
 
-Submission confirmation and appearance preferences remain device-local. Some availability-only feed records lack a matching real deadline and are deliberately retained. Preview has no private Brightspace configuration; use mocked write/retry tests and read-only live task checks there. Scheduled timing needs a real timed invocation after the secret-enabled deployment. Athletics remains the existing placeholder linked to the working Machine tracker; SQL Goals remains inactive.
+1. Richer Brightspace assignment discovery and reliability.
+2. True parent-task/subtask support for multipart coursework.
+3. Later migration of Tasks/Projects/Athletics away from Notion if justified.

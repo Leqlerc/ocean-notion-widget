@@ -8,7 +8,7 @@ for(const text of ['Tasks','Deadlines','Events','Calendar'])assert.match(pages.h
 for(const id of ['academicRadar','taskList','eventList','calendarGrid'])assert.match(pages.home,new RegExp(`id="${id}"`));
 assert.doesNotMatch(pages.home,/class="card projects-card"/);assert.match(read('home.js'),/NOceanStore\.isRadarItem/);assert.match(read('home.js'),/calendarItems/);
 const projectSurface=pages.projects+read('projects.js')+read('project-plan.js');for(const text of ['project-ribbon','project-control-panel','Next','Structure and milestones'])assert.match(projectSurface,new RegExp(text));
-assert.match(pages.athletics,/Athletics dashboard coming next/i);assert.match(pages.athletics,/\/machine\.html/);
+assert.doesNotMatch(pages.athletics,/dashboard coming next/i);for(const id of ['week','setForm','completeWorkout','habitControls','nutritionForm'])assert.match(pages.athletics,new RegExp(`id="${id}"`));
 for(const text of ['Nutrition','Sleep','Habits','Maintenance','Reflection / hotwash'])assert.match(read('machine.html'),new RegExp(text));
 for(const text of ['Appearance and biomes','Current classes','Recurring maintenance','Integrations'])assert.match(pages.settings,new RegExp(text));
 const memory=new Map(),context={localStorage:{getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,value)},crypto:{randomUUID:()=> '11111111-1111-4111-8111-111111111111'}};vm.createContext(context);vm.runInContext(read('nocean-store.js')+';globalThis.store=NOceanStore',context);

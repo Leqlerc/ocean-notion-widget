@@ -1,4 +1,4 @@
-"""CalendarProvider boundary. Google and Notion contribute independently."""
+"""Home calendar: live Google plus explicitly sourced independent coursework."""
 import json
 import os
 import re
@@ -12,11 +12,18 @@ from lib import notion
 
 
 class NotionCalendarProvider:
-    def load(self):
+    def load(self, independent_only=False):
         events = []
         for p in notion.query(notion.EVENTS):
             at = notion.value(p, 'Date')
             if not at:
+                continue
+            source = notion.value(p, 'Source') or ''
+            # Existing independent academic entries link to their Purdue source.
+            # Missing links and Google mirrors are never a Home fallback, even on outage.
+            parsed = urlsplit(source)
+            if independent_only and not (parsed.scheme == 'https' and
+                    (parsed.hostname == 'purdue.edu' or (parsed.hostname or '').endswith('.purdue.edu'))):
                 continue
             events.append({'id': p['id'], 'name': notion.value(p, 'Event') or 'Untitled event',
                 'at': at, 'end': (p['properties']['Date'].get('date') or {}).get('end'),
@@ -42,38 +49,74 @@ class DirectGoogleCalendarProvider:
         type(self)._expires_at = time.monotonic() + max(0, float(data.get('expires_in', 3600))-60)
         return self._token
 
+    def calendar_ids(self, token):
+        calendars = list(dict.fromkeys(c.strip() for c in os.getenv('GOOGLE_CALENDAR_IDS', 'primary').split(',') if c.strip())) or ['primary']
+        warnings = []
+        try:
+            page = None
+            while True:
+                params = {'maxResults': 250}
+                if page:
+                    params['pageToken'] = page
+                url = 'https://www.googleapis.com/calendar/v3/users/me/calendarList?' + urlencode(params)
+                with urlopen(Request(url, headers={'Authorization': 'Bearer ' + token}), timeout=10) as response:
+                    data = json.load(response)
+                for calendar in data.get('items', []):
+                    name = str(calendar.get('summary', '')).strip().casefold()
+                    if name in ('purdue classes', 'class deadlines') and calendar.get('id') not in calendars:
+                        calendars.append(calendar['id'])
+                page = data.get('nextPageToken')
+                if not page:
+                    break
+        except Exception:
+            warnings.append('Google calendar discovery unavailable; using configured calendars.')
+        return calendars, warnings
+
     def load(self):
         token = self.access_token()
         now = datetime.now(timezone.utc)
         events = []
-        calendars = list(dict.fromkeys(c.strip() for c in os.getenv('GOOGLE_CALENDAR_IDS', 'primary').split(',') if c.strip())) or ['primary']
+        calendars, warnings = self.calendar_ids(token)
+        available = 0
         for calendar in calendars:
-            page = None
-            while True:
-                params = {'singleEvents': 'true', 'orderBy': 'startTime', 'maxResults': 2500,
-                    'timeMin': (now - timedelta(days=62)).isoformat(),
-                    'timeMax': (now + timedelta(days=180)).isoformat()}
-                if page:
-                    params['pageToken'] = page
-                url = 'https://www.googleapis.com/calendar/v3/calendars/' + quote(calendar.strip(), safe='') + '/events?' + urlencode(params)
-                with urlopen(Request(url, headers={'Authorization': 'Bearer ' + token}), timeout=15) as r:
-                    data = json.load(r)
-                for e in data.get('items', []):
-                    if e.get('status') == 'cancelled':
-                        continue
-                    start, end = e.get('start', {}), e.get('end', {})
-                    if not (start.get('dateTime') or start.get('date')):
-                        continue
-                    name = e.get('summary', 'Event')
-                    routine = e.get('recurringEventId') and re.search(r'\b[A-Z]{2,5}\s*\d{3,5}\b', name) and not re.search(r'exam|quiz|cfu|practical|presentation|demonstration|break', name, re.I)
-                    events.append({'id': calendar + ':' + e['id'], 'name': e.get('summary', 'Event'),
-                        'at': start.get('dateTime') or start.get('date'),
-                        'end': end.get('dateTime') or end.get('date'),
-                        'exclusiveEnd': True, 'type': 'Class' if routine else 'Other', 'course': '', 'url': e.get('htmlLink', '')})
-                page = data.get('nextPageToken')
-                if not page:
-                    break
-        return {'events': events, 'source': 'Direct Google Calendar', 'direct': True}
+            try:
+                events.extend(self.load_events(token, calendar, now))
+                available += 1
+            except Exception:
+                warnings.append('A Google calendar is unavailable; its events are omitted.')
+        if not available:
+            raise RuntimeError('Google calendars unavailable')
+        return {'events': events, 'source': 'Direct Google Calendar', 'direct': True, 'warnings': warnings}
+
+    def load_events(self, token, calendar, now):
+        events = []
+        # A failed page discards this calendar's partial snapshot, never resurrecting a mirror.
+        page = None
+        while True:
+            params = {'singleEvents': 'true', 'orderBy': 'startTime', 'maxResults': 2500,
+                'timeMin': (now - timedelta(days=62)).isoformat(),
+                'timeMax': (now + timedelta(days=180)).isoformat()}
+            if page:
+                params['pageToken'] = page
+            url = 'https://www.googleapis.com/calendar/v3/calendars/' + quote(calendar.strip(), safe='') + '/events?' + urlencode(params)
+            with urlopen(Request(url, headers={'Authorization': 'Bearer ' + token}), timeout=15) as r:
+                data = json.load(r)
+            for e in data.get('items', []):
+                if e.get('status') == 'cancelled':
+                    continue
+                start, end = e.get('start', {}), e.get('end', {})
+                if not (start.get('dateTime') or start.get('date')):
+                    continue
+                name = e.get('summary', 'Event')
+                routine = e.get('recurringEventId') and re.search(r'\b[A-Z]{2,5}\s*\d{3,5}\b', name) and not re.search(r'exam|quiz|cfu|practical|presentation|demonstration|break', name, re.I)
+                events.append({'id': calendar + ':' + e['id'], 'name': e.get('summary', 'Event'),
+                    'at': start.get('dateTime') or start.get('date'),
+                    'end': end.get('dateTime') or end.get('date'),
+                    'exclusiveEnd': True, 'type': 'Class' if routine else 'Other', 'course': '', 'url': e.get('htmlLink', '')})
+            page = data.get('nextPageToken')
+            if not page:
+                break
+        return events
 
 
 def event_instant(value):
@@ -140,18 +183,23 @@ def merge_events(batches):
 def load_calendar(include_outlook=False):
     required = ('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN')
     missing = [key for key in required if not os.getenv(key, '').strip()]
-    providers = {'notion':NotionCalendarProvider()}
-    if not missing:
-        providers['google'] = DirectGoogleCalendarProvider()
     batches, status = {}, {}
+    warnings = []
     with ThreadPoolExecutor(max_workers=2) as pool:
-        jobs = {key:pool.submit(provider.load) for key,provider in providers.items()}
-        for key,job in jobs.items():
+        jobs = {'notion':pool.submit(NotionCalendarProvider().load, independent_only=True)}
+        if not missing:
+            jobs['google'] = pool.submit(DirectGoogleCalendarProvider().load)
+        else:
+            status['google'] = {'available':False,'count':0,'error':'Direct Google is not configured'}
+        for key, job in jobs.items():
             try:
-                batches[key] = job.result()['events']
+                result = job.result()
+                batches[key] = result['events']
+                warnings.extend(result.get('warnings', []))
                 status[key] = {'available':True,'count':len(batches[key])}
             except Exception:
-                status[key] = {'available':False,'count':0,'error':key.title()+' events unavailable'}
+                error = 'Google events unavailable' if key == 'google' else 'Independent coursework events unavailable'
+                status[key] = {'available':False,'count':0,'error':error}
     if include_outlook:
         try:
             from lib.integrations.store import configured, cached_outlook
@@ -161,21 +209,19 @@ def load_calendar(include_outlook=False):
                 status['outlook']={'available':True,'count':len(cached['events']),'lastSync':cached['lastSync'],'stale':cached['status']=='error'}
         except Exception:
             status['outlook']={'available':False,'count':0,'error':'Saved Outlook events unavailable'}
-    if not batches:
-        raise RuntimeError('All calendar sources unavailable.')
     direct = 'google' in batches
-    source = 'Direct Google Calendar + Notion events' if direct and 'notion' in batches else 'Direct Google Calendar' if direct else 'Notion events'
+    source = 'Direct Google Calendar' if direct else 'Calendar unavailable'
+    if batches.get('notion'):
+        source = (source + ' + ' if direct else '') + 'independent Purdue coursework'
     if 'outlook' in batches:
-        source = source+' + Outlook' if 'google' in batches or 'notion' in batches else 'Outlook'
-    warnings = [v['error'] for v in status.values() if not v['available']]
+        source = source+' + Outlook' if direct or batches.get('notion') else 'Outlook'
+    warnings.extend(v['error'] for v in status.values() if not v['available'])
     if status.get('outlook',{}).get('stale'): warnings.append('Outlook sync failed; showing last saved events.')
     if missing:
         status['google'] = {'available':False,'count':0,'error':'Direct Google is not configured'}
         source += ' · Google not configured'
     elif not direct:
         source += ' · Google unavailable'
-    elif 'notion' not in batches:
-        source += ' · Notion unavailable'
     return {'events':merge_events(batches), 'source':source, 'direct':direct,
             'providers':status, 'warnings':warnings, 'configurationMissing':missing,
             'updatedAt':datetime.now(timezone.utc).isoformat()}

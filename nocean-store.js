@@ -12,14 +12,14 @@ const NOceanStore = (() => {
     {id:'sheets',name:'Change sheets',every:7},
     {id:'shopping',name:'Shop essentials',every:7}
   ];
-  const accentPresets = new Set(['green','ice','lavender','eclipse']);
+  const accentPresets = new Set(['ice','mint','lavender','rose','cream','white','blue','green','lilac','pink','peach','gray','denim','teal','purple','berry','sand','eclipse','navy','forest','plum','wine','copper','black']);
   const difficultyModes = new Set(['off','solid','glow']);
   const cardArtKeys = ['tasks','deadlines','events','campus','calendar'];
   const biomeAssets = new Set(['blood-kelp','bulb-zone','cove-tree','dunes','grand-reef','islands','jelly-caves','kelp-day','kelp-night','lily-caves','lily-islands','lost-river','mountains','mushroom-forest','shallows-night','sparse-reef','twisty-bridge-night','twisty-bridge']);
   const defaults = {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
-    dashboard: {showDining:true,rainThreshold:35,eventCount:6},
+    dashboard: {showTasks:true,showDeadlines:true,showEvents:true,showHabitat:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',collapsedCourses:{}},
     appearance: {topBiomeHeight:176,cardOpacity:100,accent:'green',difficultyColors:'off',calendarWorkload:'solid',cardArt:{}}
   };
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -57,7 +57,7 @@ const NOceanStore = (() => {
       }
     };
   }
-  function saveSettings(value) { return write(SETTINGS_KEY,{...settings(),...value}); }
+  function saveSettings(value) { const current=settings();return write(SETTINGS_KEY,{...current,...value,dashboard:{...current.dashboard,...(value.dashboard||{})}}); }
   function verificationId(task) { return task?.sourceId || task?.id || ''; }
   function isRadarItem(task) {
     if (String(task?.sourceId||'').startsWith('brightspace:')) return true;

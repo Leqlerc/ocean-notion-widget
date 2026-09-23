@@ -23,9 +23,15 @@ const CalendarSemantics = (() => {
   function highest(events) {
     return events.reduce((best,event) => {const current=classify(event); return !best || current.priority>best.priority ? current : best;},null);
   }
+  function significant(event) {
+    const category=classify(event).key;
+    if(['exam','quiz','assessment','presentation','break'].includes(category))return true;
+    if(category==='class')return false;
+    return /\b(travel|flight|trip|interview|appointment|conference|ceremony|competition|tournament|special|important|major|gala|concert|club event)\b/i.test(`${event.type||''} ${event.name||''}`);
+  }
   function workloadLevel(count) {
     const value=Math.max(0,Number(count)||0);
     return value>=5?5:Math.floor(value);
   }
-  return {categories,classify,highest,workloadLevel};
+  return {categories,classify,highest,workloadLevel,significant};
 })();

@@ -4,7 +4,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 from lib import notion
-from lib.calendar import DirectGoogleCalendarProvider, load_calendar
+from lib.calendar import DirectGoogleCalendarProvider, NotionCalendarProvider, load_calendar
 from lib.athletics import NotionAthleticsProvider, DAILY, EXERCISES, SETS
 
 ID='11111111-1111-4111-8111-111111111111'
@@ -13,29 +13,50 @@ def page(source=DAILY):
     return {'id':ID,'parent':{'data_source_id':source},'properties':{'Date':{'type':'date','date':{'start':TODAY}},'Exercise':{'type':'title','title':[{'plain_text':'Row'}]}}}
 
 class Calendar(unittest.TestCase):
-    def test_fallback_lists_exact_missing_vars(self):
-        with patch.dict('os.environ',{},clear=True), patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[],'direct':False}), patch.object(DirectGoogleCalendarProvider,'load') as direct:
-            result=load_calendar();self.assertFalse(result['direct']);self.assertEqual(len(result['configurationMissing']),3);direct.assert_not_called()
+    def test_missing_google_never_falls_back_to_notion(self):
+        with patch.dict('os.environ',{},clear=True), patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[],'direct':False}) as notion, patch.object(DirectGoogleCalendarProvider,'load') as direct:
+            result=load_calendar();self.assertFalse(result['direct']);self.assertEqual(len(result['configurationMissing']),3);direct.assert_not_called();notion.assert_called_once_with(independent_only=True);self.assertEqual(result['events'],[])
 
-    def test_direct_and_notion_are_independent(self):
+    def test_deleted_google_mirror_never_returns(self):
         env={k:'configured' for k in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN']}
         with patch.dict('os.environ',env),patch.object(DirectGoogleCalendarProvider,'load',return_value={'events':[]}),patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[]}) as notion:
-            result=load_calendar();self.assertTrue(result['direct']);notion.assert_called_once();self.assertTrue(result['providers']['notion']['available'])
+            result=load_calendar();self.assertTrue(result['direct']);notion.assert_called_once_with(independent_only=True);self.assertEqual(result['events'],[])
         with patch.dict('os.environ',env),patch.object(DirectGoogleCalendarProvider,'load',side_effect=RuntimeError('Google unavailable')),patch('lib.calendar.NotionCalendarProvider.load',return_value={'events':[]}):
             result=load_calendar();self.assertFalse(result['direct']);self.assertIn('Google events unavailable',result['warnings'])
 
     def test_google_pagination_and_cancelled_events(self):
         responses=[{'items':[{'id':'a','summary':'MA 261 Lecture','recurringEventId':'series','start':{'date':'2026-09-14'},'end':{'date':'2026-09-15'}},{'id':'b','status':'cancelled'},{'id':'c'}],'nextPageToken':'next'}, {'items':[{'id':'d','summary':'MA 261 Quiz','recurringEventId':'series','start':{'dateTime':'2026-09-15T10:00:00-04:00'}}]}]
-        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':' primary, primary, '}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps(r).encode()) for r in responses]) as http:
+        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':' primary, primary, '}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps(r).encode()) for r in [{'items':[]},*responses]]) as http:
             result=DirectGoogleCalendarProvider().load();self.assertEqual(len(result['events']),2);self.assertEqual(result['events'][0]['type'],'Class');self.assertEqual(result['events'][1]['type'],'Other');self.assertIn('pageToken=next',http.call_args.args[0].full_url)
 
     def test_both_calendars_and_exact_rfc3339(self):
         event={'id':'a','summary':'Class','recurringEventId':'series','start':{'dateTime':'2026-09-18T15:30:17-04:00'},'end':{'dateTime':'2026-09-18T16:20:17-04:00'}}
-        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary,classes@group.calendar.google.com'}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(json.dumps({'items':[event]}).encode()) for _ in range(2)]) as http:
+        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary,classes@group.calendar.google.com'}),patch.object(DirectGoogleCalendarProvider,'access_token',return_value='secret'),patch('lib.calendar.urlopen',side_effect=[io.BytesIO(b'{"items":[]}')]+[io.BytesIO(json.dumps({'items':[event]}).encode()) for _ in range(2)]) as http:
             result=DirectGoogleCalendarProvider().load()['events'];self.assertEqual(len(result),2)
             self.assertEqual(result[0]['at'],event['start']['dateTime']);self.assertEqual(result[0]['end'],event['end']['dateTime'])
-            for call in http.call_args_list:self.assertIn('singleEvents=true',call.args[0].full_url)
+            for call in http.call_args_list[1:]:self.assertIn('singleEvents=true',call.args[0].full_url)
             self.assertTrue(result[1]['id'].startswith('classes@group.calendar.google.com:'))
+
+    def test_named_calendar_discovery_and_partial_failure(self):
+        calendars={'items':[{'id':'classes','summary':'Purdue Classes'},{'id':'deadlines','summary':'Class Deadlines'},{'id':'unrelated','summary':'Other'}]}
+        with patch.dict('os.environ',{'GOOGLE_CALENDAR_IDS':'primary'}),patch('lib.calendar.urlopen',return_value=io.BytesIO(json.dumps(calendars).encode())):
+            ids,warnings=DirectGoogleCalendarProvider().calendar_ids('token')
+        self.assertEqual(ids,['primary','classes','deadlines']);self.assertEqual(warnings,[])
+        def events(token,calendar,now):
+            if calendar=='deadlines': raise RuntimeError('unavailable')
+            return [{'id':calendar,'at':'2099-01-01','name':'Lecture'}]
+        with patch.object(DirectGoogleCalendarProvider,'access_token',return_value='token'),patch.object(DirectGoogleCalendarProvider,'calendar_ids',return_value=(ids,[])),patch.object(DirectGoogleCalendarProvider,'load_events',side_effect=events):
+            result=DirectGoogleCalendarProvider().load()
+        self.assertEqual(len(result['events']),2);self.assertEqual(len(result['warnings']),1)
+
+    def test_independent_notion_allowlist_excludes_mirrors(self):
+        pages=[{'id':str(i),'properties':{'Date':{'date':{'start':'2099-01-01'}}},'values':{'Date':'2099-01-01','Event':name,'Source':url}} for i,(name,url) in enumerate([
+            ('Deload week','https://calendar.google.com/calendar/event?eid=deleted'),
+            ('Unknown origin',''),('Quiz','https://www.math.purdue.edu/course'),
+            ('Spoof','https://purdue.edu.example.org/course')])]
+        with patch('lib.calendar.notion.query',return_value=pages),patch('lib.calendar.notion.value',side_effect=lambda p,k:p['values'].get(k)):
+            result=NotionCalendarProvider().load(independent_only=True)
+        self.assertEqual([e['name'] for e in result['events']],['Quiz'])
 
     def test_token_cache(self):
         env={k:'configured' for k in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN']}

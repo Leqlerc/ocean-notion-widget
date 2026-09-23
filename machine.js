@@ -31,7 +31,7 @@
     $('habitControls').disabled=true;try{const result=await request('/api/dashboard',{method:'POST',body:JSON.stringify({date:selected,changes:{[input.dataset.habit]:input.checked}})});daily=result.days||daily;const habits=daily[selected]?.habits||{};$('summaryHabits').textContent=`${Object.values(habits).filter(Boolean).length}/${habitNames.length} complete`;toast('Habit saved.');}
     catch(error){input.checked=!input.checked;toast(error.message);}finally{$('habitControls').disabled=false;}
   }
-  $('trainingDate').addEventListener('change',event=>{selected=event.target.value||dayKey();renderLocal();loadHabits();});
+  document.addEventListener('nocean:training-date',event=>{selected=event.detail.date;renderLocal();loadHabits();});
   document.addEventListener('nocean:training',event=>{if(event.detail.date!==selected)return;const d=event.detail.day;$('summaryTraining').textContent=d.completed?`${d.workoutType} · complete`:d.started?`${d.workoutType||d.planned} · ${event.detail.workingSets} sets`:`${d.planned} · not started`;});
   document.querySelector('.machine-tabs').addEventListener('click',event=>{const b=event.target.closest('[data-machine-tab]');if(!b)return;document.querySelectorAll('[data-machine-tab]').forEach(x=>x.classList.toggle('active',x===b));$('nutritionForm').hidden=b.dataset.machineTab!=='nutrition';$('sleepForm').hidden=b.dataset.machineTab!=='sleep';});
   $('nutritionForm').addEventListener('submit',event=>{event.preventDefault();NOceanStore.saveNutrition(selected,{calories:$('nutritionCalories').value,protein:$('nutritionProtein').value,water:$('nutritionWater').value});renderLocal();toast('Nutrition saved on this device.');});

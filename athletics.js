@@ -51,7 +51,7 @@ function applyDay(result){
   const updated={...training.data.day,...result.day};training.data.day=updated;
   training.data.week=training.data.week.map(d=>d.date===training.date?{...d,...updated}:d);
 }
-function selectDate(date){if(training.busy||date===training.date||!date)return;training.date=date;training.data=null;training.requestId=null;$('trainingDate').value=date;loadTraining();}
+function selectDate(date){if(training.busy||date===training.date||!date)return;training.date=date;training.data=null;training.requestId=null;$('trainingDate').value=date;document.dispatchEvent(new CustomEvent('nocean:training-date',{detail:{date}}));loadTraining();}
 $('trainingDate').addEventListener('change',e=>selectDate(e.target.value));
 $('week').addEventListener('click',e=>{const button=e.target.closest('[data-date]');if(button)selectDate(button.dataset.date);});
 $('workoutType').addEventListener('change',()=>mutate('PATCH',{date:training.date,workoutType:$('workoutType').value},applyDay));
