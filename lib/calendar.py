@@ -23,7 +23,7 @@ class NotionCalendarProvider:
             # Missing links and Google mirrors are never a Home fallback, even on outage.
             parsed = urlsplit(source)
             if independent_only and not (parsed.scheme == 'https' and
-                    (parsed.hostname == 'purdue.edu' or (parsed.hostname or '').endswith('.purdue.edu'))):
+                    (parsed.hostname in ('purdue.edu', 'purdue.brightspace.com') or (parsed.hostname or '').endswith('.purdue.edu'))):
                 continue
             events.append({'id': p['id'], 'name': notion.value(p, 'Event') or 'Untitled event',
                 'at': at, 'end': (p['properties']['Date'].get('date') or {}).get('end'),

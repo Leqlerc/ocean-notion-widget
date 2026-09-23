@@ -54,10 +54,11 @@ class Calendar(unittest.TestCase):
         pages=[{'id':str(i),'properties':{'Date':{'date':{'start':'2099-01-01'}}},'values':{'Date':'2099-01-01','Event':name,'Source':url}} for i,(name,url) in enumerate([
             ('Deload week','https://calendar.google.com/calendar/event?eid=deleted'),
             ('Unknown origin',''),('Quiz','https://www.math.purdue.edu/course'),
+            ('Lab quiz','https://purdue.brightspace.com/d2l/quiz'),
             ('Spoof','https://purdue.edu.example.org/course')])]
         with patch('lib.calendar.notion.query',return_value=pages),patch('lib.calendar.notion.value',side_effect=lambda p,k:p['values'].get(k)):
             result=NotionCalendarProvider().load(independent_only=True)
-        self.assertEqual([e['name'] for e in result['events']],['Quiz'])
+        self.assertEqual([e['name'] for e in result['events']],['Quiz','Lab quiz'])
 
     def test_token_cache(self):
         env={k:'configured' for k in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN']}
