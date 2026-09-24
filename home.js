@@ -63,7 +63,7 @@
     return work.map(t=>{const submitted=NOceanStore.verification(t)==='submitted',source=t.sourceId?.startsWith('brightspace:')?'Brightspace':'Tracked assignment';return `<div class="coursework-item ${submitted?'is-submitted':'is-pending'}"><span class="coursework-title">${safeURL(t.sourceUrl)?`<a href="${esc(safeURL(t.sourceUrl))}" target="_blank" rel="noopener">${esc(t.name)}</a>`:esc(t.name)}</span><div class="coursework-meta"><span>${esc(t.course||'Coursework')} · ${esc(dueText(t.due))}${!submitted&&overdue(t.due)?' · OVERDUE':''} · ${source}${t.status==='done'?' · work done':''}</span><button type="button" class="coursework-state" data-verify="${esc(t.id)}" aria-pressed="${submitted}" ${state.pending.has(t.id)?'disabled':''} aria-label="${submitted?'Undo submission for':'Mark submitted:'} ${esc(t.name)}">${submitted?'✓ Submitted · Undo':'Mark submitted'}</button></div></div>`;}).join('')||'<p class="coursework-empty">No coursework on the radar.</p>';
   }
   function renderRadar(){
-    const classes=NOceanStore.settings().classes,today=dayKey(),groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ]));let total=0,open=0;
+    const classes=NOceanStore.settings().classes,today=dayKey(),groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ])),all=[];let total=0,open=0;
     for(const task of state.tasks){
       if(!task.due||!NOceanStore.isRadarItem(task))continue;
       const submitted=NOceanStore.verification(task)==='submitted';
@@ -73,17 +73,24 @@
       if(task.status==='done'&&dateDay(task.due)<TaskPlanning.add(today,-14))continue;
       const course=task.course||'Other coursework',key=courseKey(course);
       if(!groups.has(key))groups.set(key,{course,work:[]});
-      groups.get(key).work.push(task);total++;if(!submitted)open++;
+      groups.get(key).work.push(task);all.push(task);total++;if(!submitted)open++;
     }
-    const nearest=group=>group.work.filter(t=>NOceanStore.verification(t)==='pending').map(t=>t.due).sort()[0]||'9999';
-    const cards=[...groups.values()].sort((a,b)=>nearest(a).localeCompare(nearest(b))).map(({course,work})=>{
-      work.sort((a,b)=>Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted')||a.due.localeCompare(b.due));
-      const prefs=NOceanStore.settings().dashboard,key=courseKey(course),collapsed=Boolean(prefs.collapsedCourses?.[key]),pending=work.filter(t=>NOceanStore.verification(t)==='pending'),late=pending.filter(t=>overdue(t.due)).length;
-      const limit=['today','1','3','5','all'].includes(String(prefs.deadlineCount))?String(prefs.deadlineCount):'3';
-      const visible=limit==='today'?work.filter(t=>dateDay(t.due)===today):limit==='all'?work:work.slice(0,Number(limit)),extra=work.length-visible.length;
-      return `<article class="class-radar"><button type="button" class="class-radar-head" data-course-toggle="${esc(key)}" aria-expanded="${!collapsed}" aria-controls="course-${esc(key)}"><strong>${collapsed?'▸':'▾'} ${esc(course)}</strong><span>${pending.length} upcoming${late?` · <b class="overdue-text">${late} overdue</b>`:''}${pending[0]?`<small>Next · ${esc(dueText(pending[0].due))}</small>`:''}</span></button><div id="course-${esc(key)}" class="course-radar-body" ${collapsed?'hidden':''}>${radarItems(visible)}${extra?`<p class="coursework-later">+${extra} ${limit==='today'?'outside today':'later'}</p>`:''}</div></article>`;
-    });
-    $('academicRadar').innerHTML=cards.join('')||'<p class="empty">Add current classes in Settings.</p>';
+    const mode=$('deadlineView')?.value||'date';
+    let content='';
+    if(mode==='class'){
+      const nearest=group=>group.work.filter(t=>NOceanStore.verification(t)==='pending').map(t=>t.due).sort()[0]||'9999';
+      content=[...groups.values()].filter(group=>group.work.length).sort((a,b)=>nearest(a).localeCompare(nearest(b))).map(({course,work})=>{
+        work.sort((a,b)=>a.due.localeCompare(b.due)||Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted'));
+        const prefs=NOceanStore.settings().dashboard,key=courseKey(course),collapsed=Boolean(prefs.collapsedCourses?.[key]),pending=work.filter(t=>NOceanStore.verification(t)==='pending'),late=pending.filter(t=>overdue(t.due)).length;
+        const limit=['today','1','3','5','all'].includes(String(prefs.deadlineCount))?String(prefs.deadlineCount):'3';
+        const visible=limit==='today'?work.filter(t=>dateDay(t.due)===today):limit==='all'?work:work.slice(0,Number(limit)),extra=work.length-visible.length;
+        return `<article class="class-radar"><button type="button" class="class-radar-head" data-course-toggle="${esc(key)}" aria-expanded="${!collapsed}" aria-controls="course-${esc(key)}"><strong>${collapsed?'▸':'▾'} ${esc(course)}</strong><span>${pending.length} upcoming${late?` · <b class="overdue-text">${late} overdue</b>`:''}${pending[0]?`<small>Next · ${esc(dueText(pending[0].due))}</small>`:''}</span></button><div id="course-${esc(key)}" class="course-radar-body" ${collapsed?'hidden':''}>${radarItems(visible)}${extra?`<p class="coursework-later">+${extra} ${limit==='today'?'outside today':'later'}</p>`:''}</div></article>`;
+      }).join('');
+    }else{
+      all.sort((a,b)=>a.due.localeCompare(b.due)||Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted')||String(a.name||'').localeCompare(String(b.name||'')));
+      content=radarItems(all);
+    }
+    $('academicRadar').innerHTML=content||'<p class="empty">No tracked coursework deadlines.</p>';
     $('academicSummary').textContent=`${classes.length} classes · ${open} need confirmation`;
     $('academicRadar').dataset.total=String(total);$('academicRadar').dataset.open=String(open);updateLifeStatus();
   }
@@ -200,6 +207,7 @@
     else if(button)openEditor(button.dataset.edit);
   });
   $('taskList').addEventListener('change',event=>{if(event.target.dataset.complete)updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'});});
+  $('deadlineView').addEventListener('change',renderRadar);
   $('academicRadar').addEventListener('click',async event=>{
     const toggle=event.target.closest('[data-course-toggle]');
     if(toggle){const prefs=NOceanStore.settings().dashboard,key=toggle.dataset.courseToggle;NOceanStore.saveSettings({dashboard:{collapsedCourses:{...prefs.collapsedCourses,[key]:!prefs.collapsedCourses?.[key]}}});renderRadar();$('academicRadar').querySelector(`[data-course-toggle="${key}"]`)?.focus();return;}

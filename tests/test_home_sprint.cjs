@@ -5,6 +5,7 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  const dom=new JSDOM(read('index.html'),{url:'https://nocean.test',runScripts:'outside-only'}),w=dom.window,$=s=>w.document.querySelector(s);
  const RealDate=w.Date;w.Date=class extends RealDate{constructor(...args){super(...(args.length?args:['2026-09-23T12:00:00-04:00']));}static now(){return new RealDate('2026-09-23T12:00:00-04:00').getTime();}};
  let records=Array.from({length:7},(_,i)=>({id:'t'+i,name:'Assignment '+i,course:'MFET 163',sourceId:'brightspace:'+i,status:'next',focus:false,due:`2026-09-${String(23+i).padStart(2,'0')}T23:59:00-04:00`}));
+ records[5].course='CS 159';records[5].due='2026-09-22T23:59:00-04:00';
  const requests=[];
  w.fetch=async(url,options={})=>{
   let data={};
@@ -17,8 +18,14 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
   return {ok:true,json:async()=>data};
  };
  w.eval([...scripts,'home.js'].map(read).join('\n')+';window.sprintStore=NOceanStore;');await tick();
+ assert.equal($('#deadlineView').value,'date');
+ assert.equal(w.document.querySelectorAll('#academicRadar .coursework-item').length,7);
+ assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,0);
+ assert.match($('#academicRadar .coursework-title').textContent,/Assignment 5/);
+ $('#deadlineView').value='class';$('#deadlineView').dispatchEvent(new w.Event('change'));
+ assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,2);
  assert.equal(w.document.querySelectorAll('#course-MFET163 .coursework-item').length,3);
- assert.match($('#course-MFET163').textContent,/\+4 later/);
+ assert.match($('#course-MFET163').textContent,/\+3 later/);
  $('[data-course-toggle="MFET163"]').click();assert.equal($('#course-MFET163').hidden,true);
  assert.equal(JSON.parse(w.localStorage.getItem('nocean.command.settings.v1')).dashboard.collapsedCourses.MFET163,true);
  $('[data-course-toggle="MFET163"]').click();assert.equal($('#course-MFET163').hidden,false);
@@ -28,7 +35,7 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  assert.equal(records[2].scheduledFor,'2026-09-23');assert.equal(records[2].due,'2026-09-25T23:59:00-04:00');assert.equal(requests.at(-1).due,undefined);
  assert.match($('#eventsNext').parentNode.querySelector('.event-name').textContent,/Lecture/);
  assert.match($('#eventsClock').parentNode.textContent,/Final Exam/);assert.doesNotMatch($('#eventsClock').parentNode.textContent,/Lecture|Weekly club/);
- for(const [count,expected] of [['1',1],['5',5],['all',7],['today',1]]){
+ for(const [count,expected] of [['1',1],['5',5],['all',6],['today',1]]){
   w.eval(`sprintStore.saveSettings({dashboard:{deadlineCount:'${count}'}})`);w.dispatchEvent(new w.StorageEvent('storage',{key:'nocean.command.settings.v1'}));await tick();
   assert.equal(w.document.querySelectorAll('#course-MFET163 .coursework-item').length,expected);
  }
@@ -42,5 +49,5 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  for(const key of ['black','eclipse','white','green']){v.document.querySelector(`button[data-accent="${key}"]`).click();assert.equal(JSON.parse(v.localStorage.getItem('nocean.command.settings.v1')).appearance.accent,key);assert.equal(v.document.querySelector(`button[data-accent="${key}"]`).getAttribute('aria-pressed'),'true');}
  const dining=v.document.getElementById('showDining');dining.checked=false;dining.dispatchEvent(new v.Event('change',{bubbles:true}));assert.equal(JSON.parse(v.localStorage.getItem('nocean.command.settings.v1')).dashboard.showDining,false);
  assert.equal(JSON.parse(v.localStorage.getItem('nocean.command.settings.v1')).dashboard.showTasks,true);
- settings.window.close();console.log('Home sprint passed: limits, accordion persistence, direct Focus/Today, due badges, event order/significance, layout preferences, and 24 persisted accents.');
+ settings.window.close();console.log('Home sprint passed: chronological deadlines by default, optional class grouping, accordion persistence, direct Focus/Today, due badges, event order/significance, layout preferences, and 24 persisted accents.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -17,7 +17,7 @@
   <script src="/nocean-planning.js?v=1" defer></script>
   <script src="/calendar-semantics.js?v=4" defer></script>
   <script src="/nocean-motion.js?v=2" defer></script>
-  <script src="/home.js?v=5" defer></script>
+  <script src="/home.js?v=6" defer></script>
 </head>
 <body data-page="home">
 <div class="app">
@@ -53,6 +53,7 @@
 
       <section class="card deadlines-card" data-home-module="showDeadlines" data-card-art="deadlines" aria-labelledby="radarTitle">
         <div class="card-head"><div><p class="eyebrow">Academic safety net</p><h2 id="radarTitle">Deadlines</h2></div><span id="academicSummary" class="muted"></span></div>
+        <label class="section-note" for="deadlineView">Sort <select id="deadlineView"><option value="date">Due date</option><option value="class">Class</option></select></label>
         <div id="academicRadar" class="academic-radar"><p class="empty">Loading trusted coursework…</p></div>
         <p class="section-note">Work completion never clears submission verification.</p>
       </section>
