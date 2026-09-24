@@ -18,6 +18,7 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
   return {ok:true,json:async()=>data};
  };
  w.eval([...scripts,'home.js'].map(read).join('\n')+';window.sprintStore=NOceanStore;');await tick();
+ assert.equal($('.dashboard').style.getPropertyValue('--home-columns'),'minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,.85fr)');
  assert.equal($('#deadlineView').value,'date');
  assert.equal(w.document.querySelectorAll('#academicRadar .coursework-item').length,7);
  assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,0);
