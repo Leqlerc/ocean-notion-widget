@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const read=name=>fs.readFileSync(name,'utf8');
 const pages={home:read('index.html'),projects:read('projects.html'),athletics:read('athletics.html'),settings:read('integrations.html')};
-assert.match(read('nocean-ui.js'),/\['home','\/','Home'\],\['projects','\/projects\.html','Projects'\],\['athletics','\/athletics\.html','Athletics'\],\['settings','\/integrations\.html','Settings'\]/);
+assert.match(read('nocean-ui.js'),/\['home','\/','Home'\],\['projects','\/projects\.html','Projects'\],\['athletics','\/athletics\.html','Athletics'\],\['reflections','\/reflections\.html','Reflections'\],\['settings','\/integrations\.html','Settings'\]/);
 assert.doesNotMatch(read('nocean-ui.js'),/\['tasks'.*'Tasks'\]/);
 for(const [name,html] of Object.entries(pages))assert.match(html,new RegExp(`data-page="${name}"`));
 for(const text of ['Tasks','Deadlines','Events','Calendar'])assert.match(pages.home,new RegExp(text));
@@ -18,4 +18,4 @@ context.store.saveSettings({appearance:{topBiomeHeight:350,cardOpacity:55,accent
 assert.equal(context.store.settings().appearance.topBiomeHeight,350);assert.equal(context.store.settings().appearance.cardOpacity,55);assert.equal(context.store.settings().appearance.accent,'ice');assert.equal(context.store.settings().appearance.difficultyColors,'solid');
 context.store.completeMaintenance('sheets','2026-09-21');assert.equal(context.store.maintenanceStatus('2026-09-21').find(x=>x.id==='sheets').completedToday,true);
 context.store.addReflection({date:'2026-09-21',type:'Hotwash',title:'Sprint',body:'Keep the good part.'});assert.equal(context.store.machine().reflections[0].title,'Sprint');
-console.log('Sketch UI contracts passed: four destinations, Home hierarchy, Projects control panel, Athletics shell, preserved tracker, and Settings ownership.');
+console.log('Sketch UI contracts passed: five destinations, Home hierarchy, Projects control panel, Athletics shell, preserved tracker, and Settings ownership.');

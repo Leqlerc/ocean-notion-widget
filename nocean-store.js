@@ -12,7 +12,7 @@ const NOceanStore = (() => {
     {id:'sheets',name:'Change sheets',every:7},
     {id:'shopping',name:'Shop essentials',every:7}
   ];
-  const accentPresets = new Set(['ice','mint','lavender','rose','cream','white','blue','green','lilac','pink','peach','gray','denim','teal','purple','berry','sand','eclipse','navy','forest','plum','wine','copper','black']);
+  const accentPresets = new Set(['ice','mint','lavender','rose','cream','white','blue','green','lilac','pink','peach','gray','denim','teal','purple','berry','sand','eclipse','navy','forest','plum','wine','copper','black','frost','pistachio','periwinkle','blush','lemon','silver','cyan','lime','iris','coral','gold','slate','azure','jade','orchid','ruby','orange','taupe','ocean','olive','amethyst','brick','ochre','charcoal']);
   const difficultyModes = new Set(['off','solid','glow']);
   const cardArtKeys = ['tasks','deadlines','events','campus','calendar'];
   const biomeAssets = new Set(['blood-kelp','bulb-zone','cove-tree','dunes','grand-reef','islands','jelly-caves','kelp-day','kelp-night','lily-caves','lily-islands','lost-river','mountains','mushroom-forest','shallows-night','sparse-reef','twisty-bridge-night','twisty-bridge']);
@@ -45,7 +45,7 @@ const NOceanStore = (() => {
     const legacyHeight=rawAppearance.topBiomeSize==='expanded'?258:defaults.appearance.topBiomeHeight;
     return {
       classes:Array.isArray(value.classes)?value.classes.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,40)):clone(defaultClasses),
-      maintenance:Array.isArray(value.maintenance)?value.maintenance.filter(x=>x&&x.id&&x.name).map(x=>({id:String(x.id),name:String(x.name).slice(0,80),every:Math.max(1,Math.min(365,Number(x.every)||7))})):clone(defaultMaintenance),
+      maintenance:Array.isArray(value.maintenance)?value.maintenance.filter(x=>x&&x.id&&x.name).map(x=>({id:String(x.id),name:String(x.name).slice(0,80),mode:x.mode==='weekly'?'weekly':'interval',weekday:Math.max(0,Math.min(6,Number(x.weekday)||0)),start:/^\d{4}-\d{2}-\d{2}$/.test(x.start||'')?x.start:'',every:Math.max(1,Math.min(365,Number(x.every)||7))})):clone(defaultMaintenance),
       dashboard:{...defaults.dashboard,...(value.dashboard||{})},
       appearance:{
         topBiomeHeight:clamp(rawAppearance.topBiomeHeight,80,500,legacyHeight),
@@ -86,22 +86,23 @@ const NOceanStore = (() => {
       nutrition:value.nutrition&&typeof value.nutrition==='object'?value.nutrition:{},
       sleep:value.sleep&&typeof value.sleep==='object'?value.sleep:{},
       maintenance:value.maintenance&&typeof value.maintenance==='object'?value.maintenance:{},
-      reflections:Array.isArray(value.reflections)?value.reflections.slice(0,100):[]
+      reflections:Array.isArray(value.reflections)?value.reflections:[]
     };
   }
   function saveMachine(value) { return write(MACHINE_KEY,value); }
-  function updateMachine(mutator) { const value=machine(); mutator(value); saveMachine(value); return value; }
+  function updateMachine(mutator) { const value=machine(); mutator(value); if(!saveMachine(value))throw new Error('Unable to save on this device.'); return value; }
   function saveNutrition(day,entry) { return updateMachine(v=>{v.nutrition[day]={calories:Number(entry.calories)||0,protein:Number(entry.protein)||0,water:Number(entry.water)||0};}); }
   function saveSleep(day,entry) { return updateMachine(v=>{v.sleep[day]={hours:Number(entry.hours)||0,quality:String(entry.quality||'')};}); }
-  function completeMaintenance(id,day) { return updateMachine(v=>{if(v.maintenance[id]===day)delete v.maintenance[id];else v.maintenance[id]=day;}); }
+  function completeMaintenance(id,day,toggle=true) { return updateMachine(v=>{if(toggle&&v.maintenance[id]===day)delete v.maintenance[id];else v.maintenance[id]=day;}); }
   function addReflection(entry) {
-    return updateMachine(v=>{v.reflections.unshift({id:crypto.randomUUID(),date:entry.date,type:entry.type,title:String(entry.title||'').trim().slice(0,120),body:String(entry.body||'').trim().slice(0,4000),createdAt:new Date().toISOString()});v.reflections=v.reflections.slice(0,100);});
+    return updateMachine(v=>{v.reflections.unshift({id:crypto.randomUUID(),date:entry.date,type:entry.type,title:String(entry.title||'').trim().slice(0,120),body:String(entry.body||'').trim().slice(0,4000),createdAt:new Date().toISOString()});});
   }
+  function editReflection(id,entry) { return updateMachine(v=>{const item=v.reflections.find(x=>x.id===id);if(item)Object.assign(item,{title:String(entry.title||'').trim().slice(0,120),body:String(entry.body||'').trim().slice(0,4000),date:entry.date,type:entry.type});}); }
   function removeReflection(id) { return updateMachine(v=>{v.reflections=v.reflections.filter(x=>x.id!==id);}); }
   function addDays(day,count) { const d=new Date(day+'T12:00:00');d.setDate(d.getDate()+count);return d.toISOString().slice(0,10); }
   function maintenanceStatus(today=new Date().toISOString().slice(0,10)) {
     const data=machine(),config=settings().maintenance;
-    return config.map(item=>{const last=data.maintenance[item.id]||'';const due=last?addDays(last,item.every):today;return {...item,last,due,completedToday:last===today,overdue:due<today,isDue:due<=today};});
+    return config.map(item=>{const last=data.maintenance[item.id]||'';let due=last?addDays(last,item.every):(item.start||today);if(item.mode==='weekly'){const anchor=last?addDays(last,1):(item.start||today),weekday=new Date(anchor+'T12:00:00').getDay();due=addDays(anchor,(item.weekday-weekday+7)%7);}return {...item,last,due,completedToday:last===today,overdue:due<today,isDue:due<=today};});
   }
-  return {defaults,settings,saveSettings,isRadarItem,setRadarItem,verification,setVerification,machine,saveNutrition,saveSleep,completeMaintenance,addReflection,removeReflection,maintenanceStatus};
+  return {defaults,settings,saveSettings,isRadarItem,setRadarItem,verification,setVerification,machine,saveNutrition,saveSleep,completeMaintenance,addReflection,editReflection,removeReflection,maintenanceStatus};
 })();

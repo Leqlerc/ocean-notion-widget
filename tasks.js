@@ -23,6 +23,7 @@
   },blank=empty('Nothing here. Add a task or adjust the filters.');
   if(typeof TaskMotion!=='undefined')TaskMotion.render($('moduleTasks'),shown,rowHTML,blank);else $('moduleTasks').innerHTML=shown.map(rowHTML).join('')||blank;
   $('moreTasks').hidden=filtered.length<=limit;
+  NOceanUpkeep.render(view);
   if(typeof NOceanAppearance!=='undefined')NOceanAppearance.apply();
  }
  async function load(){if(loading||pending.size||creating)return;loading=true;const version=revision;$('refresh').disabled=true;try{const [a,b]=await Promise.all([store.list(),NOceanData.projects.list()]);if(version!==revision)return;tasks=a.tasks;projects=b.projects;for(const id of ['captureProject','editProject','projectFilter']){const select=$(id),old=select.value;select.innerHTML=`<option value="${id==='projectFilter'?'all':''}">${id==='projectFilter'?'All projects':'No project'}</option>`+projects.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');select.value=old|| (id==='projectFilter'?'all':'');}if(applyEntry){applyEntry=false;const project=projects.find(p=>p.id===entry.get('project'));if(project){$('projectFilter').value=project.id;$('captureProject').value=project.id;if(['today','tomorrow','upcoming','later','all'].includes(entry.get('view')))view=entry.get('view');const task=tasks.find(t=>t.id===entry.get('task')&&TaskFilters.belongs(t,project));if(task)edit(task.id);}}render();}catch(e){$('taskStatus').textContent=e.message+' Existing tasks remain visible.';}finally{loading=false;$('refresh').disabled=false;}}

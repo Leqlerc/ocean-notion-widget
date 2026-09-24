@@ -19,6 +19,7 @@
     $('maintenanceList').innerHTML=items.map(item=>`<div class="maintenance-row ${item.overdue?'is-overdue':item.isDue?'is-due':''}"><div><strong>${esc(item.name)}</strong><small>${item.completedToday?'Completed today':item.last?`${item.overdue?'Overdue':'Next'} · ${esc(dateLabel(item.due))}`:'Due now · no completion yet'}</small></div><button data-maintenance="${esc(item.id)}" class="${item.completedToday?'quiet':'primary'}">${item.completedToday?'Undo':'Done today'}</button></div>`).join('')||empty('No recurring maintenance configured.');
   }
   function renderReflections(){
+    if(!$('reflectionList'))return;
     const items=NOceanStore.machine().reflections;$('summaryReflection').textContent=items[0]?`${items[0].type} · ${dateLabel(items[0].date)}`:'No entry';
     $('reflectionList').innerHTML=items.slice(0,6).map(item=>`<article class="reflection-row"><div><strong>${esc(item.title)}</strong><small>${esc(item.type)} · ${esc(dateLabel(item.date))}</small><p>${esc(item.body)}</p></div><button class="quiet" data-remove-reflection="${esc(item.id)}" aria-label="Remove ${esc(item.title)}">Remove</button></article>`).join('')||empty('No reflections yet.');
   }
@@ -38,7 +39,7 @@
   $('sleepForm').addEventListener('submit',event=>{event.preventDefault();NOceanStore.saveSleep(selected,{hours:$('sleepHours').value,quality:$('sleepQuality').value});renderLocal();toast('Sleep saved on this device.');});
   $('habitControls').addEventListener('change',event=>{if(event.target.dataset.habit)saveHabit(event.target);});
   $('maintenanceList').addEventListener('click',event=>{const b=event.target.closest('[data-maintenance]');if(!b)return;NOceanStore.completeMaintenance(b.dataset.maintenance,dayKey());renderLocal();toast('Maintenance updated.');});
-  $('reflectionForm').addEventListener('submit',event=>{event.preventDefault();NOceanStore.addReflection({date:selected,type:$('reflectionType').value,title:$('reflectionTitle').value,body:$('reflectionBody').value});$('reflectionTitle').value='';$('reflectionBody').value='';renderLocal();toast('Reflection saved.');});
-  $('reflectionList').addEventListener('click',event=>{const b=event.target.closest('[data-remove-reflection]');if(!b)return;NOceanStore.removeReflection(b.dataset.removeReflection);renderLocal();});
+  $('reflectionForm')?.addEventListener('submit',event=>{event.preventDefault();NOceanStore.addReflection({date:selected,type:$('reflectionType').value,title:$('reflectionTitle').value,body:$('reflectionBody').value});$('reflectionTitle').value='';$('reflectionBody').value='';renderLocal();toast('Reflection saved.');});
+  $('reflectionList')?.addEventListener('click',event=>{const b=event.target.closest('[data-remove-reflection]');if(!b)return;NOceanStore.removeReflection(b.dataset.removeReflection);renderLocal();});
   selected=$('trainingDate').value||dayKey();renderLocal();loadHabits();
 })();

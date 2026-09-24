@@ -56,6 +56,7 @@
     if(typeof TaskMotion!=='undefined')TaskMotion.render($('taskList'),visible,taskRow,blank);else $('taskList').innerHTML=visible.map(taskRow).join('')||blank;
     $('taskHint').textContent={today:'Today’s plan and automatic work due today or overdue.',tomorrow:'Tomorrow’s plan and automatic work due tomorrow.',upcoming:'Work planned or due in 2–14 days. Planning never moves the deadline.',later:'Backlog, undated work, and work beyond the next two weeks.'}[state.tab];
     $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',upcoming:'Add automatic',later:'Add to backlog'}[state.tab];
+    if(typeof NOceanUpkeep!=='undefined')NOceanUpkeep.render(state.tab);
     updateLifeStatus();
   }
   function courseKey(value){const m=String(value||'').toUpperCase().match(/([A-Z]{2,5})\s*0*(\d{3,5})/);return m?m[1]+Number(m[2]):String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
@@ -65,7 +66,7 @@
   function renderRadar(){
     const classes=NOceanStore.settings().classes,today=dayKey(),groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ]));let total=0,open=0;
     for(const task of state.tasks){
-      if(!task.due||!NOceanStore.isRadarItem(task))continue;
+      if(!CalendarSemantics.deadline(task)||!NOceanStore.isRadarItem(task))continue;
       const submitted=NOceanStore.verification(task)==='submitted';
       if(submitted&&dateDay(task.due)<TaskPlanning.add(today,-2))continue;
       // Old completed work remains in Tasks, without crowding the daily deadline view.
@@ -75,20 +76,21 @@
       if(!groups.has(key))groups.set(key,{course,work:[]});
       groups.get(key).work.push(task);total++;if(!submitted)open++;
     }
-    const nearest=group=>group.work.filter(t=>NOceanStore.verification(t)==='pending').map(t=>t.due).sort()[0]||'9999';
-    const cards=[...groups.values()].sort((a,b)=>nearest(a).localeCompare(nearest(b))).map(({course,work})=>{
-      work.sort((a,b)=>Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted')||a.due.localeCompare(b.due));
-      const prefs=NOceanStore.settings().dashboard,key=courseKey(course),collapsed=Boolean(prefs.collapsedCourses?.[key]),pending=work.filter(t=>NOceanStore.verification(t)==='pending'),late=pending.filter(t=>overdue(t.due)).length;
-      const limit=['today','1','3','5','all'].includes(String(prefs.deadlineCount))?String(prefs.deadlineCount):'3';
-      const visible=limit==='today'?work.filter(t=>dateDay(t.due)===today):limit==='all'?work:work.slice(0,Number(limit)),extra=work.length-visible.length;
-      return `<article class="class-radar"><button type="button" class="class-radar-head" data-course-toggle="${esc(key)}" aria-expanded="${!collapsed}" aria-controls="course-${esc(key)}"><strong>${collapsed?'▸':'▾'} ${esc(course)}</strong><span>${pending.length} upcoming${late?` · <b class="overdue-text">${late} overdue</b>`:''}${pending[0]?`<small>Next · ${esc(dueText(pending[0].due))}</small>`:''}</span></button><div id="course-${esc(key)}" class="course-radar-body" ${collapsed?'hidden':''}>${radarItems(visible)}${extra?`<p class="coursework-later">+${extra} ${limit==='today'?'outside today':'later'}</p>`:''}</div></article>`;
-    });
-    $('academicRadar').innerHTML=cards.join('')||'<p class="empty">Add current classes in Settings.</p>';
+    const filter=$('deadlineFilter').value;
+    const all=[...groups.values()].flatMap(g=>g.work);
+    const courses=[...new Set(all.map(t=>t.course||'Other coursework'))].sort();
+    $('deadlineClass').innerHTML=courses.map(c=>`<option>${esc(c)}</option>`).join('');
+    $('deadlineClass').value=courses.includes(state.deadlineClass)?state.deadlineClass:courses[0]||'';
+    $('deadlineClass').hidden=filter!=='class';
+    const work=all.filter(t=>filter==='exams'?['exam','quiz','assessment'].includes(CalendarSemantics.classify(t).key):filter==='class'?(t.course||'Other coursework')===$('deadlineClass').value:true);
+    const dueInstant=value=>new Date(value.length===10?value+'T23:59:00':value).getTime();
+    work.sort((a,b)=>Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted')||dueInstant(a.due)-dueInstant(b.due));
+    $('academicRadar').innerHTML=radarItems(work);
     $('academicSummary').textContent=`${classes.length} classes · ${open} need confirmation`;
     $('academicRadar').dataset.total=String(total);$('academicRadar').dataset.open=String(open);updateLifeStatus();
   }
   function calendarItems(day){
-    const deadlines=state.tasks.filter(t=>t.due&&dateDay(t.due)===day&&NOceanStore.isRadarItem(t)&&NOceanStore.verification(t)==='pending');
+    const deadlines=state.tasks.filter(t=>CalendarSemantics.deadline(t)&&dateDay(t.due)===day&&NOceanStore.isRadarItem(t)&&NOceanStore.verification(t)==='pending');
     const deadlineIds=new Set(deadlines.map(t=>t.id));
     const work=state.tasks.filter(t=>t.status!=='done'&&!deadlineIds.has(t.id)&&(t.scheduledFor===day||dateDay(t.due)===day));
     const events=state.events.filter(e=>e.at&&dateDay(e.at)===day);
@@ -167,12 +169,13 @@
     const prefs=NOceanStore.settings().dashboard,fmt=n=>Math.round(Number(n)),threshold=Math.max(10,Math.min(90,Number(prefs.rainThreshold)||35));
     const current=fmt(data.current.temperature_2m),todayRain=rainWindow(data,0,threshold),tomorrowRain=rainWindow(data,1,threshold),highs=data.daily.temperature_2m_max,lows=data.daily.temperature_2m_min;
     const delta=fmt(highs[1]-highs[0]),decision=tomorrowRain.startsWith('No meaningful')?(Math.abs(delta)>=8?`Tomorrow’s high is ${Math.abs(delta)}° ${delta>0?'warmer':'cooler'} than today.`:'No major weather swing between today and tomorrow.'):`Plan around rain tomorrow: ${tomorrowRain}.`;
+    $('weather').closest('.campus-column').dataset.condition=NOceanSignals.weather(data.current);
     $('weather').innerHTML=`<div class="forecast-grid"><article class="forecast-day"><strong>Today · ${esc(weatherCode(data.current.weather_code))}</strong><div class="forecast-temp">${current}°</div><div class="forecast-detail">High ${fmt(highs[0])}° · Low ${fmt(lows[0])}°<br>Rain: ${esc(todayRain)}</div></article><article class="forecast-day"><strong>Tomorrow · ${esc(weatherCode(data.daily.weather_code?.[1]))}</strong><div class="forecast-temp">${fmt(highs[1])}° <span class="muted">high</span></div><div class="forecast-detail">Low ${fmt(lows[1])}°<br>Rain: ${esc(tomorrowRain)}</div></article></div><p class="forecast-decision">${esc(decision)}</p>`;
   }
   function renderDining(data){
     if(!NOceanStore.settings().dashboard.showDining){$('diningBrief').hidden=true;return;}$('diningBrief').hidden=false;
     const now=Date.now(),all=Object.values(data.meals||{}).flat(),meal=new Date().getHours()<15?'Lunch':'Dinner',courts=all,format=value=>value?new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(value)):'',names=['Wiley','Windsor'];
-    $('dining').innerHTML=names.map(name=>{const court=courts.filter(x=>String(x.name||'').toLowerCase().includes(name.toLowerCase())).sort((a,b)=>{const rank=c=>c.start&&c.end?(new Date(c.start)<=now&&now<new Date(c.end)?0:new Date(c.start)>now?1:2):3;return rank(a)-rank(b)||(a.start||'').localeCompare(b.start||'');})[0],pick=court?.picks?.[0],percent=court?.crowd?.percent,level=court?.open===true?occupancyLevel(percent):0,hours=court?.start&&court?.end?`${format(court.start)}–${format(court.end)}`:`${meal} hours unavailable`,stateLabel=court?.open===true?'Open':court?.open===false?'Closed':'Status unavailable',food=pick?`${esc(pick.name)} · ${pick.protein!=null?esc(pick.protein)+'g P':'P unavailable'} · ${pick.fat!=null?esc(pick.fat)+'g F':'F unavailable'} · ${pick.proteinFatRatio!=null?esc(pick.proteinFatRatio)+' P:F':pick.fat===0?'P:F ≥'+esc(pick.protein||0)+' (0g F reported)':'P:F unavailable'}`:esc(court?.message||'Protein-forward item unavailable');return `<article class="facility-status dining-court occupancy-${level}"><div class="facility-title"><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">${name}</a><span class="facility-state">${stateLabel}</span></div><div class="facility-meta"><span>${esc(hours)}</span><span>${percent==null?'Occupancy unavailable':esc(percent)+'%'}</span></div><strong class="dining-pick">${food}</strong></article>`;}).join('');
+    $('dining').innerHTML=names.map(name=>{const court=courts.filter(x=>String(x.name||'').toLowerCase().includes(name.toLowerCase())).sort((a,b)=>{const rank=c=>c.start&&c.end?(new Date(c.start)<=now&&now<new Date(c.end)?0:new Date(c.start)>now?1:2):3;return rank(a)-rank(b)||(a.start||'').localeCompare(b.start||'');})[0],percent=court?.crowd?.percent,level=court?.open===true?occupancyLevel(percent):0,hours=court?.start&&court?.end?`${format(court.start)}–${format(court.end)}`:`${meal} hours unavailable`,stateLabel=court?.open===true?'Open':court?.open===false?'Closed':'Status unavailable',food=(court?.picks||[]).slice(0,3).map(p=>`<span class="dining-option">${esc(p.name)} · ${p.protein==null?'Protein unavailable':esc(p.protein)+'g protein'}</span>`).join('')||esc(court?.message||'Protein-forward items unavailable');return `<article class="facility-status dining-court occupancy-${level}"><div class="facility-title"><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">${name}</a><span class="facility-state">${stateLabel}</span></div><div class="facility-meta"><span>${esc(hours)}</span><span>${percent==null?'Occupancy unavailable':esc(percent)+'%'}</span></div><strong class="dining-pick">${food}</strong></article>`;}).join('');
   }
   async function loadCampus(){
     setLoading('campus',true);const [w,r,d]=await Promise.allSettled([request(CONFIG.weather),request('/api/recwell'),request('/api/dining')]);
@@ -182,14 +185,16 @@
   }
   function eventWhen(value){const d=new Date(value.length===10?value+'T12:00:00':value),key=dateDay(value);if(key===dayKey())return value.length===10?'Today':'Today · '+timeLabel(value);if(key===tomorrow())return value.length===10?'Tomorrow':'Tomorrow · '+timeLabel(value);return new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'short',month:'short',day:'numeric',...(value.length>10?{hour:'numeric',minute:'2-digit'}:{})}).format(d);}
   async function loadEvents(){
-    setLoading('events',true);try{const data=await request('/api/events'),now=Date.now(),pref=Number(NOceanStore.settings().dashboard.eventCount),count=[1,3,5,8].includes(pref)?pref:3;state.events=data.events||[];
+    setLoading('events',true);try{const data=await request('/api/events'),now=Date.now(),pref=Number(NOceanStore.settings().dashboard.eventCount),count=[1,3,5,8].includes(pref)?pref:3;state.events=CalendarSemantics.cleanEvents(data.events||[]);
       const instant=value=>new Date(value.length===10?value+'T12:00:00':value).getTime();
       const future=state.events.filter(e=>e.at&&(e.at.length===10?dateDay(e.at)>=dayKey():instant(e.at)>=now)).sort((a,b)=>instant(a.at)-instant(b.at));
       const important=future.filter(e=>CalendarSemantics.significant(e)).slice(0,3);
       const rows=events=>events.map(e=>`<div class="event-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a class="event-name" href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>`:`<span class="event-name">${esc(e.name)}</span>`}</div>`).join('');
-      $('eventList').innerHTML=`<section aria-labelledby="eventsNext"><h3 id="eventsNext" class="eyebrow">Next</h3>${rows(future.slice(0,count))||empty('No upcoming events.')}</section><section aria-labelledby="eventsClock"><h3 id="eventsClock" class="eyebrow">On the Clock</h3>${rows(important)||empty('No significant events ahead.')}</section>`;$('calendarSource').textContent=[data.source||'Calendar',...(data.warnings||[])].join(' · ');renderCalendar();
+      $('eventList').innerHTML=`<section aria-labelledby="eventsNext"><h3 id="eventsNext" class="eyebrow">Next</h3>${rows(future.filter(e=>!CalendarSemantics.significant(e)).slice(0,count))||empty('No upcoming events.')}</section><section aria-labelledby="eventsClock"><h3 id="eventsClock" class="eyebrow">On the Clock</h3>${rows(important)||empty('No significant events ahead.')}</section>`;$('calendarSource').textContent=[data.source||'Calendar',...(data.warnings||[])].join(' · ');renderCalendar();
     }catch{$('eventList').innerHTML=empty('Calendar unavailable.');$('calendarSource').textContent='Use Open calendar to check directly.';}finally{setLoading('events',false);}
   }
+  $('deadlineFilter').onchange=renderRadar;
+  $('deadlineClass').onchange=()=>{state.deadlineClass=$('deadlineClass').value;renderRadar();};
   function refresh(){applyLayout();loadCore();loadCampus();loadEvents();}
   $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim(),plan=state.tab==='upcoming'?'automatic':state.tab;if(!name||creating)return;creating=true;taskRevision++;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:plan==='today',...TaskPlanning.change(plan)});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify(`Added to ${{today:'today',tomorrow:'tomorrow',automatic:'automatic planning',later:'backlog'}[plan]}.`);}catch(error){$('taskMessage').textContent=error.message;}finally{creating=false;$('addButton').disabled=false;}});
   document.querySelector('.tabs').addEventListener('click',event=>{const button=event.target.closest('[data-tab]');if(button){state.tab=button.dataset.tab;renderTasks();}});

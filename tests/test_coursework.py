@@ -25,10 +25,10 @@ class CourseworkTests(unittest.TestCase):
             self.assertNotEqual(coursework.identity(original),coursework.identity(other))
         self.assertNotEqual(coursework.title_key('HQ 12-1'),coursework.title_key('HQ 1-21'))
 
-    def test_lifecycle_requires_actual_obligation(self):
+    def test_lifecycle_never_counts_as_obligation(self):
         due=item();available=item('HQ 12-1 - Available',due='2026-09-20T00:00:00-04:00')
         ends=item('HQ 12-1 - Availability Ends');lone=item('Safety module - Available',unit='1134648')
-        self.assertEqual(coursework.actionable([due,available,ends,lone]),[due,lone])
+        self.assertEqual(coursework.actionable([due,available,ends,lone]),[due])
 
     def test_read_deduplication_preserves_user_owned_state(self):
         clean=item('MFET 163 — HQ 12-1',status='done',planningMode='planned',scheduledFor='2026-09-30',difficulty='Hard',focus=True,project='Design')

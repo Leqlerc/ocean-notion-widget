@@ -101,7 +101,7 @@ class NotionAthleticsProvider:
     def load(self, key):
         selected = day_key(key)
         monday = selected - timedelta(days=selected.weekday())
-        start, end = (monday-timedelta(days=28)).isoformat(), (monday+timedelta(days=6)).isoformat()
+        start, end = min(monday-timedelta(days=28), date(2026,9,24)).isoformat(), max(monday+timedelta(days=6), datetime.now(notion.TZ).date()).isoformat()
         filter = {'and':[{'property':'Date','date':{'on_or_after':start}}, {'property':'Date','date':{'on_or_before':end}}]}
         with ThreadPoolExecutor(max_workers=2) as pool:
             daily_future = pool.submit(notion.query, DAILY, filter)
@@ -134,6 +134,7 @@ class NotionAthleticsProvider:
         return {'date':key,'today':datetime.now(notion.TZ).date().isoformat(), 'week':week,
                 'day':next(d for d in week if d['date']==key), 'sets':sets,
                 'exercises':sorted(exercises,key=lambda e:(not e['rotation'],e['name'])), 'recent':history,
+                'progress':[d for d in days if d['date'] >= '2026-09-24'],
                 'workoutTypes':list(WORKOUT_TYPES),'qualities':list(QUALITIES),
                 'canLogSets':not bool(exercise_error or set_error), 'setMessage':exercise_error or set_error,
                 'updatedAt':datetime.now(notion.TZ).isoformat()}
