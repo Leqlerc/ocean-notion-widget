@@ -66,7 +66,7 @@ dialog{background:#0d1c22;border:1px solid rgba(167,215,213,.25);border-radius:1
 .dashboard>.campus-card,.dashboard>.calendar-card{grid-column:1/-1}
 .dashboard>.tasks-card,.dashboard>.deadlines-card{height:620px;box-sizing:border-box}
 .home-side{display:grid;gap:18px;min-width:0}
-@media(min-width:1181px){.home-side{height:620px;grid-template-rows:minmax(0,1fr) auto;align-self:start}.home-side>.events-card{min-height:0;overflow:auto}.home-side>.habitat-card{align-self:end}}
+@media(min-width:1181px){.home-side{height:620px;align-self:start}.home-side>.events-card{height:100%;min-height:0;display:flex;flex-direction:column}.home-side>.events-card .compact-events{max-height:none;flex:1;overflow:auto}}
 .academic-radar{max-height:none;flex:1;overflow:auto}
 .class-radar-head{width:100%;border:0;border-radius:0;text-align:left;background:transparent;color:var(--text);cursor:pointer}
 .class-radar-head strong{font-size:.82rem;white-space:nowrap}.class-radar-head span{text-align:right}.class-radar-head small{display:block;margin-top:3px}
@@ -74,7 +74,7 @@ dialog{background:#0d1c22;border:1px solid rgba(167,215,213,.25);border-radius:1
 .overdue-text{color:#ffa4b0}.task-row-actions{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}.task-row-actions .focus-button{display:inline-block}.task-row-actions button{padding:3px 6px;font-size:.68rem;min-height:28px}.task-row .task-text{min-width:0}.task-name{overflow-wrap:anywhere}
 .due-badge{font-size:.6rem;font-weight:800;letter-spacing:.035em;padding:3px 5px;border:1px solid #7a929e;border-radius:5px;color:#c8d9e3;white-space:nowrap}.due-badge.is-overdue{color:#ffb0bc;border-color:#d96379;background:#421e2a}.due-badge.is-due-today{color:#ffe2a0;border-color:#d4ac56;background:#382e19}
 .campus-grid{grid-template-columns:repeat(var(--campus-columns,3),minmax(0,1fr))}
-.compact-events{max-height:397px;display:block}.compact-events section+section{margin-top:14px;border-top:1px solid #536975;padding-top:12px}.compact-events h3{font-size:.7rem}.event-row{padding:8px 0}.event-name{overflow-wrap:anywhere}
+.compact-events{max-height:none;display:block;overflow:auto}.compact-events section+section{margin-top:14px;border-top:1px solid #536975;padding-top:12px}.compact-events h3{font-size:.7rem}.event-row{padding:8px 0}.event-name{overflow-wrap:anywhere}
 .habitat-card{padding:13px 16px;position:relative;overflow:hidden;background:linear-gradient(150deg,#182c42,#112b35 65%,#274d51)}.habitat-card h2{font-size:.75rem;color:#bdd7df}.habitat-scene{height:92px;position:relative;overflow:hidden;pointer-events:none}.habitat-moon{position:absolute;width:26px;height:26px;right:18%;top:7px;border-radius:50%;background:#d9e7ef;box-shadow:0 0 32px #b2c9de55}.habitat-resident{position:absolute;left:35%;top:8px;font-size:48px;color:#acd2f3;filter:drop-shadow(0 0 12px #82bcde88);animation:habitat-float 6s ease-in-out infinite;transition:filter .4s}.habitat-card:hover .habitat-resident{filter:drop-shadow(0 0 18px #c4e4ff)}.habitat-ripple{position:absolute;bottom:5px;left:20%;width:60%;height:17px;border:1px solid #8dbbca55;border-radius:50%;box-shadow:0 8px 0 #8dbbca18}.habitat-caption{font-size:.66rem;color:#98b9c8;margin:0}.habitat-resident img{width:100%;height:100%;object-fit:contain}
 @keyframes habitat-float{50%{transform:translateY(-5px) rotate(4deg)}}
 @media(prefers-reduced-motion:reduce){.habitat-resident{animation:none;transition:none}}

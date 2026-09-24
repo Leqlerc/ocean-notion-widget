@@ -6,6 +6,7 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  const RealDate=w.Date;w.Date=class extends RealDate{constructor(...args){super(...(args.length?args:['2026-09-23T12:00:00-04:00']));}static now(){return new RealDate('2026-09-23T12:00:00-04:00').getTime();}};
  let records=Array.from({length:7},(_,i)=>({id:'t'+i,name:'Assignment '+i,course:'MFET 163',sourceId:'brightspace:'+i,status:'next',focus:false,due:`2026-09-${String(23+i).padStart(2,'0')}T23:59:00-04:00`}));
  records[5].course='CS 159';records[5].due='2026-09-22T23:59:00-04:00';
+ records.push({id:'lifecycle',name:'Homework 5 - Available',course:'CS 159',sourceId:'brightspace:lifecycle',status:'next',focus:false,due:'2026-09-24T08:00:00-04:00'});
  const requests=[];
  w.fetch=async(url,options={})=>{
   let data={};
@@ -19,12 +20,16 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  };
  w.eval([...scripts,'home.js'].map(read).join('\n')+';window.sprintStore=NOceanStore;');await tick();
  assert.equal($('.dashboard').style.getPropertyValue('--home-columns'),'minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,.85fr)');
+ assert.equal(w.document.querySelector('.habitat-card'),null);
+ assert.equal(w.document.querySelector('#homeSide .events-card')!==null,true);
  assert.equal($('#deadlineView').value,'date');
  assert.equal(w.document.querySelectorAll('#academicRadar .coursework-item').length,7);
+ assert.doesNotMatch($('#academicRadar').textContent,/Homework 5 - Available/);
  assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,0);
  assert.match($('#academicRadar .coursework-title').textContent,/Assignment 5/);
  $('#deadlineView').value='class';$('#deadlineView').dispatchEvent(new w.Event('change'));
  assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,2);
+ assert.doesNotMatch($('#academicRadar').textContent,/Homework 5 - Available/);
  assert.equal(w.document.querySelectorAll('#course-MFET163 .coursework-item').length,3);
  assert.match($('#course-MFET163').textContent,/\+3 later/);
  $('[data-course-toggle="MFET163"]').click();assert.equal($('#course-MFET163').hidden,true);
@@ -40,7 +45,7 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
   w.eval(`sprintStore.saveSettings({dashboard:{deadlineCount:'${count}'}})`);w.dispatchEvent(new w.StorageEvent('storage',{key:'nocean.command.settings.v1'}));await tick();
   assert.equal(w.document.querySelectorAll('#course-MFET163 .coursework-item').length,expected);
  }
- w.eval("sprintStore.saveSettings({dashboard:{showTasks:false,showEvents:false,showHabitat:false,showWeather:false,showDining:false}})");w.dispatchEvent(new w.StorageEvent('storage',{key:'nocean.command.settings.v1'}));await tick();
+ w.eval("sprintStore.saveSettings({dashboard:{showTasks:false,showEvents:false,showWeather:false,showDining:false}})");w.dispatchEvent(new w.StorageEvent('storage',{key:'nocean.command.settings.v1'}));await tick();
  assert.equal($('.tasks-card').hidden,true);assert.equal($('#homeSide').hidden,true);assert.equal($('[data-home-module="showWeather"]').hidden,true);assert.equal($('.deadlines-card').hidden,false);
  assert.equal($('.dashboard').style.getPropertyValue('--home-columns'),'minmax(0,1.2fr)');
  dom.window.close();
@@ -50,5 +55,5 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  for(const key of ['black','eclipse','white','green']){v.document.querySelector(`button[data-accent="${key}"]`).click();assert.equal(JSON.parse(v.localStorage.getItem('nocean.command.settings.v1')).appearance.accent,key);assert.equal(v.document.querySelector(`button[data-accent="${key}"]`).getAttribute('aria-pressed'),'true');}
  const dining=v.document.getElementById('showDining');dining.checked=false;dining.dispatchEvent(new v.Event('change',{bubbles:true}));assert.equal(JSON.parse(v.localStorage.getItem('nocean.command.settings.v1')).dashboard.showDining,false);
  assert.equal(JSON.parse(v.localStorage.getItem('nocean.command.settings.v1')).dashboard.showTasks,true);
- settings.window.close();console.log('Home sprint passed: chronological deadlines by default, optional class grouping, accordion persistence, direct Focus/Today, due badges, event order/significance, layout preferences, and 24 persisted accents.');
+ settings.window.close();console.log('Home sprint passed: chronological deadlines by default, lifecycle availability excluded, Events expanded without Habitat, optional class grouping, accordion persistence, direct Focus/Today, due badges, event order/significance, layout preferences, and 24 persisted accents.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

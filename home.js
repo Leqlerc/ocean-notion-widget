@@ -28,7 +28,7 @@
   function applyLayout(){
     const prefs=NOceanStore.settings().dashboard;
     document.querySelectorAll('[data-home-module]').forEach(node=>{node.hidden=prefs[node.dataset.homeModule]===false;});
-    const side=$('homeSide');side.hidden=prefs.showEvents===false&&prefs.showHabitat===false;
+    const side=$('homeSide');side.hidden=prefs.showEvents===false;
     const columns=[prefs.showTasks!==false?'1.35fr':'',prefs.showDeadlines!==false?'1.2fr':'',!side.hidden?'.85fr':''].filter(Boolean);
     document.querySelector('.dashboard').style.setProperty('--home-columns',columns.map(x=>`minmax(0,${x})`).join(' ')||'minmax(0,1fr)');
     document.querySelector('.dashboard').style.setProperty('--home-mid-columns',Math.max(1,Number(prefs.showTasks!==false)+Number(prefs.showDeadlines!==false)));
