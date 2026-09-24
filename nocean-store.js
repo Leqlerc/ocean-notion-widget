@@ -12,7 +12,8 @@ const NOceanStore = (() => {
     {id:'sheets',name:'Change sheets',every:7},
     {id:'shopping',name:'Shop essentials',every:7}
   ];
-  const accentPresets = new Set(['ice','mint','lavender','rose','cream','white','blue','green','lilac','pink','peach','gray','denim','teal','purple','berry','sand','eclipse','navy','forest','plum','wine','copper','black','frost','pistachio','periwinkle','blush','lemon','silver','cyan','lime','iris','coral','gold','slate','azure','jade','orchid','ruby','orange','taupe','ocean','olive','amethyst','brick','ochre','charcoal']);
+  const accentPresets = new Set(["red-soft","red-light","coral","red","ruby","wine","orange-soft","peach","orange-light","orange","copper","orange-dark","cream","lemon","yellow-light","gold","yellow","yellow-dark","mint","green","green-medium","jade","forest","green-dark","frost","ice","blue","azure","denim","navy","lavender","lilac","periwinkle","iris","purple","plum","rose","pink-light","pink","orchid","berry","pink-dark","white","silver","gray","slate","eclipse","black"]);
+  const accentAliases={"blush":"red-light","brick":"wine","taupe":"slate","sand":"peach","ochre":"yellow-dark","pistachio":"green","lime":"green-medium","olive":"green-dark","teal":"jade","ocean":"navy","cyan":"azure","amethyst":"plum","charcoal":"eclipse"};
   const difficultyModes = new Set(['off','solid','glow']);
   const cardArtKeys = ['tasks','deadlines','events','campus','calendar'];
   const biomeAssets = new Set(['blood-kelp','bulb-zone','cove-tree','dunes','grand-reef','islands','jelly-caves','kelp-day','kelp-night','lily-caves','lily-islands','lost-river','mountains','mushroom-forest','shallows-night','sparse-reef','twisty-bridge-night','twisty-bridge']);
@@ -50,7 +51,7 @@ const NOceanStore = (() => {
       appearance:{
         topBiomeHeight:clamp(rawAppearance.topBiomeHeight,80,500,legacyHeight),
         cardOpacity:clamp(rawAppearance.cardOpacity,20,100,defaults.appearance.cardOpacity),
-        accent:accentPresets.has(rawAppearance.accent)?rawAppearance.accent:defaults.appearance.accent,
+        accent:accentPresets.has(rawAppearance.accent)?rawAppearance.accent:accentAliases[rawAppearance.accent]||defaults.appearance.accent,
         difficultyColors:difficultyModes.has(rawAppearance.difficultyColors)?rawAppearance.difficultyColors:defaults.appearance.difficultyColors,
         calendarWorkload:['off','solid','outline'].includes(rawAppearance.calendarWorkload)?rawAppearance.calendarWorkload:defaults.appearance.calendarWorkload,
         cardArt

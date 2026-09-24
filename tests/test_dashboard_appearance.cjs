@@ -28,7 +28,7 @@ assert.match(rootStyles.get('--card-surface-strong'),/^rgba\(17,37,44,0\.168\)$/
 
 assert.equal(context.appearance.setAccent('lavender'),true);
 assert.equal(document.body.dataset.accent,'lavender');
-assert.equal(rootStyles.get('--accent'),'#c7adff');
+assert.equal(rootStyles.get('--accent'),'#f3e8ff');
 assert.equal(context.appearance.setDifficultyColors('glow'),true);
 assert.equal(document.body.dataset.difficultyColors,'glow');
 for(const mode of ['off','solid','outline']){
@@ -62,7 +62,7 @@ for(const removed of ['homeHeadingSetting','homeSubtitleSetting','resetHomeCopy'
 assert.match(styles,/var\(--top-biome-height,176px\)/);
 assert.match(styles,/--card-surface-strong/);
 assert.match(source('home.js'),/workload=items\.deadlines\.length\+items\.work\.length/);
-for(const level of [1,2,3,4,5])assert.match(styles,new RegExp(`calendar-day\\.workload-${level}`));
+for(const level of [1,2,3,4,5])assert.match(source('nocean.css'),new RegExp(`\\.workload-${level}`));
 assert.doesNotMatch(styles,/calendar-day\.workload-[1-5]\{background:linear-gradient/);
 assert.match(styles,/\.card\{background-color:[^}]+backdrop-filter:none/);
 assert.match(styles,/\.calendar-day\.is-today\{box-shadow:/);assert.match(styles,/\.calendar-day\.is-selected\{outline:/);

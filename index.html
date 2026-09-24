@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#071016">
   <title>NOcean · Home</title>
-  <link rel="stylesheet" href="/nocean.css?v=2">
-  <link rel="stylesheet" href="/nocean-system.css?v=6">
+  <link rel="stylesheet" href="/nocean.css?v=21">
+  <link rel="stylesheet" href="/nocean-system.css?v=21">
   <script src="/nocean-shared.js?v=20" defer></script>
   <script src="/nocean-data.js?v=3" defer></script>
-  <script src="/nocean-store.js?v=20" defer></script>
-  <script src="/nocean-dashboard-appearance.js?v=20" defer></script>
+  <script src="/nocean-store.js?v=21" defer></script>
+  <script src="/nocean-dashboard-appearance.js?v=21" defer></script>
   <script src="/nocean-ui.js?v=20" defer></script>
   <script src="/time-backgrounds.js?v=3" defer></script>
   <script src="/nocean-deadlines.js?v=2" defer></script>
   <script src="/nocean-planning.js?v=1" defer></script>
   <script src="/calendar-semantics.js?v=20" defer></script>
   <script src="/nocean-motion.js?v=2" defer></script>
-  <script src="/nocean-signals.js?v=1" defer></script><script src="/nocean-upkeep.js?v=1" defer></script><script src="/home.js?v=20" defer></script>
-<link rel="stylesheet" href="/nocean-sprint.css?v=1"></head>
+  <script src="/nocean-signals.js?v=21" defer></script><script src="/nocean-upkeep.js?v=21" defer></script><script src="/home.js?v=21" defer></script>
+<link rel="stylesheet" href="/nocean-sprint.css?v=21"></head>
 <body data-page="home">
 <div class="app">
   <header class="topbar">
@@ -38,17 +38,17 @@
           <label class="sr-only" for="taskName">Task name</label>
           <input id="taskName" required maxlength="500" placeholder="What will you actually work on?" autocomplete="off">
           <button type="submit" class="primary" id="addButton">Add to today</button>
-          <div class="capture-options">
+          <details class="capture-details"><summary>Details · project, due date, difficulty</summary><div class="capture-options">
             <label>Project<input id="taskProject" list="projectOptions" placeholder="Optional" maxlength="100"></label>
             <label>Due date<input id="taskDue" type="date"></label>
             <label>Time<input id="taskTime" type="time"></label>
             <label>Difficulty<select id="taskDifficulty"><option>Unrated</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
-          </div>
+          </div></details>
         </form>
-        <nav class="tabs" aria-label="Work plan"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="later" aria-pressed="false">Backlog</button></nav>
+        <nav class="tabs" aria-label="Work plan"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="later" aria-pressed="false">Backlog</button><button data-tab="maintenance">Maintenance</button></nav>
         <div id="taskMessage" class="panel-message" role="status"></div>
         <div id="taskList" class="scroll task-list"><p class="empty">Loading the work plan…</p></div>
-        <div id="upkeepDue"></div><div class="card-foot"><span id="taskHint">Only work you deliberately planned or focused appears here.</span><a href="/tasks.html">All tasks →</a></div>
+        <div id="upkeepDue"></div><div id="maintenancePane" class="maintenance-pane" hidden><p class="section-note">Recurring chores appear in Today automatically. Saved on this device.</p><div id="upkeepManage"></div><form id="upkeepForm"><input id="upkeepId" type="hidden"><label>Name<input id="upkeepName" required maxlength="80"></label><label>Schedule<select id="upkeepMode"><option value="interval">Every N days</option><option value="weekly">Weekly</option></select></label><label id="upkeepIntervalLabel">Days<input id="upkeepEvery" type="number" min="1" max="365" value="7" required></label><label id="upkeepWeekdayLabel" hidden>Weekday<select id="upkeepWeekday"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label><label>First due on or after<input id="upkeepStart" type="date" required></label><button class="primary">Save upkeep</button><button type="button" id="upkeepCancel">Cancel edit</button></form><p id="upkeepMessage" role="status"></p></div><div class="card-foot"><span id="taskHint">Only work you deliberately planned or focused appears here.</span><a href="/tasks.html">All tasks →</a></div>
       </section>
 
       <section class="card deadlines-card" data-home-module="showDeadlines" data-card-art="deadlines" aria-labelledby="radarTitle">
@@ -88,7 +88,7 @@
         </div>
       </section>
     </div>
-  <section class="card upkeep-card"><details><summary>Maintenance / Upkeep</summary><p class="section-note">Recurring chores appear in Today automatically. Saved on this device.</p><div id="upkeepManage"></div><form id="upkeepForm"><input id="upkeepId" type="hidden"><label>Name<input id="upkeepName" required maxlength="80"></label><label>Schedule<select id="upkeepMode"><option value="interval">Every N days</option><option value="weekly">Weekly</option></select></label><label id="upkeepIntervalLabel">Days<input id="upkeepEvery" type="number" min="1" max="365" value="7" required></label><label id="upkeepWeekdayLabel" hidden>Weekday<select id="upkeepWeekday"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label><label>First due on or after<input id="upkeepStart" type="date" required></label><button class="primary">Save upkeep</button><button type="button" id="upkeepCancel">Cancel edit</button></form><p id="upkeepMessage" role="status"></p></details></section></main>
+  </main>
 </div>
 <datalist id="projectOptions"></datalist>
 <dialog id="editDialog" aria-labelledby="editTitle">

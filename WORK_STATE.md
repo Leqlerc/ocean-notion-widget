@@ -1,34 +1,32 @@
 # NOcean Work State
 
-## Release checkpoint — 2026-09-23
+## Current release — 2026-09-23
 
-Product sprint completed on `main`, based on `6f62599`. Commit/push follow this handoff update. GitHub → Vercel production verification for this release remains pending; local/browser checks are not proof of deployment.
+Corrective product sprint on `main`, based on `d423a21`. Commit/push follow this update. Production deployment is not verified; no Vercel/integration/backend investigation was performed in this sprint.
 
-## Implemented
+## Current product behavior
 
-- Home Deadlines is one chronological feed, with Due Date / All, Class, and Exams filters. Pending submission confirmations stay ahead of submitted items; existing historical hiding and independent submission state are preserved. Obsolete per-course limit settings were removed from the UI.
-- Announcements/opening/availability notices are excluded from Home Deadlines and Events. Brightspace ingestion/read filtering now excludes standalone informational notices even without a matching due record. Stored records are not deleted. Ordinary scheduling is excluded from Deadlines; assignment/submission deadlines are excluded from Events. Routine events fill Next; exams/tests/quizzes and significant commitments fill On the Clock. Recitation/recitation-quiz pairs merge only for the same identified course and exact start instant.
-- Maintenance / Upkeep has a dedicated section on Home and Tasks, with create/edit/remove, interval days, weekly weekday, and initial anchor date. Due items are projected directly into Today from the canonical local record: no copied tasks or duplicate generated occurrences. Completion advances from the actual completion date (weekly → next selected weekday). Legacy schedules receive a stable start anchor; one-time task planning is unchanged.
-- Reflections is a fifth top-level destination with square tiles and title/date/type/content CRUD. Existing local reflection records remain visible; records no longer silently truncate at 100. Athletics no longer embeds the reflection editor. The legacy Machine route remains compatible.
-- Athletics has a 26-week contribution heatmap, completed workouts this week/month, daily streak, and weekly consistency. Provider history supplies progress; only dates on/after September 24, 2026 count, and future dates are excluded. Existing older workouts are retained. No imported/backfilled progress records.
-- Wiley/Windsor show up to three ranked protein picks from the existing pipeline. Existing occupancy thresholds/colors drive their borders, with stronger high-occupancy borders. Weather uses current WMO codes and wind speed for snow → rain/storm → wind → cloudy → clear border precedence.
-- Tasks, Deadlines, and the Habitat bottom edge align on desktop using the existing grid row. Mobile retains stacked cards. All 24 original accent keys/colors remain, with 24 additional organized swatches (48 total).
+- Home Tasks has more of the existing grid width. Titles use their own full-width row; badges/actions sit below. Optional capture fields collapse under Details to prevent vertical compression. Desktop Tasks/Deadlines/Habitat remain aligned; mobile stacks normally.
+- Home and Tasks expose Today, Tomorrow, Backlog, and Maintenance (Tasks retains All). Backlog also includes the former Upcoming items, so removing that tab hides no work. Maintenance's canonical editor lives inside its task category; there is no separate Home card. Due occurrences still appear in Today without copied records and completion advances the existing interval/weekly schedule.
+- Active deadline titles/links are neutral white, with no yellow row highlight. Submitted items remain muted. Chronological ordering, class/exam filters, announcement separation, submission confirmation, and historical hiding remain unchanged.
+- Weather has its normal border. Today/Tomorrow task views use the existing calendar 0–5 workload scale and shared color definitions, counting unique work/pending coursework plus due maintenance. Backlog/Maintenance have normal borders. User accents remain independent of workload colors.
+- Athletics has no Maintenance card/tile. Habits follows the training/recovery grid. Nutrition and Sleep each show inputs followed directly by a consistency heatmap.
+- One contribution-map renderer powers all three 26-week maps. Workout cells expand across the card width (1278px in the desktop fixture), retaining the September 24, 2026 workout cutoff. Nutrition: empty / any positive field / calories + protein logged. Sleep: active when hours are logged. These show logging completeness, not dietary or sleep scores. Future history is not rendered.
+- Accent selector has exactly eight labeled families (Red, Orange, Yellow, Green, Blue, Purple, Pink, Chrome), six shades from light to dark each. Meaningful old keys remain; retired colors map to compatible shades. Every previous saved accent resolves safely.
 
-## Persistence and boundaries
+## Persistence / preserved boundaries
 
-- Maintenance and Reflections reuse `nocean.command.settings.v1` / `nocean.machine.local.v1` on this device, matching the existing persistence boundary. No server database migration or cross-device sync was added. Save failures in the new editors are surfaced.
-- Tasks, Projects, Athletics Daily logs, Training Sets, Exercises, and habits retain existing Notion providers. Google/Notion calendar source boundaries and partial-failure behavior remain intact. No live external records were mutated for tests.
-- Existing theme/background/card customization and independent submission confirmation remain intact. Active pages carry refreshed script versions.
+- Maintenance, nutrition, sleep, and reflections remain device-local using existing keys. No records deleted, migrations, or backfills.
+- Tasks/Projects/training/habits providers, Brightspace ingestion, calendar integrations, Reflections CRUD/navigation, and authentication were not changed. Shared Machine code guards legacy-only controls; the legacy route remains compatible.
+- Earlier shipped dining protein picks/occupancy borders, source filtering/deduplication, and theme/card customization remain intact. Habitat still uses its previously documented temporary star artwork.
 
-## Verification
+## Checks actually run
 
-- 24 Python tests passed: `tests.test_coursework` and `tests.test_iteration`, including the progress cutoff and stricter lifecycle exclusion.
-- Nine Node suites passed: product sprint, Home sprint, Athletics page, daily-use loop, product reset/navigation, dashboard appearance, frontend, UI, and deadlines (five time zones). Coverage includes classification, conservative recitation deduplication, cross-course chronological ordering and filters, interval/weekly recurrence, Today auto-population/no duplicates, reflection CRUD/persistence, and weather precedence.
-- Changed JavaScript syntax checks, Python compileall, and `git diff --check` passed.
-- Local browser fixtures: `tests/layout.html` showed no overflow at 1440, 1536, and 390px (including Tasks). Desktop Tasks/Deadlines/Habitat bottoms measured exactly 872px. Home screenshots visually reviewed at desktop and mobile. Reflection create/reload worked at 390px; no script errors with complete provider fixtures. Test dependencies and screenshots are isolated in ignored `.test-deps/`.
+- Eight targeted Node suites passed: corrective sprint, product sprint, Home sprint, Athletics page, daily-use loop, dashboard appearance, frontend, UI. They cover recurrence/Today no-duplicates, view transitions, workload count changes, deadline filters, nutrition/sleep signals, workout cutoff, eight ordered color families, all legacy accent keys, persistence and existing task flows.
+- Changed JavaScript syntax checks and final `git diff --check` passed. No backend changes; Python suites were not rerun.
+- Browser fixtures: `tests/layout.html` at 1440/1536/390px; Home Tasks width 563px, title area 491px, all three Home bottom edges at 872px. Verified neutral computed deadline color and transparent pending border, no Weather condition outline, Maintenance tab placement, three Athletics heatmaps, nutrition/sleep save updates, 48 buttons/eight family labels, and no JS errors or mobile document overflow. Home/maintenance/Athletics/palette screenshots visually reviewed. Fixtures and dependencies remain in ignored `.test-deps/`.
 
-## Remaining / next action
+## Next action / limitations
 
-- Verify the pushed commit reaches READY Production through the existing GitHub → Vercel integration, then check live classification and data display read-only.
-- Habitat still uses the previously documented temporary star artwork; this sprint only changed alignment.
-- Earlier deferred work remains: richer Brightspace discovery, multipart coursework, optional provider migration, and owner-authenticated duplicate reconciliation. No cleanup/archive operation was performed; scheduled Brightspace timing remains unproven.
+- Verify this commit's normal GitHub → Vercel production release when deployment verification is requested. No implementation blocker remains in this corrective scope.
+- Earlier deferred provider/discovery/duplicate-cleanup work remains out of scope. Local upkeep/recovery/reflection data does not sync across devices.

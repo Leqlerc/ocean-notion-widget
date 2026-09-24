@@ -29,13 +29,14 @@
     const prefs=NOceanStore.settings().dashboard;
     document.querySelectorAll('[data-home-module]').forEach(node=>{node.hidden=prefs[node.dataset.homeModule]===false;});
     const side=$('homeSide');side.hidden=prefs.showEvents===false&&prefs.showHabitat===false;
-    const columns=[prefs.showTasks!==false?'1.1fr':'',prefs.showDeadlines!==false?'1.2fr':'',!side.hidden?'.85fr':''].filter(Boolean);
+    const columns=[prefs.showTasks!==false?'1.4fr':'',prefs.showDeadlines!==false?'1.1fr':'',!side.hidden?'.85fr':''].filter(Boolean);
     document.querySelector('.dashboard').style.setProperty('--home-columns',columns.map(x=>`minmax(0,${x})`).join(' ')||'minmax(0,1fr)');
     document.querySelector('.dashboard').style.setProperty('--home-mid-columns',Math.max(1,Number(prefs.showTasks!==false)+Number(prefs.showDeadlines!==false)));
     document.querySelector('.campus-grid').style.setProperty('--campus-columns',Math.max(1,['showWeather','showFacilities','showDining'].filter(key=>prefs[key]!==false).length));
   }
   function plannedFor(task,tab){
     if(task.status==='done')return state.lingering.has(task.id)&&state.lingerTabs.get(task.id)===tab;
+    if(tab==='later')return TaskPlanning.matches(task,'later',dayKey())||TaskPlanning.matches(task,'upcoming',dayKey());
     return TaskPlanning.matches(task,tab,dayKey());
   }
   function taskRow(task){
@@ -49,12 +50,17 @@
   }
   function renderTasks(){
     document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===state.tab);b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab));});
+    const maintenance=state.tab==='maintenance';
+    $('quickAdd').hidden=maintenance;$('taskList').hidden=maintenance;
+    document.querySelector('.tasks-card .card-foot').hidden=maintenance;
+    NOceanUpkeep.render(state.tab);renderWorkload();
+    if(maintenance){$('tasksTitle').textContent='Maintenance';$('taskCount').textContent=NOceanStore.settings().maintenance.length+' recurring';return;}
     const visible=visibleTasks();
     $('tasksTitle').textContent={today:'Today',tomorrow:'Tomorrow',upcoming:'Upcoming',later:'Backlog'}[state.tab];
     $('taskCount').textContent=`${visible.filter(t=>t.status!=='done').length} planned`;
     const blank=empty(state.tab==='today'?'No deliberate work yet. Add the next thing you will actually do.':'Nothing planned here.');
     if(typeof TaskMotion!=='undefined')TaskMotion.render($('taskList'),visible,taskRow,blank);else $('taskList').innerHTML=visible.map(taskRow).join('')||blank;
-    $('taskHint').textContent={today:'Today’s plan and automatic work due today or overdue.',tomorrow:'Tomorrow’s plan and automatic work due tomorrow.',upcoming:'Work planned or due in 2–14 days. Planning never moves the deadline.',later:'Backlog, undated work, and work beyond the next two weeks.'}[state.tab];
+    $('taskHint').textContent={today:'Today’s plan and automatic work due today or overdue.',tomorrow:'Tomorrow’s plan and automatic work due tomorrow.',upcoming:'Work planned or due in 2–14 days. Planning never moves the deadline.',later:'Undated work, deferred tasks, and work beyond tomorrow.'}[state.tab];
     $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',upcoming:'Add automatic',later:'Add to backlog'}[state.tab];
     if(typeof NOceanUpkeep!=='undefined')NOceanUpkeep.render(state.tab);
     updateLifeStatus();
@@ -96,7 +102,12 @@
     const events=state.events.filter(e=>e.at&&dateDay(e.at)===day);
     return {deadlines,work,events};
   }
+  function renderWorkload(){
+    NOceanSignals.workloadOutline(document.querySelector('.tasks-card'),state.tasks,state.tab);
+  }
+  document.addEventListener('nocean:upkeep',()=>{renderWorkload();updateLifeStatus();});
   function renderCalendar(){
+    renderWorkload();
     const monthDate=new Date(state.calendarMonth+'-01T12:00:00'),year=monthDate.getFullYear(),month=monthDate.getMonth();
     const firstDay=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();
     $('calendarLabel').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(monthDate);
@@ -169,7 +180,7 @@
     const prefs=NOceanStore.settings().dashboard,fmt=n=>Math.round(Number(n)),threshold=Math.max(10,Math.min(90,Number(prefs.rainThreshold)||35));
     const current=fmt(data.current.temperature_2m),todayRain=rainWindow(data,0,threshold),tomorrowRain=rainWindow(data,1,threshold),highs=data.daily.temperature_2m_max,lows=data.daily.temperature_2m_min;
     const delta=fmt(highs[1]-highs[0]),decision=tomorrowRain.startsWith('No meaningful')?(Math.abs(delta)>=8?`Tomorrow’s high is ${Math.abs(delta)}° ${delta>0?'warmer':'cooler'} than today.`:'No major weather swing between today and tomorrow.'):`Plan around rain tomorrow: ${tomorrowRain}.`;
-    $('weather').closest('.campus-column').dataset.condition=NOceanSignals.weather(data.current);
+
     $('weather').innerHTML=`<div class="forecast-grid"><article class="forecast-day"><strong>Today · ${esc(weatherCode(data.current.weather_code))}</strong><div class="forecast-temp">${current}°</div><div class="forecast-detail">High ${fmt(highs[0])}° · Low ${fmt(lows[0])}°<br>Rain: ${esc(todayRain)}</div></article><article class="forecast-day"><strong>Tomorrow · ${esc(weatherCode(data.daily.weather_code?.[1]))}</strong><div class="forecast-temp">${fmt(highs[1])}° <span class="muted">high</span></div><div class="forecast-detail">Low ${fmt(lows[1])}°<br>Rain: ${esc(tomorrowRain)}</div></article></div><p class="forecast-decision">${esc(decision)}</p>`;
   }
   function renderDining(data){

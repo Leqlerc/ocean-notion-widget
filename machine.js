@@ -11,7 +11,9 @@
     $('sleepHours').value=sleep.hours||'';$('sleepQuality').value=sleep.quality||'';
     $('summaryNutrition').textContent=nutrition.protein?`${nutrition.protein}g protein${nutrition.calories?' · '+nutrition.calories+' kcal':''}`:'Not logged';
     $('summarySleep').textContent=sleep.hours?`${sleep.hours}h${sleep.quality?' · '+sleep.quality:''}`:'Not logged';
-    renderMaintenance();renderReflections();
+    if($('maintenanceList'))renderMaintenance();renderReflections();
+    if($('nutritionConsistency'))NOceanSignals.renderConsistency($('nutritionConsistency'),data.nutrition,'nutrition',dayKey());
+    if($('sleepConsistency'))NOceanSignals.renderConsistency($('sleepConsistency'),data.sleep,'sleep',dayKey());
   }
   function renderMaintenance(){
     const items=NOceanStore.maintenanceStatus(dayKey()),due=items.filter(x=>x.isDue&&!x.completedToday).length;
@@ -34,11 +36,11 @@
   }
   document.addEventListener('nocean:training-date',event=>{selected=event.detail.date;renderLocal();loadHabits();});
   document.addEventListener('nocean:training',event=>{if(event.detail.date!==selected)return;const d=event.detail.day;$('summaryTraining').textContent=d.completed?`${d.workoutType} · complete`:d.started?`${d.workoutType||d.planned} · ${event.detail.workingSets} sets`:`${d.planned} · not started`;});
-  document.querySelector('.machine-tabs').addEventListener('click',event=>{const b=event.target.closest('[data-machine-tab]');if(!b)return;document.querySelectorAll('[data-machine-tab]').forEach(x=>x.classList.toggle('active',x===b));$('nutritionForm').hidden=b.dataset.machineTab!=='nutrition';$('sleepForm').hidden=b.dataset.machineTab!=='sleep';});
+  document.querySelector('.machine-tabs')?.addEventListener('click',event=>{const b=event.target.closest('[data-machine-tab]');if(!b)return;document.querySelectorAll('[data-machine-tab]').forEach(x=>x.classList.toggle('active',x===b));$('nutritionForm').hidden=b.dataset.machineTab!=='nutrition';$('sleepForm').hidden=b.dataset.machineTab!=='sleep';});
   $('nutritionForm').addEventListener('submit',event=>{event.preventDefault();NOceanStore.saveNutrition(selected,{calories:$('nutritionCalories').value,protein:$('nutritionProtein').value,water:$('nutritionWater').value});renderLocal();toast('Nutrition saved on this device.');});
   $('sleepForm').addEventListener('submit',event=>{event.preventDefault();NOceanStore.saveSleep(selected,{hours:$('sleepHours').value,quality:$('sleepQuality').value});renderLocal();toast('Sleep saved on this device.');});
   $('habitControls').addEventListener('change',event=>{if(event.target.dataset.habit)saveHabit(event.target);});
-  $('maintenanceList').addEventListener('click',event=>{const b=event.target.closest('[data-maintenance]');if(!b)return;NOceanStore.completeMaintenance(b.dataset.maintenance,dayKey());renderLocal();toast('Maintenance updated.');});
+  $('maintenanceList')?.addEventListener('click',event=>{const b=event.target.closest('[data-maintenance]');if(!b)return;NOceanStore.completeMaintenance(b.dataset.maintenance,dayKey());renderLocal();toast('Maintenance updated.');});
   $('reflectionForm')?.addEventListener('submit',event=>{event.preventDefault();NOceanStore.addReflection({date:selected,type:$('reflectionType').value,title:$('reflectionTitle').value,body:$('reflectionBody').value});$('reflectionTitle').value='';$('reflectionBody').value='';renderLocal();toast('Reflection saved.');});
   $('reflectionList')?.addEventListener('click',event=>{const b=event.target.closest('[data-remove-reflection]');if(!b)return;NOceanStore.removeReflection(b.dataset.removeReflection);renderLocal();});
   selected=$('trainingDate').value||dayKey();renderLocal();loadHabits();
