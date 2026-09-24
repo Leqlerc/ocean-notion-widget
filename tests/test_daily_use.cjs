@@ -18,7 +18,7 @@ async function boot(){
   else return {ok:false,json:async()=>({error:'Fixture provider unavailable'})};
   return {ok:true,json:async()=>data};
  };
- w.eval(['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean-planning.js','calendar-semantics.js','nocean-store.js','nocean-signals.js','nocean-upkeep.js','home.js'].map(read).join('\n'));
+ w.eval(['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean-planning.js','calendar-semantics.js','nocean-store.js','home.js'].map(read).join('\n'));
  await tick();return {dom,w,$:id=>w.document.getElementById(id)};
 }
 (async()=>{
@@ -27,13 +27,13 @@ async function boot(){
  let {dom,w,$}=await boot();
  assert.doesNotMatch($('academicRadar').textContent,/Historical completed coursework/);
  assert.match($('taskList').textContent,/Today assignment/);assert.match($('taskList').textContent,/Overdue assignment/);
- w.document.querySelector('[data-tab="later"]').click();assert.match($('taskList').textContent,/Friday assignment/);
+ w.document.querySelector('[data-tab="upcoming"]').click();assert.match($('taskList').textContent,/Friday assignment/);
  for(const tab of ['today','tomorrow','later']){
   w.document.querySelector(`[data-tab="${tab}"]`).click();$('taskName').value='Quick '+tab;
   $('quickAdd').dispatchEvent(new w.Event('submit',{cancelable:true}));$('quickAdd').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
  }
  assert.equal(posts,3);assert.equal(records.filter(t=>t.name.startsWith('Quick')).length,3);
- w.document.querySelector('[data-tab="later"]').click();w.document.querySelector('[data-edit="up"]').click();
+ w.document.querySelector('[data-tab="upcoming"]').click();w.document.querySelector('[data-edit="up"]').click();
  $('editName').value='Edited Friday assignment';w.document.querySelector('[data-plan="tomorrow"]').click();$('editTask').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
  assert.equal(records.find(t=>t.id==='up').due,'2026-09-25T23:00:00-04:00');assert.equal(records.find(t=>t.id==='up').scheduledFor,'2026-09-23');
  w.document.querySelector('[data-tab="today"]').click();const check=w.document.querySelector('[data-complete="due"]');check.checked=true;check.dispatchEvent(new w.Event('change',{bubbles:true}));await tick();

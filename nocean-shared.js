@@ -4,7 +4,7 @@ const NOcean = (() => {
   const CONFIG = {
     timezone: 'America/Indiana/Indianapolis',
     calendarRefresh: 45000, taskRefresh: 90000, campusRefresh: 300000,
-    weather: 'https://api.open-meteo.com/v1/forecast?latitude=40.4237&longitude=-86.9212&current=temperature_2m,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FIndiana%2FIndianapolis&forecast_days=2'
+    weather: 'https://api.open-meteo.com/v1/forecast?latitude=40.4237&longitude=-86.9212&current=temperature_2m,weather_code&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FIndiana%2FIndianapolis&forecast_days=2'
   };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

@@ -13,7 +13,7 @@ const read=p=>fs.readFileSync(p,'utf8'),tick=()=>new Promise(r=>setTimeout(r,40)
   else return {ok:false,json:async()=>({error:'Unavailable fixture'})};
   return {ok:true,json:async()=>data};
  };
- w.eval(['nocean-shared.js','nocean-store.js','nocean-signals.js','athletics.js','machine.js'].map(read).join('\n'));await tick();
+ w.eval(['nocean-shared.js','nocean-store.js','athletics.js','machine.js'].map(read).join('\n'));await tick();
  assert.equal($('setControls').disabled,false);$('exercise').value='row';$('reps').value='8';$('load').value='30';$('rir').value='2';$('warmup').checked=true;
  $('setForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.match($('sets').textContent,/8 reps · 30 lb · Warm-up · 2 RIR/);
  $('completeWorkout').click();await tick();assert.match($('workoutStatus').textContent,/Completed/);

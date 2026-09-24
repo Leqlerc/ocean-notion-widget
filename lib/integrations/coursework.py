@@ -54,14 +54,12 @@ def identity(item):
 
 
 def actionable(items):
-    """Opening dates and informational notices are never submission deadlines."""
-    def notice(item):
-        name = item.get('name', '')
-        if re.search(r'\b(announcement|informational|content posted|module available)\b', name, re.I):
-            return True
-        return bool(re.search(r'\b(available|availability|opens?|posted|released)\b', name, re.I)
-                    and not re.search(r'\b(due|deadline|submit by)\b', name, re.I))
-    return [i for i in items if not notice(i)]
+    """Suppress lifecycle notifications only when the matching real due item exists."""
+    due_keys={(course_key(i),title_key(i['name'])) for i in items
+              if not LIFECYCLE.search(i['name']) and course_key(i)}
+    return [i for i in items if not (LIFECYCLE.search(i['name']) and
+            ((course_key(i),title_key(i['name'])) in due_keys or
+             re.match(r'^Week\s+\d+\s*[|:] ',i['name'],re.I)))]
 
 
 def canonical_rank(item):

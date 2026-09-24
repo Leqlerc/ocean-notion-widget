@@ -897,6 +897,3 @@ dialog::backdrop {
 .calendar-grid { row-gap:0; }
 .month-nav button { line-height:16px; }
 .archive-button { margin-right:auto; color:var(--muted); }
-
-/* Shared calendar and day-view workload scale, independent of accents. */
-.workload-1{--workload-red:#fbd5d9;--workload-ink:#371019}.workload-2{--workload-red:#efa1ad;--workload-ink:#371019}.workload-3{--workload-red:#d96379;--workload-ink:#230810}.workload-4{--workload-red:#a72d49;--workload-ink:#fff}.workload-5{--workload-red:#641329;--workload-ink:#fff}
