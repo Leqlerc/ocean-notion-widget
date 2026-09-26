@@ -2,7 +2,7 @@
 
 ## Multi-step tasks + Projects upgrade — 2026-09-26
 
-Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934fdc`. The verified implementation is commit `d56aa48`. This branch is Preview-only and must not be promoted to Production without review.
+Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934fdc`. Feature implementation is `d56aa48`; Vercel function-cap compatibility is `1b7b4a5`. This branch is Preview-only and must not be promoted to Production without review.
 
 ## Task model and persistence
 
@@ -33,7 +33,8 @@ Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934
 - Focused Node suites passed: planning, multi-step planning/calendar deduplication, project model, Tasks DOM interactions, Projects interactions/progressive load, and ProjectPlan UI.
 - Focused Python suites passed: task planning/type, task-step ownership/validation/completion semantics, project-plan compatibility/metadata, and provider task contracts. `python -m compileall -q api lib tests/preview_server.py` passed with the bundled runtime.
 - Full Python discovery ran 91 tests: 82 passed, 6 disposable-database tests skipped, and 3 unrelated current-main assertions failed in coursework/calendar legacy fixtures. Focused changed-area suites are green.
-- Browser QA used the local read-only/in-memory Preview server. Desktop and 390 px verified Tasks type/step editor, Projects workspace, in-place Multi-step creation, step completion and reopening, Checkpoint creation/snapshot, Experiment status, Progress Log state, touch sizing, and no horizontal overflow. Browser console had no warnings/errors. No production promotion occurred.
+- Browser QA used the local read-only/in-memory Preview server. Desktop and 390 px verified Tasks type/step editor, Projects workspace, in-place Multi-step creation, step completion and reopening, Checkpoint creation/snapshot, Experiment status, Progress Log state, touch sizing, and no horizontal overflow. Browser console had no warnings/errors.
+- GitHub/Vercel Preview for `1b7b4a5` reached READY at `https://ocean-notion-widget-ffhpqhf43-yiqwill-3102.vercel.app` after keeping the deployment at the Hobby-plan limit of 12 functions. The protected Preview returned its Vercel login gate externally, so authenticated live-data UI was not re-exercised there. No Production promotion occurred.
 - `git diff --check` passed.
 
 ## Known limitations / next highest ROI
