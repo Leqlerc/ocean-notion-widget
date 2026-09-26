@@ -9,7 +9,7 @@ const TaskPlanning=(()=>{
   if(task.planningMode==='backlog')return 'later';
   const planned=dateKey(task.scheduledFor),due=dateKey(task.due);
   if(planned)return planned<=today?'today':planned===add(today,1)?'tomorrow':planned<=add(today,14)?'upcoming':'later';
-  if(task.focus||task.status==='doing'||(due&&due<=today))return 'today';
+  if(task.status==='doing'||(due&&due<=today))return 'today';
   if(due===add(today,1))return 'tomorrow';
   return due&&due<=add(today,14)?'upcoming':'later';
  }
