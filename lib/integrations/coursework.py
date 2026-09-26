@@ -6,7 +6,7 @@ from lib import notion
 
 ORG_COURSES = {'1640342':'MFET 163','1631262':'CS 159','1636988':'HONR 19901',
                '1634573':'ENGR 161','36061':'COM 114','1134648':'Purdue requirements'}
-LIFECYCLE = re.compile(r'\s+[-–—]\s+(Available|Availability Ends)\s*$',re.I)
+LIFECYCLE = re.compile(r'(?:\s+[-–—:]\s*|\b)(?:available|availability\s+(?:starts?|ends?)|becomes?\s+available|opens?)\s*$',re.I)
 SUFFIX = re.compile(r'\s+[-–—]\s+(Due|Available|Availability Ends)\s*$',re.I)
 PREFIX = re.compile(r'^\s*[A-Z]{2,5}\s*\d{3,5}\s*[:–—-]\s*',re.I)
 
@@ -54,12 +54,8 @@ def identity(item):
 
 
 def actionable(items):
-    """Suppress lifecycle notifications only when the matching real due item exists."""
-    due_keys={(course_key(i),title_key(i['name'])) for i in items
-              if not LIFECYCLE.search(i['name']) and course_key(i)}
-    return [i for i in items if not (LIFECYCLE.search(i['name']) and
-            ((course_key(i),title_key(i['name'])) in due_keys or
-             re.match(r'^Week\s+\d+\s*[|:] ',i['name'],re.I)))]
+    """Lifecycle/access notices are never academic obligations."""
+    return [i for i in items if not LIFECYCLE.search(i.get('name', ''))]
 
 
 def canonical_rank(item):
