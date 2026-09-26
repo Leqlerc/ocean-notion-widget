@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#071016">
   <title>NOcean · Home</title>
   <link rel="stylesheet" href="/nocean.css?v=2">
-  <link rel="stylesheet" href="/nocean-system.css?v=11">
+  <link rel="stylesheet" href="/nocean-system.css?v=12">
   <script src="/nocean-shared.js?v=5" defer></script>
   <script src="/nocean-data.js?v=4" defer></script>
   <script src="/nocean-store.js?v=7" defer></script>
@@ -17,7 +17,7 @@
   <script src="/nocean-planning.js?v=3" defer></script>
   <script src="/calendar-semantics.js?v=5" defer></script>
   <script src="/nocean-motion.js?v=2" defer></script>
-  <script src="/home.js?v=11" defer></script>
+  <script src="/home.js?v=12" defer></script>
 </head>
 <body data-page="home">
 <div class="app">
@@ -28,7 +28,7 @@
   </header>
   <main>
     <div class="command-intro">
-      <div><p class="eyebrow" id="homeDate">Today</p><h2 id="homeHeading">Good morning, Will</h2><p id="homeSubtitle">Take the next clear step.</p></div>
+      <div><p class="eyebrow" id="homeDate">Today</p><h2 id="homeHeading">Good morning, Will</h2></div>
       <p id="lifeStatus" class="life-status">Loading today’s signal…</p>
     </div>
     <div class="dashboard">
@@ -36,7 +36,7 @@
         <div class="card-head"><div><p class="eyebrow">Tasks</p><h2 id="tasksTitle">Today</h2></div><div class="task-head-controls"><label>Sort<select id="taskSort"><option value="plan">Plan</option><option value="priority">Priority</option><option value="due">Due date</option></select></label><span id="taskCount" class="muted"></span></div></div>
         <form id="quickAdd" class="quick-add">
           <label class="sr-only" for="taskName">Task name</label>
-          <input id="taskName" required maxlength="500" placeholder="What will you actually work on?" autocomplete="off">
+          <input id="taskName" required maxlength="500" placeholder="Task name" autocomplete="off">
           <button type="submit" class="primary" id="addButton">Add to today</button>
           <div class="capture-options">
             <label>Project<input id="taskProject" list="projectOptions" placeholder="Optional" maxlength="100"></label>
@@ -47,14 +47,14 @@
             <label>Type<select id="taskType"><option>Simple</option><option>Multi-step</option></select></label>
           </div>
           <div id="quickSteps" class="inline-step-editor" hidden>
-            <div class="inline-step-head"><div><strong>Steps</strong><span>Plan concrete actions, not another mini project.</span></div><button type="button" id="addQuickStep" class="quiet">+ Add step</button></div>
+            <div class="inline-step-head"><strong>Subtasks</strong><button type="button" id="addQuickStep" class="quiet">+ Add</button></div>
             <div id="quickStepList"></div>
           </div>
         </form>
         <nav class="tabs" aria-label="Work plan"><button class="active" data-tab="today" aria-pressed="true">Today</button><button data-tab="tomorrow" aria-pressed="false">Tomorrow</button><button data-tab="upcoming" aria-pressed="false">Upcoming</button><button data-tab="later" aria-pressed="false">Backlog</button></nav>
         <div id="taskMessage" class="panel-message" role="status"></div>
         <div id="taskList" class="scroll task-list"><p class="empty">Loading the work plan…</p></div>
-        <div class="card-foot"><span id="taskHint">Only work you deliberately planned or focused appears here.</span><a href="/tasks.html">All tasks →</a></div>
+        <div class="card-foot"><span id="taskHint"></span><a href="/tasks.html">All tasks →</a></div>
       </section>
 
       <section class="card deadlines-card" data-home-module="showDeadlines" data-card-art="deadlines" aria-labelledby="radarTitle">
@@ -95,7 +95,7 @@
 <dialog id="editDialog" class="task-editor-dialog" aria-labelledby="editTitle">
   <form id="editTask" class="task-editor-form">
     <div class="task-editor-head">
-      <div><p class="eyebrow">Task workspace</p><h2 id="editTitle">Edit task</h2></div>
+      <div><h2 id="editTitle">Edit task</h2></div>
       <button type="button" id="closeEdit" class="quiet" aria-label="Close editor">✕</button>
     </div>
     <input id="editId" type="hidden">
@@ -110,10 +110,10 @@
     </div>
     <label class="toggle-row editor-focus"><input id="editFocus" type="checkbox"> Focus this task</label>
     <div id="editSteps" class="inline-step-editor" hidden>
-      <div class="inline-step-head"><div><strong>Steps</strong><span>Each step can carry its own work date.</span></div><button type="button" id="addEditStep" class="quiet">+ Add step</button></div>
+      <div class="inline-step-head"><strong>Subtasks</strong><button type="button" id="addEditStep" class="quiet">+ Add</button></div>
       <div id="editStepList"></div>
     </div>
-    <div id="editPlanActions" class="plan-actions editor-plan-actions"><span>Move the work plan without changing the deadline</span><button type="button" data-plan="today">Today</button><button type="button" data-plan="tomorrow">Tomorrow</button><button type="button" data-plan="later">Backlog</button><button type="button" data-plan="automatic">Automatic</button></div>
+    <div id="editPlanActions" class="plan-actions editor-plan-actions"><button type="button" data-plan="today">Today</button><button type="button" data-plan="tomorrow">Tomorrow</button><button type="button" data-plan="later">Backlog</button><button type="button" data-plan="automatic">Automatic</button></div>
     <p id="editError" class="panel-message" role="alert"></p>
     <div class="dialog-actions"><button type="button" id="archiveTask" class="quiet">Archive</button><button type="button" id="cancelEdit" class="quiet">Cancel</button><button type="submit" id="saveEdit" class="primary">Save task</button></div>
   </form>
