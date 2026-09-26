@@ -132,3 +132,16 @@ dialog{background:#0d1c22;border:1px solid rgba(167,215,213,.25);border-radius:1
 #projectTaskEditor,#projectEditor,#goalEditor{padding:22px}#projectTaskEditor .primary,#projectEditor .primary,#goalEditor .primary{background:var(--accent-2);border-color:var(--accent-2);color:#061923}.project-step-editor{border-color:rgba(127,200,228,.24)!important;background:rgba(4,15,24,.5)}
 @media(max-width:680px){#editDialog{width:calc(100vw - 16px)}.task-editor-form{padding:18px}.task-editor-grid{grid-template-columns:1fr 1fr}.inline-step-row{grid-template-columns:1fr}.inline-step-row button{width:100%}}
 @media(max-width:440px){.task-editor-grid{grid-template-columns:1fr}}
+
+/* Compact task/subtask presentation */
+.task-row .task-primary{display:flex;align-items:center;gap:7px;min-width:0}
+.task-row .task-progress{flex:none;min-width:34px;height:22px;font-size:.66rem;margin:0}
+.task-row .task-name{min-width:0}
+.home-subtasks{margin:2px 0 0 auto;width:max-content;position:relative}
+.home-subtasks>summary{list-style:none;display:grid;place-items:center;width:26px;height:20px;border-radius:7px;color:var(--muted);cursor:pointer;user-select:none}
+.home-subtasks>summary::-webkit-details-marker{display:none}
+.home-subtasks[open]{width:100%;margin:6px 0 0}
+.home-subtasks[open]>summary{margin-left:auto}
+.home-subtask-list{display:grid;gap:2px;padding:5px 0 0 40px}
+.home-task-step{min-height:28px!important;font-size:.72rem!important}
+.home-task-step input{width:16px!important;height:16px!important}
