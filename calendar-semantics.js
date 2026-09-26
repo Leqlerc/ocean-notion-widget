@@ -33,5 +33,13 @@ const CalendarSemantics = (() => {
     const value=Math.max(0,Number(count)||0);
     return value>=5?5:Math.floor(value);
   }
-  return {categories,classify,highest,workloadLevel,significant};
+  function cleanName(event) {
+    const name=String(event?.name||'');
+    if(classify(event).key!=='class')return name;
+    return name
+      .replace(/\s+(?:[-–—|:]\s*)?(?:Section|Sec\.?)[\s#]*[A-Z0-9-]+\s*$/i,'')
+      .replace(/\s+\d{4,6}-[A-Z0-9]{2,4}\s*$/i,'')
+      .trim();
+  }
+  return {categories,classify,highest,workloadLevel,significant,cleanName};
 })();
