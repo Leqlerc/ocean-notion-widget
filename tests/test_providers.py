@@ -31,12 +31,29 @@ class Tasks(unittest.TestCase):
         self.assertIsNone(NotionTaskStore().properties({'difficulty':'Unrated'})['Difficulty']['select'])
         with self.assertRaises(ValueError):validate({'difficulty':'Impossible'})
 
+    def test_priority_normalization_validation_and_persistence(self):
+        self.assertEqual(normalize(page())['priority'], 'Normal')
+        priority_page = page()
+        priority_page['properties']['Priority'] = {'type':'select', 'select':{'name':'High'}}
+        self.assertEqual(normalize(priority_page)['priority'], 'High')
+        self.assertEqual(NotionTaskStore().properties(validate({'priority':'Critical'}))['Priority']['select']['name'], 'Critical')
+        with self.assertRaises(ValueError): validate({'priority':'Urgent'})
+
+    def test_focus_cleanup_skips_imported_coursework(self):
+        manual = page(id='11111111-1111-4111-8111-111111111111')
+        imported = page(id='22222222-2222-4222-8222-222222222222')
+        imported['properties']['Source ID'] = {'type':'rich_text','rich_text':[{'plain_text':'brightspace:item'}]}
+        with patch('lib.notion.query', return_value=[manual, imported]), patch('lib.notion.request') as api:
+            NotionTaskStore().clear_focus()
+            api.assert_called_once_with('PATCH', '/pages/' + manual['id'], {'properties': {'Focus': {'checkbox': False}}})
+
     def test_create_defaults(self):
         with patch('lib.notion.request', return_value=page()) as api, patch('lib.projects.NotionProjectStore.resolve',return_value={'id':'22222222-2222-4222-8222-222222222222','name':'Exam prep'}):
             NotionTaskStore().create({'name': 'Prepare notes', 'project': 'Exam prep'})
             props = api.call_args.args[2]['properties']
             self.assertEqual(props['Projects']['relation'][0]['id'],'22222222-2222-4222-8222-222222222222')
-            self.assertTrue(props['Focus']['checkbox'])
+            self.assertFalse(props['Focus']['checkbox'])
+            self.assertEqual(props['Priority']['select']['name'], 'Normal')
             self.assertEqual(props['Status']['select']['name'], 'Next')
             self.assertEqual(props['Project']['rich_text'][0]['text']['content'], 'Exam prep')
 

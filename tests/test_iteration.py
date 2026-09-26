@@ -66,13 +66,6 @@ class Calendar(unittest.TestCase):
             self.assertEqual(DirectGoogleCalendarProvider().access_token(),'cached');self.assertEqual(DirectGoogleCalendarProvider().access_token(),'cached');self.assertEqual(http.call_count,1)
 
 class Athletics(unittest.TestCase):
-    def test_progress_starts_on_cutoff(self):
-        days=[{**page(), 'id':str(i), 'properties':{'Date':{'type':'date','date':{'start':day}}}}
-              for i,day in enumerate(['2026-09-23','2026-09-24','2026-10-01'])]
-        with patch('lib.notion.query',side_effect=lambda source,*args:days if source==DAILY else []):
-            result=NotionAthleticsProvider().load('2026-10-01')
-        self.assertEqual([d['date'] for d in result['progress']],['2026-09-24','2026-10-01'])
-
     def test_completion_changes_only_training_fields(self):
         with patch('lib.notion.query',return_value=[page()]),patch('lib.notion.request',return_value=page()) as http:
             NotionAthleticsProvider().update_day({'date':TODAY,'quality':'Productive','workoutType':'Push'})

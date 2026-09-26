@@ -31,7 +31,6 @@ function render(){
   document.querySelectorAll('[data-support]').forEach(el=>el.checked=Boolean(day.support[el.dataset.support]));
   $('recent').innerHTML=data.recent.length?data.recent.map(d=>`<div class="recent-row"><div><strong>${esc(d.workoutType||'Workout')} · ${esc(shortDate(d.date))}</strong><small>${esc(d.quality||'In progress')}</small></div><div><span>${esc(d.workingSets)} sets</span><small>${Number(d.volume).toLocaleString()} lb volume</small></div></div>`).join(''):empty('No earlier workouts in the past four weeks.');
   document.dispatchEvent(new CustomEvent('nocean:training',{detail:{date:training.date,day,workingSets:work.length,volume}}));
-  if($('workoutProgress'))NOceanSignals.renderProgress($('workoutProgress'),[...(data.progress||[]).filter(d=>d.date!==day.date),day],dayKey());
   lock();
 }
 async function loadTraining(){

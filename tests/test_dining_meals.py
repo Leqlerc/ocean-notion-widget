@@ -7,7 +7,7 @@ class Meals(unittest.TestCase):
   def meal(name,start,end,item):return {'Name':name,'Type':name,'Status':'Open','Hours':{'StartTime':start,'EndTime':end},'Stations':[{'Name':'Rotating Grill','Items':[{'ID':item,'Name':'Chicken '+item}]}]}
   menu={'IsPublished':True,'Meals':[meal('Breakfast','07:00:00','10:00:00','breakfast'),meal('Lunch','11:00:00','14:00:00','lunch'),meal('Late Lunch','14:00:00','16:00:00','late'),meal('Dinner','17:00:00','21:00:00','dinner')]}
   with patch('lib.dining.fetch',return_value=menu):
-   result=court_menu('Ford',datetime(2026,9,15,15,tzinfo=TZ));self.assertEqual(set(result),{'Lunch','Dinner'});self.assertEqual(result['Lunch'][1][0]['ID'],'late');self.assertEqual(result['Dinner'][1][0]['ID'],'dinner')
+   result=court_menu('Ford',datetime(2026,9,15,15,tzinfo=TZ));self.assertEqual(set(result),{'Lunch','Dinner'});self.assertEqual(result['Lunch'][1][0]['ID'],'late');self.assertEqual(result['Dinner'][1][0]['ID'],'dinner');self.assertEqual(result['Lunch'][0]['stations'],['Rotating Grill'])
  def test_wait_freshness_and_colors(self):
   now=datetime(2026,9,15,12,tzinfo=TZ)
   for maximum,level in [(5,'low'),(10,'moderate'),(20,'busy'),(25,'very-busy')]:

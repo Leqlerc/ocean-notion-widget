@@ -198,6 +198,8 @@ def load_calendar(include_outlook=False):
                 status['outlook']={'available':True,'count':len(cached['events']),'lastSync':cached['lastSync'],'stale':cached['status']=='error'}
         except Exception:
             status['outlook']={'available':False,'count':0,'error':'Saved Outlook events unavailable'}
+    if not batches:
+        raise RuntimeError('Calendar providers unavailable')
     direct = 'google' in batches
     source = 'Direct Google Calendar' if direct else 'Calendar unavailable'
     if batches.get('notion'):

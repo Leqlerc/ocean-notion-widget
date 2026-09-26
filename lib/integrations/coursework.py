@@ -6,7 +6,7 @@ from lib import notion
 
 ORG_COURSES = {'1640342':'MFET 163','1631262':'CS 159','1636988':'HONR 19901',
                '1634573':'ENGR 161','36061':'COM 114','1134648':'Purdue requirements'}
-LIFECYCLE = re.compile(r'\s+[-–—]\s+(Available|Availability Ends)\s*$',re.I)
+LIFECYCLE = re.compile(r'(?:\s+[-–—:]\s*|\b)(?:available|availability\s+(?:starts?|ends?)|becomes?\s+available|opens?)\s*$',re.I)
 SUFFIX = re.compile(r'\s+[-–—]\s+(Due|Available|Availability Ends)\s*$',re.I)
 PREFIX = re.compile(r'^\s*[A-Z]{2,5}\s*\d{3,5}\s*[:–—-]\s*',re.I)
 
@@ -54,14 +54,8 @@ def identity(item):
 
 
 def actionable(items):
-    """Opening dates and informational notices are never submission deadlines."""
-    def notice(item):
-        name = item.get('name', '')
-        if re.search(r'\b(announcement|informational|content posted|module available)\b', name, re.I):
-            return True
-        return bool(re.search(r'\b(available|availability|opens?|posted|released)\b', name, re.I)
-                    and not re.search(r'\b(due|deadline|submit by)\b', name, re.I))
-    return [i for i in items if not notice(i)]
+    """Lifecycle/access notices are never academic obligations."""
+    return [i for i in items if not LIFECYCLE.search(i.get('name', ''))]
 
 
 def canonical_rank(item):

@@ -114,7 +114,8 @@ def court_menu(name, now):
             info['message']='Menu not published' if not data.get('IsPublished') else 'No '+group.lower()+' service published'
             views[group]=(info,[]);continue
         meal,(start,end)=candidates[0]
-        info.update(open=start<=now<end,start=start.isoformat(),end=end.isoformat(),service=meal['Name'])
+        stations=[s.get('Name','') for s in meal.get('Stations',[]) if s.get('Name')]
+        info.update(open=start<=now<end,start=start.isoformat(),end=end.isoformat(),service=meal['Name'],stations=stations)
         items={}
         for station in meal.get('Stations',[]):
             station_name=station.get('Name','')

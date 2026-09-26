@@ -12,15 +12,14 @@ const NOceanStore = (() => {
     {id:'sheets',name:'Change sheets',every:7},
     {id:'shopping',name:'Shop essentials',every:7}
   ];
-  const accentPresets = new Set(["red-soft","red-light","coral","red","ruby","wine","orange-soft","peach","orange-light","orange","copper","orange-dark","cream","lemon","yellow-light","gold","yellow","yellow-dark","mint","green","green-medium","jade","forest","green-dark","frost","ice","blue","azure","denim","navy","lavender","lilac","periwinkle","iris","purple","plum","rose","pink-light","pink","orchid","berry","pink-dark","white","silver","gray","slate","eclipse","black"]);
-  const accentAliases={"blush":"red-light","brick":"wine","taupe":"slate","sand":"peach","ochre":"yellow-dark","pistachio":"green","lime":"green-medium","olive":"green-dark","teal":"jade","ocean":"navy","cyan":"azure","amethyst":"plum","charcoal":"eclipse"};
+  const accentPresets = new Set(['ice','mint','lavender','rose','cream','white','blue','green','lilac','pink','peach','gray','denim','teal','purple','berry','sand','eclipse','navy','forest','plum','wine','copper','black']);
   const difficultyModes = new Set(['off','solid','glow']);
   const cardArtKeys = ['tasks','deadlines','events','campus','calendar'];
   const biomeAssets = new Set(['blood-kelp','bulb-zone','cove-tree','dunes','grand-reef','islands','jelly-caves','kelp-day','kelp-night','lily-caves','lily-islands','lost-river','mountains','mushroom-forest','shallows-night','sparse-reef','twisty-bridge-night','twisty-bridge']);
   const defaults = {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
-    dashboard: {showTasks:true,showDeadlines:true,showEvents:true,showHabitat:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',collapsedCourses:{}},
+    dashboard: {showTasks:true,showDeadlines:true,showEvents:true,showHabitat:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',taskSort:'plan',collapsedCourses:{}},
     appearance: {topBiomeHeight:176,cardOpacity:100,accent:'green',difficultyColors:'off',calendarWorkload:'solid',cardArt:{}}
   };
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -46,12 +45,12 @@ const NOceanStore = (() => {
     const legacyHeight=rawAppearance.topBiomeSize==='expanded'?258:defaults.appearance.topBiomeHeight;
     return {
       classes:Array.isArray(value.classes)?value.classes.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,40)):clone(defaultClasses),
-      maintenance:Array.isArray(value.maintenance)?value.maintenance.filter(x=>x&&x.id&&x.name).map(x=>({id:String(x.id),name:String(x.name).slice(0,80),mode:x.mode==='weekly'?'weekly':'interval',weekday:Math.max(0,Math.min(6,Number(x.weekday)||0)),start:/^\d{4}-\d{2}-\d{2}$/.test(x.start||'')?x.start:'',every:Math.max(1,Math.min(365,Number(x.every)||7))})):clone(defaultMaintenance),
+      maintenance:Array.isArray(value.maintenance)?value.maintenance.filter(x=>x&&x.id&&x.name).map(x=>({id:String(x.id),name:String(x.name).slice(0,80),every:Math.max(1,Math.min(365,Number(x.every)||7))})):clone(defaultMaintenance),
       dashboard:{...defaults.dashboard,...(value.dashboard||{})},
       appearance:{
         topBiomeHeight:clamp(rawAppearance.topBiomeHeight,80,500,legacyHeight),
         cardOpacity:clamp(rawAppearance.cardOpacity,20,100,defaults.appearance.cardOpacity),
-        accent:accentPresets.has(rawAppearance.accent)?rawAppearance.accent:accentAliases[rawAppearance.accent]||defaults.appearance.accent,
+        accent:accentPresets.has(rawAppearance.accent)?rawAppearance.accent:defaults.appearance.accent,
         difficultyColors:difficultyModes.has(rawAppearance.difficultyColors)?rawAppearance.difficultyColors:defaults.appearance.difficultyColors,
         calendarWorkload:['off','solid','outline'].includes(rawAppearance.calendarWorkload)?rawAppearance.calendarWorkload:defaults.appearance.calendarWorkload,
         cardArt
@@ -61,14 +60,10 @@ const NOceanStore = (() => {
   function saveSettings(value) { const current=settings();return write(SETTINGS_KEY,{...current,...value,dashboard:{...current.dashboard,...(value.dashboard||{})}}); }
   function verificationId(task) { return task?.sourceId || task?.id || ''; }
   function isRadarItem(task) {
-    if (String(task?.sourceId||'').startsWith('brightspace:')) return true;
-    return Boolean(task?.id && read(RADAR_KEY,{})[String(task.id)]);
+    return String(task?.sourceId||'').startsWith('brightspace:');
   }
   function setRadarItem(task,tracked) {
-    if (!task?.id || String(task?.sourceId||'').startsWith('brightspace:')) return false;
-    const all=read(RADAR_KEY,{}),key=String(task.id);
-    if(tracked) all[key]=true; else delete all[key];
-    return write(RADAR_KEY,all);
+    return false;
   }
   function verification(task) {
     const item=read(VERIFY_KEY,{})[verificationId(task)];
@@ -87,23 +82,22 @@ const NOceanStore = (() => {
       nutrition:value.nutrition&&typeof value.nutrition==='object'?value.nutrition:{},
       sleep:value.sleep&&typeof value.sleep==='object'?value.sleep:{},
       maintenance:value.maintenance&&typeof value.maintenance==='object'?value.maintenance:{},
-      reflections:Array.isArray(value.reflections)?value.reflections:[]
+      reflections:Array.isArray(value.reflections)?value.reflections.slice(0,100):[]
     };
   }
   function saveMachine(value) { return write(MACHINE_KEY,value); }
-  function updateMachine(mutator) { const value=machine(); mutator(value); if(!saveMachine(value))throw new Error('Unable to save on this device.'); return value; }
+  function updateMachine(mutator) { const value=machine(); mutator(value); saveMachine(value); return value; }
   function saveNutrition(day,entry) { return updateMachine(v=>{v.nutrition[day]={calories:Number(entry.calories)||0,protein:Number(entry.protein)||0,water:Number(entry.water)||0};}); }
   function saveSleep(day,entry) { return updateMachine(v=>{v.sleep[day]={hours:Number(entry.hours)||0,quality:String(entry.quality||'')};}); }
-  function completeMaintenance(id,day,toggle=true) { return updateMachine(v=>{if(toggle&&v.maintenance[id]===day)delete v.maintenance[id];else v.maintenance[id]=day;}); }
+  function completeMaintenance(id,day) { return updateMachine(v=>{if(v.maintenance[id]===day)delete v.maintenance[id];else v.maintenance[id]=day;}); }
   function addReflection(entry) {
-    return updateMachine(v=>{v.reflections.unshift({id:crypto.randomUUID(),date:entry.date,type:entry.type,title:String(entry.title||'').trim().slice(0,120),body:String(entry.body||'').trim().slice(0,4000),createdAt:new Date().toISOString()});});
+    return updateMachine(v=>{v.reflections.unshift({id:crypto.randomUUID(),date:entry.date,type:entry.type,title:String(entry.title||'').trim().slice(0,120),body:String(entry.body||'').trim().slice(0,4000),createdAt:new Date().toISOString()});v.reflections=v.reflections.slice(0,100);});
   }
-  function editReflection(id,entry) { return updateMachine(v=>{const item=v.reflections.find(x=>x.id===id);if(item)Object.assign(item,{title:String(entry.title||'').trim().slice(0,120),body:String(entry.body||'').trim().slice(0,4000),date:entry.date,type:entry.type});}); }
   function removeReflection(id) { return updateMachine(v=>{v.reflections=v.reflections.filter(x=>x.id!==id);}); }
   function addDays(day,count) { const d=new Date(day+'T12:00:00');d.setDate(d.getDate()+count);return d.toISOString().slice(0,10); }
   function maintenanceStatus(today=new Date().toISOString().slice(0,10)) {
     const data=machine(),config=settings().maintenance;
-    return config.map(item=>{const last=data.maintenance[item.id]||'';let due=last?addDays(last,item.every):(item.start||today);if(item.mode==='weekly'){const anchor=last?addDays(last,1):(item.start||today),weekday=new Date(anchor+'T12:00:00').getDay();due=addDays(anchor,(item.weekday-weekday+7)%7);}return {...item,last,due,completedToday:last===today,overdue:due<today,isDue:due<=today};});
+    return config.map(item=>{const last=data.maintenance[item.id]||'';const due=last?addDays(last,item.every):today;return {...item,last,due,completedToday:last===today,overdue:due<today,isDue:due<=today};});
   }
-  return {defaults,settings,saveSettings,isRadarItem,setRadarItem,verification,setVerification,machine,saveNutrition,saveSleep,completeMaintenance,addReflection,editReflection,removeReflection,maintenanceStatus};
+  return {defaults,settings,saveSettings,isRadarItem,setRadarItem,verification,setVerification,machine,saveNutrition,saveSleep,completeMaintenance,addReflection,removeReflection,maintenanceStatus};
 })();

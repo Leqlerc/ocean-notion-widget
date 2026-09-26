@@ -13,6 +13,7 @@ let records=[
  {id:'upcoming',name:'Upcoming action',scheduledFor:'2026-09-25',planningMode:'planned'},
  {id:'backlog',name:'Backlog action',planningMode:'backlog',due:'2026-09-21T23:59:00-04:00'},
  {id:'distant',name:'Distant action',planningMode:'automatic',due:'2026-10-25T23:59:00-04:00'},
+ {id:'imported',name:'Imported Brightspace assignment',sourceId:'brightspace:assignment',planningMode:'automatic',due:'2026-09-20T23:59:00-04:00'},
 ].map(t=>({status:'next',difficulty:'Unrated',projectIds:['p1'],project:'Project',focus:false,...t}));
 let writes=[],fail=false,created=0;
 const api={
@@ -37,7 +38,7 @@ async function boot(){
  try{
   let w=dom.window,$=id=>w.document.getElementById(id);
   const view=async key=>{w.document.querySelector(`[data-view="${key}"]`).click();await tick();};
-  assert.match($('moduleTasks').textContent,/Today action/);assert.doesNotMatch($('moduleTasks').textContent,/Deferred action/);
+  assert.match($('moduleTasks').textContent,/Today action/);assert.doesNotMatch($('moduleTasks').textContent,/Deferred action|Imported Brightspace assignment/);
   await view('tomorrow');assert.match($('moduleTasks').textContent,/Deferred action/);
   await view('upcoming');assert.match($('moduleTasks').textContent,/Upcoming action/);assert.doesNotMatch($('moduleTasks').textContent,/Distant action/);
   await view('later');assert.match($('moduleTasks').textContent,/Backlog action/);assert.match($('moduleTasks').textContent,/Distant action/);

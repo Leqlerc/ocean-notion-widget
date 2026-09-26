@@ -20,59 +20,52 @@
   function setLoading(name,on){if(on)state.loading.add(name);else state.loading.delete(name);$('syncStatus').textContent=state.loading.size?'Refreshing…':'Up to date';}
   function dueText(value){return value?Deadlines.label(value):'';}
   function overdue(value){return value&&(value.length===10?dateDay(value)<dayKey():new Date(value).getTime()<Date.now());}
-  function dueBadge(value){
-    if(!value)return '';
-    const day=dateDay(value),label=overdue(value)?'OVERDUE':day===dayKey()?'DUE TODAY':day===tomorrow()?'DUE TOMORROW':'DUE '+new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,...(day<TaskPlanning.add(dayKey(),7)?{weekday:'short'}:{month:'short',day:'numeric'})}).format(new Date(value.length===10?value+'T12:00:00':value)).toUpperCase();
-    return `<span class="due-badge ${overdue(value)?'is-overdue':day===dayKey()?'is-due-today':''}" title="${esc(dueText(value))}">${esc(label)}</span>`;
-  }
+  const priorityRank={Critical:0,High:1,Normal:2,Low:3};
+  const isImported=task=>String(task?.sourceId||'').startsWith('brightspace:');
   function applyLayout(){
     const prefs=NOceanStore.settings().dashboard;
     document.querySelectorAll('[data-home-module]').forEach(node=>{node.hidden=prefs[node.dataset.homeModule]===false;});
     const side=$('homeSide');side.hidden=prefs.showEvents===false&&prefs.showHabitat===false;
-    const columns=[prefs.showTasks!==false?'1.4fr':'',prefs.showDeadlines!==false?'1.1fr':'',!side.hidden?'.85fr':''].filter(Boolean);
+    const columns=[prefs.showTasks!==false?'1.1fr':'',prefs.showDeadlines!==false?'1.2fr':'',!side.hidden?'.85fr':''].filter(Boolean);
     document.querySelector('.dashboard').style.setProperty('--home-columns',columns.map(x=>`minmax(0,${x})`).join(' ')||'minmax(0,1fr)');
     document.querySelector('.dashboard').style.setProperty('--home-mid-columns',Math.max(1,Number(prefs.showTasks!==false)+Number(prefs.showDeadlines!==false)));
     document.querySelector('.campus-grid').style.setProperty('--campus-columns',Math.max(1,['showWeather','showFacilities','showDining'].filter(key=>prefs[key]!==false).length));
   }
   function plannedFor(task,tab){
     if(task.status==='done')return state.lingering.has(task.id)&&state.lingerTabs.get(task.id)===tab;
-    if(tab==='later')return TaskPlanning.matches(task,'later',dayKey())||TaskPlanning.matches(task,'upcoming',dayKey());
     return TaskPlanning.matches(task,tab,dayKey());
   }
   function taskRow(task){
     const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',difficulty=String(task.difficulty||'Unrated').toLowerCase();
-    return `<article class="task-row difficulty-${esc(difficulty)} ${done?'done':''}" data-task-id="${esc(task.id)}"><input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}"><div class="task-text"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${task.difficulty&&task.difficulty!=='Unrated'?`<span class="difficulty-indicator difficulty-${esc(difficulty)}">${esc(task.difficulty)}</span>`:''}${due?`<span>Due ${esc(due)}</span>`:''}</div></div><div class="task-row-actions">${!done?`${dueBadge(task.due)}<button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>${task.focus?'●':'○'} Focus</button>${state.tab!=='today'?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}`:''}</div></article>`;
+    const priority=task.priority||'Normal';
+    return `<article class="task-row difficulty-${esc(difficulty)} ${task.focus?'is-focused':''} ${done?'done':''}" data-task-id="${esc(task.id)}"><input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}"><div class="task-text"><div class="task-primary"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button>${!done?`<span class="priority-chip priority-${esc(priority.toLowerCase())}">${esc(priority)}</span><button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>Focus</button>`:''}</div><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${task.difficulty&&task.difficulty!=='Unrated'?`<span class="difficulty-indicator difficulty-${esc(difficulty)}">${esc(task.difficulty)}</span>`:''}${due?`<span class="${overdue(task.due)?'overdue':''}">Due ${esc(due)}</span>`:''}${!done&&state.tab!=='today'&&!task.focus?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}</div></div></article>`;
   }
   function visibleTasks(tab=state.tab){
-    const visible=state.tasks.filter(t=>plannedFor(t,tab)).sort((a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999'));
+    const sort=NOceanStore.settings().dashboard.taskSort||'plan',tie=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.name.localeCompare(b.name),compare=sort==='priority'?(a,b)=>(priorityRank[a.priority||'Normal']??2)-(priorityRank[b.priority||'Normal']??2)||tie(a,b):sort==='due'?tie:(a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999')||a.name.localeCompare(b.name);
+    const visible=state.tasks.filter(t=>!isImported(t)&&(!t.focus||t.status==='done')&&plannedFor(t,tab)).sort(compare);
     for(const id of state.lingering)if(state.lingerTabs.get(id)===tab){const at=visible.findIndex(t=>t.id===id);if(at>=0){const [task]=visible.splice(at,1);visible.splice(Math.min(state.rowPositions.get(id)??at,visible.length),0,task);}}
     return visible;
   }
   function renderTasks(){
     document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===state.tab);b.setAttribute('aria-pressed',String(b.dataset.tab===state.tab));});
-    const maintenance=state.tab==='maintenance';
-    $('quickAdd').hidden=maintenance;$('taskList').hidden=maintenance;
-    document.querySelector('.tasks-card .card-foot').hidden=maintenance;
-    NOceanUpkeep.render(state.tab);renderWorkload();
-    if(maintenance){$('tasksTitle').textContent='Maintenance';$('taskCount').textContent=NOceanStore.settings().maintenance.length+' recurring';return;}
-    const visible=visibleTasks();
+    const visible=visibleTasks(),focused=state.tasks.find(t=>!isImported(t)&&t.focus&&t.status!=='done');
     $('tasksTitle').textContent={today:'Today',tomorrow:'Tomorrow',upcoming:'Upcoming',later:'Backlog'}[state.tab];
-    $('taskCount').textContent=`${visible.filter(t=>t.status!=='done').length} planned`;
+    $('taskCount').textContent=`${visible.filter(t=>t.status!=='done').length+(focused?1:0)} shown`;
+    $('taskSort').value=NOceanStore.settings().dashboard.taskSort||'plan';
     const blank=empty(state.tab==='today'?'No deliberate work yet. Add the next thing you will actually do.':'Nothing planned here.');
-    if(typeof TaskMotion!=='undefined')TaskMotion.render($('taskList'),visible,taskRow,blank);else $('taskList').innerHTML=visible.map(taskRow).join('')||blank;
-    $('taskHint').textContent={today:'Today’s plan and automatic work due today or overdue.',tomorrow:'Tomorrow’s plan and automatic work due tomorrow.',upcoming:'Work planned or due in 2–14 days. Planning never moves the deadline.',later:'Undated work, deferred tasks, and work beyond tomorrow.'}[state.tab];
-    $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',upcoming:'Add automatic',later:'Add to backlog'}[state.tab];
-    if(typeof NOceanUpkeep!=='undefined')NOceanUpkeep.render(state.tab);
+    $('taskList').innerHTML=(focused?`<section class="focus-section" aria-label="Focused task"><span class="focus-section-label">Focus</span>${taskRow(focused)}</section>`:'')+(visible.map(taskRow).join('')||(!focused?blank:''));
+    $('taskHint').textContent={today:'Manually created work planned for today or due now.',tomorrow:'Manual work planned or due tomorrow.',upcoming:'Manual work planned or due in 2–14 days.',later:'Manual backlog, undated work, and work beyond two weeks.'}[state.tab];
+    $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',upcoming:'Add task',later:'Add to backlog'}[state.tab];
     updateLifeStatus();
   }
   function courseKey(value){const m=String(value||'').toUpperCase().match(/([A-Z]{2,5})\s*0*(\d{3,5})/);return m?m[1]+Number(m[2]):String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
   function radarItems(work){
-    return work.map(t=>{const submitted=NOceanStore.verification(t)==='submitted',source=t.sourceId?.startsWith('brightspace:')?'Brightspace':'Tracked assignment';return `<div class="coursework-item ${submitted?'is-submitted':'is-pending'}"><span class="coursework-title">${safeURL(t.sourceUrl)?`<a href="${esc(safeURL(t.sourceUrl))}" target="_blank" rel="noopener">${esc(t.name)}</a>`:esc(t.name)}</span><div class="coursework-meta"><span>${esc(t.course||'Coursework')} · ${esc(dueText(t.due))}${!submitted&&overdue(t.due)?' · OVERDUE':''} · ${source}${t.status==='done'?' · work done':''}</span><button type="button" class="coursework-state" data-verify="${esc(t.id)}" aria-pressed="${submitted}" ${state.pending.has(t.id)?'disabled':''} aria-label="${submitted?'Undo submission for':'Mark submitted:'} ${esc(t.name)}">${submitted?'✓ Submitted · Undo':'Mark submitted'}</button></div></div>`;}).join('')||'<p class="coursework-empty">No coursework on the radar.</p>';
+    return work.map(t=>{const submitted=NOceanStore.verification(t)==='submitted';return `<div class="coursework-item ${submitted?'is-submitted':''}"><span class="coursework-title">${safeURL(t.sourceUrl)?`<a href="${esc(safeURL(t.sourceUrl))}" target="_blank" rel="noopener">${esc(t.name)}</a>`:esc(t.name)}</span><div class="coursework-meta"><span>${esc(t.course||'Coursework')} · ${esc(dueText(t.due))}${!submitted&&overdue(t.due)?' · OVERDUE':''} · Brightspace${t.status==='done'?' · work done':''}</span><button type="button" class="coursework-state" data-verify="${esc(t.id)}" aria-pressed="${submitted}" ${state.pending.has(t.id)?'disabled':''} aria-label="${submitted?'Undo submission for':'Mark submitted:'} ${esc(t.name)}">${submitted?'✓ Submitted · Undo':'Mark submitted'}</button></div></div>`;}).join('')||'<p class="coursework-empty">No upcoming coursework detected <small>Brightspace feed coverage may be incomplete.</small></p>';
   }
   function renderRadar(){
     const classes=NOceanStore.settings().classes,today=dayKey(),groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ]));let total=0,open=0;
     for(const task of state.tasks){
-      if(!CalendarSemantics.deadline(task)||!NOceanStore.isRadarItem(task))continue;
+      if(!task.due||!isImported(task))continue;
       const submitted=NOceanStore.verification(task)==='submitted';
       if(submitted&&dateDay(task.due)<TaskPlanning.add(today,-2))continue;
       // Old completed work remains in Tasks, without crowding the daily deadline view.
@@ -82,32 +75,26 @@
       if(!groups.has(key))groups.set(key,{course,work:[]});
       groups.get(key).work.push(task);total++;if(!submitted)open++;
     }
-    const filter=$('deadlineFilter').value;
-    const all=[...groups.values()].flatMap(g=>g.work);
-    const courses=[...new Set(all.map(t=>t.course||'Other coursework'))].sort();
-    $('deadlineClass').innerHTML=courses.map(c=>`<option>${esc(c)}</option>`).join('');
-    $('deadlineClass').value=courses.includes(state.deadlineClass)?state.deadlineClass:courses[0]||'';
-    $('deadlineClass').hidden=filter!=='class';
-    const work=all.filter(t=>filter==='exams'?['exam','quiz','assessment'].includes(CalendarSemantics.classify(t).key):filter==='class'?(t.course||'Other coursework')===$('deadlineClass').value:true);
-    const dueInstant=value=>new Date(value.length===10?value+'T23:59:00':value).getTime();
-    work.sort((a,b)=>Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted')||dueInstant(a.due)-dueInstant(b.due));
-    $('academicRadar').innerHTML=radarItems(work);
+    const nearest=group=>group.work.filter(t=>NOceanStore.verification(t)==='pending').map(t=>t.due).sort()[0]||'9999';
+    const cards=[...groups.values()].sort((a,b)=>nearest(a).localeCompare(nearest(b))).map(({course,work})=>{
+      work.sort((a,b)=>Number(NOceanStore.verification(a)==='submitted')-Number(NOceanStore.verification(b)==='submitted')||a.due.localeCompare(b.due));
+      const prefs=NOceanStore.settings().dashboard,key=courseKey(course),collapsed=Boolean(prefs.collapsedCourses?.[key]),pending=work.filter(t=>NOceanStore.verification(t)==='pending'),late=pending.filter(t=>overdue(t.due)).length;
+      const limit=['today','1','3','5','all'].includes(String(prefs.deadlineCount))?String(prefs.deadlineCount):'3';
+      const visible=limit==='today'?work.filter(t=>dateDay(t.due)===today):limit==='all'?work:work.slice(0,Number(limit)),extra=work.length-visible.length;
+      return `<article class="class-radar"><button type="button" class="class-radar-head" data-course-toggle="${esc(key)}" aria-expanded="${!collapsed}" aria-controls="course-${esc(key)}"><strong>${collapsed?'▸':'▾'} ${esc(course)}</strong><span>${pending.length} upcoming${late?` · <b class="overdue-text">${late} overdue</b>`:''}${pending[0]?`<small>Next · ${esc(dueText(pending[0].due))}</small>`:''}</span></button><div id="course-${esc(key)}" class="course-radar-body" ${collapsed?'hidden':''}>${radarItems(visible)}${extra?`<p class="coursework-later">+${extra} ${limit==='today'?'outside today':'later'}</p>`:''}</div></article>`;
+    });
+    $('academicRadar').innerHTML=cards.join('')||'<p class="empty">Add current classes in Settings.</p>';
     $('academicSummary').textContent=`${classes.length} classes · ${open} need confirmation`;
     $('academicRadar').dataset.total=String(total);$('academicRadar').dataset.open=String(open);updateLifeStatus();
   }
   function calendarItems(day){
-    const deadlines=state.tasks.filter(t=>CalendarSemantics.deadline(t)&&dateDay(t.due)===day&&NOceanStore.isRadarItem(t)&&NOceanStore.verification(t)==='pending');
+    const deadlines=state.tasks.filter(t=>t.due&&dateDay(t.due)===day&&isImported(t)&&NOceanStore.verification(t)==='pending');
     const deadlineIds=new Set(deadlines.map(t=>t.id));
-    const work=state.tasks.filter(t=>t.status!=='done'&&!deadlineIds.has(t.id)&&(t.scheduledFor===day||dateDay(t.due)===day));
+    const work=state.tasks.filter(t=>!isImported(t)&&t.status!=='done'&&!deadlineIds.has(t.id)&&(t.scheduledFor===day||dateDay(t.due)===day));
     const events=state.events.filter(e=>e.at&&dateDay(e.at)===day);
     return {deadlines,work,events};
   }
-  function renderWorkload(){
-    NOceanSignals.workloadOutline(document.querySelector('.tasks-card'),state.tasks,state.tab);
-  }
-  document.addEventListener('nocean:upkeep',()=>{renderWorkload();updateLifeStatus();});
   function renderCalendar(){
-    renderWorkload();
     const monthDate=new Date(state.calendarMonth+'-01T12:00:00'),year=monthDate.getFullYear(),month=monthDate.getMonth();
     const firstDay=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();
     $('calendarLabel').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(monthDate);
@@ -122,7 +109,7 @@
     const items=calendarItems(state.selectedDay),label=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric'}).format(new Date(state.selectedDay+'T12:00:00'));
     const rows=[
       ...items.deadlines.map(t=>`<div class="agenda-row agenda-deadline"><small>Deadline · ${esc(t.course||'Course')}</small><strong>${esc(t.name)}</strong></div>`),
-      ...items.events.map(e=>`<div class="agenda-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>`:`<strong>${esc(e.name)}</strong>`}</div>`),
+      ...items.events.map(e=>`<div class="agenda-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(CalendarSemantics.cleanName(e))}</a>`:`<strong>${esc(CalendarSemantics.cleanName(e))}</strong>`}</div>`),
       ...items.work.map(t=>`<div class="agenda-row"><small>Task${t.project?' · '+esc(t.project):''}</small><strong>${esc(t.name)}</strong></div>`)
     ];
     $('calendarAgenda').innerHTML=`<h3>${esc(label)}</h3>${rows.join('')||empty('Nothing tracked for this date.')}`;
@@ -131,7 +118,7 @@
     const date=new Date(state.calendarMonth+'-01T12:00:00');date.setMonth(date.getMonth()+delta);state.calendarMonth=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;state.selectedDay=state.calendarMonth+'-01';renderCalendar();
   }
   function updateLifeStatus(){
-    const academic=Number($('academicRadar').dataset.open||0),planned=state.tasks.filter(t=>plannedFor(t,'today')).length,maintenance=NOceanStore.maintenanceStatus(dayKey()).filter(x=>x.isDue&&!x.completedToday).length;
+    const academic=Number($('academicRadar').dataset.open||0),planned=state.tasks.filter(t=>!isImported(t)&&plannedFor(t,'today')).length,maintenance=NOceanStore.maintenanceStatus(dayKey()).filter(x=>x.isDue&&!x.completedToday).length;
     if(!state.tasks.length&&!$('academicRadar').dataset.open){$('lifeStatus').textContent='Loading today’s signal…';return;}
     const pieces=[`${academic} coursework check${academic===1?'':'s'}`,`${planned} task${planned===1?'':'s'} planned`];if(maintenance)pieces.push(`${maintenance} maintenance due`);
     $('lifeStatus').textContent=pieces.join(' · ')+(academic||maintenance?' — something still needs confirmation.':' — clear on the tracked signals.');
@@ -142,7 +129,7 @@
     setLoading('core',true);$('taskMessage').textContent='';
     const [taskResult,projectResult]=await Promise.allSettled([tasks.list(),projects.list()]);
     if(revision!==taskRevision||requestId!==coreRequest||state.pending.size||creating){setLoading('core',false);return;}
-    if(taskResult.status==='fulfilled'){state.tasks=taskResult.value.tasks;state.courses=taskResult.value.courses;state.statuses=taskResult.value.statuses;renderTasks();renderRadar();renderCalendar();}
+    if(taskResult.status==='fulfilled'){state.tasks=taskResult.value.tasks;let focusSeen=false;state.tasks=state.tasks.map(task=>{if(isImported(task)||!task.focus)return task;if(focusSeen)return {...task,focus:false};focusSeen=true;return task;});state.courses=taskResult.value.courses;state.statuses=taskResult.value.statuses;const options='<option value="">None</option>'+state.courses.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');$('taskCourse').innerHTML=options;renderTasks();renderRadar();renderCalendar();}
     else{$('taskMessage').textContent='Tasks unavailable. Refresh to reconnect.';$('taskList').innerHTML=empty('Your work plan could not load.');}
     if(projectResult.status==='fulfilled'){state.projects=projectResult.value.projects;$('projectOptions').innerHTML=state.projects.filter(p=>p.status==='Active').map(p=>`<option value="${esc(p.name)}"></option>`).join('');}
     setLoading('core',false);
@@ -163,12 +150,11 @@
   }
   function openEditor(id){
     const task=state.tasks.find(t=>t.id===id);if(!task)return;const d=Deadlines.fields(task.due);
-    $('editId').value=id;$('editName').value=task.name;$('editProject').value=task.project||'';$('editDue').value=d.date;$('editTime').value=d.time;$('editDifficulty').value=task.difficulty||'Unrated';$('editFocus').checked=task.focus;
-    const brightspace=String(task.sourceId||'').startsWith('brightspace:');$('editRadar').checked=NOceanStore.isRadarItem(task);$('editRadar').disabled=brightspace;$('editRadar').title=brightspace?'Brightspace coursework is always tracked on Academic Radar.':'Only enable this for a real class assignment or obligation.';
+    $('editId').value=id;$('editName').value=task.name;$('editProject').value=task.project||'';$('editDue').value=d.date;$('editTime').value=d.time;$('editDifficulty').value=task.difficulty||'Unrated';$('editPriority').value=task.priority||'Normal';$('editFocus').checked=task.focus;
     $('editCourse').innerHTML='<option value="">None</option>'+[...new Set([...state.courses,task.course].filter(Boolean))].map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');$('editCourse').value=task.course||'';$('editError').textContent='';editingPlan=null;
     document.querySelectorAll('#editDialog [data-plan]').forEach(b=>b.classList.remove('active'));$('editDialog').showModal();
   }
-  function weatherCode(code){return ({0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Cloudy',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Rain showers',81:'Rain showers',82:'Heavy showers',95:'Thunderstorms'})[code]||'Mixed conditions';}
+  function weatherCode(code){return ({0:['☀️','Clear'],1:['🌤️','Mostly clear'],2:['⛅','Partly cloudy'],3:['☁️','Cloudy'],45:['🌫️','Foggy'],48:['🌫️','Icy fog'],51:['🌦️','Light drizzle'],53:['🌦️','Drizzle'],55:['🌧️','Heavy drizzle'],61:['🌦️','Light rain'],63:['🌧️','Rain'],65:['🌧️','Heavy rain'],71:['🌨️','Light snow'],73:['🌨️','Snow'],75:['❄️','Heavy snow'],80:['🌦️','Rain showers'],81:['🌧️','Rain showers'],82:['⛈️','Heavy showers'],95:['⛈️','Thunderstorms']})[code]||['🌡️','Mixed conditions'];}
   function rainWindow(data,index,threshold){
     const date=data.daily.time[index],times=data.hourly?.time||[],rain=data.hourly?.precipitation_probability||[],hours=[];
     times.forEach((time,i)=>{if(time.startsWith(date)&&Number(rain[i])>=threshold)hours.push({time,prob:Number(rain[i])});});
@@ -177,16 +163,15 @@
     return `${fmt(start)}–${fmt(end)} · up to ${Math.max(...hours.map(x=>x.prob))}%`;
   }
   function renderWeather(data){
-    const prefs=NOceanStore.settings().dashboard,fmt=n=>Math.round(Number(n)),threshold=Math.max(10,Math.min(90,Number(prefs.rainThreshold)||35));
-    const current=fmt(data.current.temperature_2m),todayRain=rainWindow(data,0,threshold),tomorrowRain=rainWindow(data,1,threshold),highs=data.daily.temperature_2m_max,lows=data.daily.temperature_2m_min;
+    const prefs=NOceanStore.settings().dashboard,fmt=n=>Number.isFinite(Number(n))?Math.round(Number(n)):null,threshold=Math.max(10,Math.min(90,Number(prefs.rainThreshold)||35));
+    const current=fmt(data.current.temperature_2m),feels=fmt(data.current.apparent_temperature),wind=fmt(data.current.wind_speed_10m),todayRain=rainWindow(data,0,threshold),tomorrowRain=rainWindow(data,1,threshold),highs=data.daily.temperature_2m_max,lows=data.daily.temperature_2m_min,[icon,condition]=weatherCode(data.current.weather_code),[tomorrowIcon,tomorrowCondition]=weatherCode(data.daily.weather_code?.[1]);
     const delta=fmt(highs[1]-highs[0]),decision=tomorrowRain.startsWith('No meaningful')?(Math.abs(delta)>=8?`Tomorrow’s high is ${Math.abs(delta)}° ${delta>0?'warmer':'cooler'} than today.`:'No major weather swing between today and tomorrow.'):`Plan around rain tomorrow: ${tomorrowRain}.`;
-
-    $('weather').innerHTML=`<div class="forecast-grid"><article class="forecast-day"><strong>Today · ${esc(weatherCode(data.current.weather_code))}</strong><div class="forecast-temp">${current}°</div><div class="forecast-detail">High ${fmt(highs[0])}° · Low ${fmt(lows[0])}°<br>Rain: ${esc(todayRain)}</div></article><article class="forecast-day"><strong>Tomorrow · ${esc(weatherCode(data.daily.weather_code?.[1]))}</strong><div class="forecast-temp">${fmt(highs[1])}° <span class="muted">high</span></div><div class="forecast-detail">Low ${fmt(lows[1])}°<br>Rain: ${esc(tomorrowRain)}</div></article></div><p class="forecast-decision">${esc(decision)}</p>`;
+    $('weather').innerHTML=`<div class="forecast-grid"><article class="forecast-day"><strong><span class="weather-icon" aria-hidden="true">${icon}</span> Today · ${esc(condition)}</strong><div class="forecast-temp">${current}°</div><div class="forecast-detail">${feels!=null?`Feels ${feels}°`:''}${feels!=null&&wind!=null?' · ':''}${wind!=null?`Wind ${wind} mph`:''}${feels!=null||wind!=null?'<br>':''}High ${fmt(highs[0])}° · Low ${fmt(lows[0])}°<br>Rain: ${esc(todayRain)}</div></article><article class="forecast-day"><strong><span class="weather-icon" aria-hidden="true">${tomorrowIcon}</span> Tomorrow · ${esc(tomorrowCondition)}</strong><div class="forecast-temp">${fmt(highs[1])}° <span class="muted">high</span></div><div class="forecast-detail">Low ${fmt(lows[1])}°<br>Rain: ${esc(tomorrowRain)}</div></article></div><p class="forecast-decision">${esc(decision)}</p>`;
   }
   function renderDining(data){
     if(!NOceanStore.settings().dashboard.showDining){$('diningBrief').hidden=true;return;}$('diningBrief').hidden=false;
     const now=Date.now(),all=Object.values(data.meals||{}).flat(),meal=new Date().getHours()<15?'Lunch':'Dinner',courts=all,format=value=>value?new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(value)):'',names=['Wiley','Windsor'];
-    $('dining').innerHTML=names.map(name=>{const court=courts.filter(x=>String(x.name||'').toLowerCase().includes(name.toLowerCase())).sort((a,b)=>{const rank=c=>c.start&&c.end?(new Date(c.start)<=now&&now<new Date(c.end)?0:new Date(c.start)>now?1:2):3;return rank(a)-rank(b)||(a.start||'').localeCompare(b.start||'');})[0],percent=court?.crowd?.percent,level=court?.open===true?occupancyLevel(percent):0,hours=court?.start&&court?.end?`${format(court.start)}–${format(court.end)}`:`${meal} hours unavailable`,stateLabel=court?.open===true?'Open':court?.open===false?'Closed':'Status unavailable',food=(court?.picks||[]).slice(0,3).map(p=>`<span class="dining-option">${esc(p.name)} · ${p.protein==null?'Protein unavailable':esc(p.protein)+'g protein'}</span>`).join('')||esc(court?.message||'Protein-forward items unavailable');return `<article class="facility-status dining-court occupancy-${level}"><div class="facility-title"><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">${name}</a><span class="facility-state">${stateLabel}</span></div><div class="facility-meta"><span>${esc(hours)}</span><span>${percent==null?'Occupancy unavailable':esc(percent)+'%'}</span></div><strong class="dining-pick">${food}</strong></article>`;}).join('');
+    $('dining').innerHTML=names.map(name=>{const court=courts.filter(x=>String(x.name||'').toLowerCase().includes(name.toLowerCase())).sort((a,b)=>{const rank=c=>c.start&&c.end?(new Date(c.start)<=now&&now<new Date(c.end)?0:new Date(c.start)>now?1:2):3;return rank(a)-rank(b)||(a.start||'').localeCompare(b.start||'');})[0],picks=(court?.picks||[]).slice(0,3),percent=court?.crowd?.percent,level=court?.open===true?occupancyLevel(percent):0,hours=court?.start&&court?.end?`${format(court.start)}–${format(court.end)}`:`${meal} hours unavailable`,stateLabel=court?.open===true?'Open':court?.open===false?'Closed':'Status unavailable',foods=picks.length?picks.map(pick=>`<li><span>${esc(pick.name)}</span><small>${pick.protein!=null?esc(pick.protein)+'g P':'P unavailable'}${pick.fat!=null?' · '+esc(pick.fat)+'g F':''}${pick.proteinFatRatio!=null?' · '+esc(pick.proteinFatRatio)+' P:F':''}</small></li>`).join(''):`<li>${esc(court?.message||'Protein-forward item unavailable')}</li>`,pasta=name==='Wiley'&&(court?.stations||[]).some(station=>/sizzling pasta strip/i.test(station));return `<article class="facility-status dining-court occupancy-${level}"><div class="facility-title"><a href="https://dining.purdue.edu/menus/" target="_blank" rel="noopener">${name}</a><span class="facility-state">${stateLabel}</span></div><div class="facility-meta"><span>${esc(hours)}</span><span>${percent==null?'Occupancy unavailable':esc(percent)+'%'}</span></div>${pasta?'<p class="pasta-callout">Sizzling Pasta Strip · available</p>':''}<ol class="dining-picks">${foods}</ol></article>`;}).join('');
   }
   async function loadCampus(){
     setLoading('campus',true);const [w,r,d]=await Promise.allSettled([request(CONFIG.weather),request('/api/recwell'),request('/api/dining')]);
@@ -195,23 +180,29 @@
     if(d.status==='fulfilled')renderDining(d.value);else $('dining').innerHTML=empty('Dining signal unavailable.');setLoading('campus',false);
   }
   function eventWhen(value){const d=new Date(value.length===10?value+'T12:00:00':value),key=dateDay(value);if(key===dayKey())return value.length===10?'Today':'Today · '+timeLabel(value);if(key===tomorrow())return value.length===10?'Tomorrow':'Tomorrow · '+timeLabel(value);return new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'short',month:'short',day:'numeric',...(value.length>10?{hour:'numeric',minute:'2-digit'}:{})}).format(d);}
+  function eventCountdown(value,now=Date.now()){
+    if(!value||value.length===10)return '';
+    const minutes=Math.max(0,Math.ceil((new Date(value).getTime()-now)/60000));
+    if(minutes<60)return `${minutes}m`;
+    if(minutes<1440)return `${Math.floor(minutes/60)}h${minutes%60?` ${minutes%60}m`:''}`;
+    const days=Math.floor(minutes/1440),hours=Math.floor((minutes%1440)/60);return `${days}d${days<3&&hours?` ${hours}h`:''}`;
+  }
+  function renderEvents(){
+    const now=Date.now(),pref=Number(NOceanStore.settings().dashboard.eventCount),count=[1,3,5,8].includes(pref)?pref:3,instant=value=>new Date(value.length===10?value+'T12:00:00':value).getTime();
+    const future=state.events.filter(e=>e.at&&(e.at.length===10?dateDay(e.at)>=dayKey():instant(e.at)>=now)).sort((a,b)=>instant(a.at)-instant(b.at)),important=future.filter(e=>CalendarSemantics.significant(e)).slice(0,3);
+    const rows=events=>events.map(e=>{const countdown=eventCountdown(e.at,now),name=CalendarSemantics.cleanName(e);return `<div class="event-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}${countdown?` <b class="event-countdown">${esc(countdown)}</b>`:''}</small>${safeURL(e.url)?`<a class="event-name" href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(name)}</a>`:`<span class="event-name">${esc(name)}</span>`}</div>`;}).join('');
+    $('eventList').innerHTML=`<section aria-labelledby="eventsNext"><h3 id="eventsNext" class="eyebrow">Next</h3>${rows(future.slice(0,count))||empty('No upcoming events.')}</section><section aria-labelledby="eventsClock"><h3 id="eventsClock" class="eyebrow">On the Clock</h3>${rows(important)||empty('No significant events ahead.')}</section>`;renderCalendar();
+  }
   async function loadEvents(){
-    setLoading('events',true);try{const data=await request('/api/events'),now=Date.now(),pref=Number(NOceanStore.settings().dashboard.eventCount),count=[1,3,5,8].includes(pref)?pref:3;state.events=CalendarSemantics.cleanEvents(data.events||[]);
-      const instant=value=>new Date(value.length===10?value+'T12:00:00':value).getTime();
-      const future=state.events.filter(e=>e.at&&(e.at.length===10?dateDay(e.at)>=dayKey():instant(e.at)>=now)).sort((a,b)=>instant(a.at)-instant(b.at));
-      const important=future.filter(e=>CalendarSemantics.significant(e)).slice(0,3);
-      const rows=events=>events.map(e=>`<div class="event-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a class="event-name" href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(e.name)}</a>`:`<span class="event-name">${esc(e.name)}</span>`}</div>`).join('');
-      $('eventList').innerHTML=`<section aria-labelledby="eventsNext"><h3 id="eventsNext" class="eyebrow">Next</h3>${rows(future.filter(e=>!CalendarSemantics.significant(e)).slice(0,count))||empty('No upcoming events.')}</section><section aria-labelledby="eventsClock"><h3 id="eventsClock" class="eyebrow">On the Clock</h3>${rows(important)||empty('No significant events ahead.')}</section>`;$('calendarSource').textContent=[data.source||'Calendar',...(data.warnings||[])].join(' · ');renderCalendar();
+    setLoading('events',true);try{const data=await request('/api/events');state.events=data.events||[];renderEvents();$('calendarSource').textContent=[data.source||'Calendar',...(data.warnings||[])].join(' · ');
     }catch{$('eventList').innerHTML=empty('Calendar unavailable.');$('calendarSource').textContent='Use Open calendar to check directly.';}finally{setLoading('events',false);}
   }
-  $('deadlineFilter').onchange=renderRadar;
-  $('deadlineClass').onchange=()=>{state.deadlineClass=$('deadlineClass').value;renderRadar();};
   function refresh(){applyLayout();loadCore();loadCampus();loadEvents();}
-  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim(),plan=state.tab==='upcoming'?'automatic':state.tab;if(!name||creating)return;creating=true;taskRevision++;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:plan==='today',...TaskPlanning.change(plan)});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify(`Added to ${{today:'today',tomorrow:'tomorrow',automatic:'automatic planning',later:'backlog'}[plan]}.`);}catch(error){$('taskMessage').textContent=error.message;}finally{creating=false;$('addButton').disabled=false;}});
+  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim(),plan=state.tab==='upcoming'?'automatic':state.tab;if(!name||creating)return;creating=true;taskRevision++;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),course:$('taskCourse').value,priority:$('taskPriority').value,difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:false,...TaskPlanning.change(plan)});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify(`Added to ${{today:'today',tomorrow:'tomorrow',automatic:'upcoming',later:'backlog'}[plan]}.`);}catch(error){$('taskMessage').textContent=error.message;}finally{creating=false;$('addButton').disabled=false;}});
   document.querySelector('.tabs').addEventListener('click',event=>{const button=event.target.closest('[data-tab]');if(button){state.tab=button.dataset.tab;renderTasks();}});
-  $('taskList').addEventListener('click',event=>{
+  $('taskList').addEventListener('click',async event=>{
     const focus=event.target.closest('[data-focus]'),today=event.target.closest('[data-today]'),button=event.target.closest('[data-edit]');
-    if(focus){const task=state.tasks.find(t=>t.id===focus.dataset.focus);if(task)updateTask(task.id,{focus:!task.focus});}
+    if(focus){const task=state.tasks.find(t=>t.id===focus.dataset.focus);if(task){const before=state.tasks.map(t=>({id:t.id,focus:t.focus}));if(!task.focus)state.tasks=state.tasks.map(t=>isImported(t)?t:{...t,focus:t.id===task.id});if(!await updateTask(task.id,{focus:!task.focus}))state.tasks=state.tasks.map(t=>({...t,focus:before.find(x=>x.id===t.id)?.focus||false}));renderTasks();}}
     else if(today)updateTask(today.dataset.today,TaskPlanning.change('today'));
     else if(button)openEditor(button.dataset.edit);
   });
@@ -232,10 +223,12 @@
   $('calendarGrid').addEventListener('click',event=>{const button=event.target.closest('[data-calendar-day]');if(!button)return;state.selectedDay=button.dataset.calendarDay;renderCalendar();});
   $('calendarPrev').addEventListener('click',()=>moveCalendar(-1));$('calendarNext').addEventListener('click',()=>moveCalendar(1));
   document.querySelector('.plan-actions').addEventListener('click',event=>{const button=event.target.closest('[data-plan]');if(!button)return;editingPlan=button.dataset.plan;document.querySelectorAll('#editDialog [data-plan]').forEach(b=>b.classList.toggle('active',b===button));});
-  $('editTask').addEventListener('submit',async event=>{event.preventDefault();const id=$('editId').value,radar=$('editRadar').checked,changes={name:$('editName').value.trim(),project:$('editProject').value.trim(),course:$('editCourse').value,difficulty:$('editDifficulty').value,focus:$('editFocus').checked,due:Deadlines.serialize($('editDue').value,$('editTime').value)};if(editingPlan)Object.assign(changes,TaskPlanning.change(editingPlan));$('saveEdit').disabled=true;if(await updateTask(id,changes)){const saved=state.tasks.find(t=>t.id===id);if(saved)NOceanStore.setRadarItem(saved,radar);renderRadar();$('editDialog').close();notify('Task saved.');}$('saveEdit').disabled=false;});
+  $('editTask').addEventListener('submit',async event=>{event.preventDefault();const id=$('editId').value,changes={name:$('editName').value.trim(),project:$('editProject').value.trim(),course:$('editCourse').value,difficulty:$('editDifficulty').value,priority:$('editPriority').value,focus:$('editFocus').checked,due:Deadlines.serialize($('editDue').value,$('editTime').value)};if(editingPlan)Object.assign(changes,TaskPlanning.change(editingPlan));if(changes.focus)state.tasks=state.tasks.map(t=>isImported(t)?t:{...t,focus:t.id===id});$('saveEdit').disabled=true;if(await updateTask(id,changes)){$('editDialog').close();notify('Task saved.');}$('saveEdit').disabled=false;});
   $('archiveTask').addEventListener('click',async()=>{const id=$('editId').value;try{await tasks.archive(id);state.tasks=state.tasks.filter(t=>t.id!==id);$('editDialog').close();renderTasks();renderRadar();renderCalendar();notify('Task archived.');}catch(error){$('editError').textContent=error.message;}});
+  $('taskSort').addEventListener('change',()=>{NOceanStore.saveSettings({dashboard:{taskSort:$('taskSort').value}});renderTasks();});
   $('closeEdit').onclick=$('cancelEdit').onclick=()=>$('editDialog').close();$('refresh').addEventListener('click',refresh);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!document.querySelector('dialog[open]'))refresh();});
-  window.addEventListener('storage',event=>{if(event.key==='nocean.command.settings.v1'){applyLayout();renderRadar();loadEvents();}});
+  window.addEventListener('storage',event=>{if(event.key==='nocean.command.settings.v1'){applyLayout();renderTasks();renderRadar();loadEvents();}});
+  setInterval(()=>{if(!document.hidden&&state.events.length)renderEvents();},60000);
   refresh();
 })();

@@ -1,32 +1,31 @@
 # NOcean Work State
 
-## Current release — 2026-09-23
+## Current branch — 2026-09-25
 
-Corrective product sprint on `main`, based on `d423a21`. Commit/push follow this update. Production deployment is not verified; no Vercel/integration/backend investigation was performed in this sprint.
+`codex/home-functionality-sprint` contains the functionality-first Home sprint. It is based on `main` at `91c038a` and includes the resolved rollback already staged when this sprint began. The branch is not intentionally promoted to Production.
 
-## Current product behavior
+## Implemented
 
-- Home Tasks has more of the existing grid width. Titles use their own full-width row; badges/actions sit below. Optional capture fields collapse under Details to prevent vertical compression. Desktop Tasks/Deadlines/Habitat remain aligned; mobile stacks normally.
-- Home and Tasks expose Today, Tomorrow, Backlog, and Maintenance (Tasks retains All). Backlog also includes the former Upcoming items, so removing that tab hides no work. Maintenance's canonical editor lives inside its task category; there is no separate Home card. Due occurrences still appear in Today without copied records and completion advances the existing interval/weekly schedule.
-- Active deadline titles/links are neutral white, with no yellow row highlight. Submitted items remain muted. Chronological ordering, class/exam filters, announcement separation, submission confirmation, and historical hiding remain unchanged.
-- Weather has its normal border. Today/Tomorrow task views use the existing calendar 0–5 workload scale and shared color definitions, counting unique work/pending coursework plus due maintenance. Backlog/Maintenance have normal borders. User accents remain independent of workload colors.
-- Athletics has no Maintenance card/tile. Habits follows the training/recovery grid. Nutrition and Sleep each show inputs followed directly by a consistency heatmap.
-- One contribution-map renderer powers all three 26-week maps. Workout cells expand across the card width (1278px in the desktop fixture), retaining the September 24, 2026 workout cutoff. Nutrition: empty / any positive field / calories + protein logged. Sleep: active when hours are logged. These show logging completeness, not dietary or sleep scores. Future history is not rendered.
-- Accent selector has exactly eight labeled families (Red, Orange, Yellow, Green, Blue, Purple, Pink, Chrome), six shades from light to dark each. Meaningful old keys remain; retired colors map to compatible shades. Every previous saved accent resolves safely.
+- Task Manager now represents manually created work only. Brightspace-source records remain in the shared Notion store but are excluded from Home and the full Tasks page. Planning Today does not imply Focus.
+- Quick-add and edit support optional Course plus persistent Critical / High / Normal / Low Priority. Legacy tasks normalize to Normal. The Notion adapter uses an existing compatible Priority select or adds the backward-compatible select property on the first priority write.
+- Home supports persisted Plan / Priority / Due date sorting. Due dates are quiet metadata; compact Priority and Focus controls share the title row. Focus is exclusive, appears in a visually separate section above sorted work, and legacy multi-focus state is presented safely.
+- Academic Safety Net now accepts Brightspace-source coursework only. Manual course-tagged tasks cannot enter it, pending yellow bars are removed, standalone access/availability lifecycle notices are filtered, and configured courses with no detected items show a neutral incomplete-coverage state.
+- Events show minute-granularity countdowns without provider refetches. Centralized class-name cleanup removes explicit Section/Sec suffixes and Purdue CRN-section suffixes while retaining meaningful names/numbers.
+- Campus Signals weather includes condition icons, current/feels-like temperature, wind, today/tomorrow highs and lows, and rain windows using Open-Meteo. Dining renders up to three existing ranked picks per displayed court and shows Wiley Sizzling Pasta Strip only when the current published meal contains that station.
+- Existing Home / Projects / Athletics / Settings boundaries, Calendar provider behavior, submission verification, partial-provider failure behavior, project persistence, and server-side credentials remain intact.
 
-## Persistence / preserved boundaries
+## Verification
 
-- Maintenance, nutrition, sleep, and reflections remain device-local using existing keys. No records deleted, migrations, or backfills.
-- Tasks/Projects/training/habits providers, Brightspace ingestion, calendar integrations, Reflections CRUD/navigation, and authentication were not changed. Shared Machine code guards legacy-only controls; the legacy route remains compatible.
-- Earlier shipped dining protein picks/occupancy borders, source filtering/deduplication, and theme/card customization remain intact. Habitat still uses its previously documented temporary star artwork.
+- Node syntax: `home.js`, `tasks.js`, `calendar-semantics.js`, `nocean-store.js`.
+- Node DOM suites: Home sketch UI, Home sprint, daily-use loop, full Tasks interactions, and planning.
+- All 20 Node `.cjs` suites passed.
+- Python discovery: 86 passed, 6 database integration tests skipped because no disposable test database was configured.
+- `python -m compileall -q api lib` passed.
+- Browser preview: inspected desktop and 390 px. Seven compact task rows fit the live Today list; Focus and Priority remain visible at 390 px; Focus treatment, Safety Net, countdowns, weather, and three dining picks render without horizontal card overflow. No console warnings/errors were reported.
+- `git diff --check` passed.
 
-## Checks actually run
+## Boundaries and main follow-up
 
-- Eight targeted Node suites passed: corrective sprint, product sprint, Home sprint, Athletics page, daily-use loop, dashboard appearance, frontend, UI. They cover recurrence/Today no-duplicates, view transitions, workload count changes, deadline filters, nutrition/sleep signals, workout cutoff, eight ordered color families, all legacy accent keys, persistence and existing task flows.
-- Changed JavaScript syntax checks and final `git diff --check` passed. No backend changes; Python suites were not rerun.
-- Browser fixtures: `tests/layout.html` at 1440/1536/390px; Home Tasks width 563px, title area 491px, all three Home bottom edges at 872px. Verified neutral computed deadline color and transparent pending border, no Weather condition outline, Maintenance tab placement, three Athletics heatmaps, nutrition/sleep save updates, 48 buttons/eight family labels, and no JS errors or mobile document overflow. Home/maintenance/Athletics/palette screenshots visually reviewed. Fixtures and dependencies remain in ignored `.test-deps/`.
-
-## Next action / limitations
-
-- Verify this commit's normal GitHub → Vercel production release when deployment verification is requested. No implementation blocker remains in this corrective scope.
-- Earlier deferred provider/discovery/duplicate-cleanup work remains out of scope. Local upkeep/recovery/reflection data does not sync across devices.
+- The current Brightspace integration is still an iCalendar feed and cannot guarantee full assignment/submission coverage.
+- Highest-priority follow-up: investigate authenticated direct Brightspace/D2L assignment discovery through official APIs—enumerate current courses, retrieve Assignment/Dropbox folders and due dates, read the current user's submission state, and determine whether Purdue permits the required student/application authentication. Prefer a real API integration; evaluate browser automation only if Purdue does not offer usable authentication.
+- Local credentials were unavailable, so the live Notion schema could not be inspected from this checkout. The adapter detects the schema at runtime and only accepts a compatible Select property; it performs a non-destructive Priority property addition when missing.

@@ -18,8 +18,8 @@ assert.equal(run('deriveProjects(state.tasks).find(p=>p.id===\"p\").percent'),33
 assert.equal(run('deriveProjects(state.tasks).find(p=>p.id===\"zero\").percent'),0);
 assert.equal(run('deriveProjects(state.tasks.map(t=>({...t,status:\"done\"}))).find(p=>p.id===\"p\").percent'),100);
 assert.equal(run('deriveProjects(state.tasks,[{id:\"p\",name:\"Exam\",status:\"Completed\"}]).length'),0);
-assert.equal(run('visibleTasks().length'),3);
-run('state.showDone=true');assert.equal(run('visibleTasks().length'),4);
+assert.equal(run('visibleTasks().length'),2);
+run('state.showDone=true');assert.equal(run('visibleTasks().length'),3);
 assert.equal(run(`routineEvent({type:'Class',name:'MA 261 Quiz'})`),false);
 assert.equal(run(`routineEvent({type:'Class',name:'MA 261 Lecture'})`),true);
 assert.equal(run(`eventOnDay({at:'2026-09-13',end:'2026-09-15',exclusiveEnd:true},'2026-09-15')`),false);
