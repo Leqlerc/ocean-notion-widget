@@ -7,12 +7,9 @@
   const tomorrow=()=>TaskPlanning.add(dayKey(),1);
   const dateFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'long',month:'long',day:'numeric'});
   $('homeDate').textContent=dateFmt.format(new Date());
-  const quotes=['Take the next clear step.','Steady work makes room for good days.','A little progress still changes the shape of the day.','Make it simple, then make it real.','Attention is a direction—choose it kindly.','Start where your feet are.','Good work can be quiet and still count.','Leave a little room for wonder.','One useful thing is enough to begin.','Move with purpose, not pressure.'];
   function renderGreeting(now=new Date()){
     const hour=now.getHours(),period=hour>=5&&hour<12?'morning':hour>=12&&hour<17?'afternoon':'evening';
-    const localDay=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    let hash=0;for(const char of localDay)hash=(hash*31+char.charCodeAt(0))>>>0;
-    $('homeHeading').textContent=`Good ${period}, Will`;$('homeSubtitle').textContent=quotes[hash%quotes.length];
+    $('homeHeading').textContent=`Good ${period}, Will`;
   }
   renderGreeting();
 
@@ -31,7 +28,7 @@
   }
   function draftStepRow(draft,index,mode){
     const prefix=mode==='quick'?'quick':'edit';
-    return '<div class="inline-step-row"><label>Step<input data-'+prefix+'-step-name="'+index+'" maxlength="300" value="'+esc(draft.name||'')+'" placeholder="Concrete next action"></label><label>Planned date<input data-'+prefix+'-step-date="'+index+'" type="date" value="'+esc(draft.plannedFor||'')+'"></label><button type="button" class="quiet" data-'+prefix+'-step-remove="'+index+'">Remove</button></div>';
+    return '<div class="inline-step-row"><label>Step<input data-'+prefix+'-step-name="'+index+'" maxlength="300" value="'+esc(draft.name||'')+'" placeholder="Subtask"></label><label>Planned date<input data-'+prefix+'-step-date="'+index+'" type="date" value="'+esc(draft.plannedFor||'')+'"></label><button type="button" class="quiet" data-'+prefix+'-step-remove="'+index+'">Remove</button></div>';
   }
   function renderDraftSteps(mode){
     const drafts=mode==='quick'?quickDrafts:editDrafts,prefix=mode==='quick'?'quick':'edit',host=$(mode==='quick'?'quickStepList':'editStepList');
@@ -94,10 +91,10 @@
     return TaskPlanning.matches(task,tab,dayKey());
   }
   function taskRow(task){
-    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',priority=task.priority||'Normal',multi=isMulti(task),steps=task.steps||[],relevant=TaskPlanning.relevantSteps(task,state.tab),completed=steps.filter(s=>s.done).length;
-    const stepHtml=relevant.map(step=>`<label class="home-task-step"><input type="checkbox" data-step-complete="${esc(step.id)}" data-task="${esc(task.id)}" ${busy?'disabled':''}><span>${esc(step.name)}</span></label>`).join('');
-    const warning=multi&&!done&&TaskPlanning.dateKey(task.due)<=dayKey()&&!TaskPlanning.relevantSteps(task,'today').length?'<span class="due-warning">Due now · no step planned</span>':'';
-    return `<article class="task-row ${task.focus?'is-focused':''} ${done?'done':''}" data-task-id="${esc(task.id)}">${multi?`<span class="task-progress" aria-label="${completed} of ${steps.length} steps complete">${completed}/${steps.length}</span>`:`<input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}">`}<div class="task-text"><div class="task-primary"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button>${!done?`<span class="priority-chip priority-${esc(priority.toLowerCase())}">${esc(priority)}</span><button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>Focus</button>`:''}</div><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${due?`<span class="${overdue(task.due)?'overdue':''}">Due ${esc(due)}</span>`:''}${warning}${!multi&&!done&&state.tab!=='today'&&!task.focus?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}</div>${multi?`<div class="home-task-steps">${stepHtml||(task.focus?'<span class="muted">No incomplete step in this view.</span>':'')}<details><summary>All steps</summary>${steps.map(step=>`<label class="home-task-step"><input type="checkbox" data-step-complete="${esc(step.id)}" data-task="${esc(task.id)}" ${step.done?'checked':''} ${busy?'disabled':''}><span>${esc(step.name)}</span></label>`).join('')}</details></div>`:''}</div></article>`;
+    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',priority=task.priority||'Normal',multi=isMulti(task),steps=task.steps||[],completed=steps.filter(s=>s.done).length;
+    const warning=multi&&!done&&TaskPlanning.dateKey(task.due)<=dayKey()&&!TaskPlanning.relevantSteps(task,'today').length?'<span class="due-warning">Due now · no subtask planned today</span>':'';
+    const subtasks=steps.map(step=>`<label class="home-task-step"><input type="checkbox" data-step-complete="${esc(step.id)}" data-task="${esc(task.id)}" ${step.done?'checked':''} ${busy?'disabled':''}><span>${esc(step.name)}</span></label>`).join('');
+    return `<article class="task-row ${task.focus?'is-focused':''} ${done?'done':''}" data-task-id="${esc(task.id)}">${multi?'':`<input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}">`}<div class="task-text"><div class="task-primary">${multi?`<span class="task-progress" aria-label="${completed} of ${steps.length} subtasks complete">${completed}/${steps.length}</span>`:''}<button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button>${!done?`<span class="priority-chip priority-${esc(priority.toLowerCase())}">${esc(priority)}</span><button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>Focus</button>`:''}</div><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${due?`<span class="${overdue(task.due)?'overdue':''}">Due ${esc(due)}</span>`:''}${warning}${!multi&&!done&&state.tab!=='today'&&!task.focus?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}</div>${multi&&steps.length?`<details class="home-subtasks"><summary aria-label="Show subtasks">⌄</summary><div class="home-subtask-list">${subtasks}</div></details>`:''}</div></article>`;
   }
   function visibleTasks(tab=state.tab){
     const sort=NOceanStore.settings().dashboard.taskSort||'plan',tie=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.name.localeCompare(b.name),compare=sort==='priority'?(a,b)=>(priorityRank[a.priority||'Normal']??2)-(priorityRank[b.priority||'Normal']??2)||tie(a,b):sort==='due'?tie:(a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999')||a.name.localeCompare(b.name);
@@ -111,9 +108,9 @@
     $('tasksTitle').textContent={today:'Today',tomorrow:'Tomorrow',upcoming:'Upcoming',later:'Backlog'}[state.tab];
     $('taskCount').textContent=`${visible.filter(t=>t.status!=='done').length+(focused?1:0)} shown`;
     $('taskSort').value=NOceanStore.settings().dashboard.taskSort||'plan';
-    const blank=empty(state.tab==='today'?'No deliberate work yet. Add the next thing you will actually do.':'Nothing planned here.');
+    const blank=empty('No tasks.');
     $('taskList').innerHTML=(focused?`<section class="focus-section" aria-label="Focused task"><span class="focus-section-label">Focus</span>${taskRow(focused)}</section>`:'')+(visible.map(taskRow).join('')||(!focused?blank:''));
-    $('taskHint').textContent={today:'Manually created work planned for today or due now.',tomorrow:'Manual work planned or due tomorrow.',upcoming:'Manual work planned or due in 2–14 days.',later:'Manual backlog, undated work, and work beyond two weeks.'}[state.tab];
+    $('taskHint').textContent='';
     $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',upcoming:'Add task',later:'Add to backlog'}[state.tab];
     updateLifeStatus();
   }
@@ -185,9 +182,9 @@
   }
   function updateLifeStatus(){
     const academic=Number($('academicRadar').dataset.open||0),planned=state.tasks.filter(t=>!isImported(t)&&plannedFor(t,'today')).length,maintenance=NOceanStore.maintenanceStatus(dayKey()).filter(x=>x.isDue&&!x.completedToday).length;
-    if(!state.tasks.length&&!$('academicRadar').dataset.open){$('lifeStatus').textContent='Loading today’s signal…';return;}
-    const pieces=[`${academic} coursework check${academic===1?'':'s'}`,`${planned} task${planned===1?'':'s'} planned`];if(maintenance)pieces.push(`${maintenance} maintenance due`);
-    $('lifeStatus').textContent=pieces.join(' · ')+(academic||maintenance?' — something still needs confirmation.':' — clear on the tracked signals.');
+    if(!state.tasks.length&&!$('academicRadar').dataset.open){$('lifeStatus').textContent='Loading…';return;}
+    const pieces=[`${academic} coursework`,`${planned} tasks`];if(maintenance)pieces.push(`${maintenance} maintenance`);
+    $('lifeStatus').textContent=pieces.join(' · ');
   }
   async function loadCore(){
     if(state.pending.size||creating)return;
