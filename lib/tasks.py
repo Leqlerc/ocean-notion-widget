@@ -4,14 +4,15 @@ from uuid import UUID
 from lib import notion
 
 STATUSES = {'inbox': 'Inbox', 'next': 'Next', 'doing': 'Doing', 'waiting': 'Waiting', 'done': 'Done'}
-FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty', 'scheduledFor', 'planningMode'}
+PRIORITIES = ('Critical', 'High', 'Normal', 'Low')
+FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty', 'priority', 'scheduledFor', 'planningMode'}
 
 
 def normalize(page):
     get = lambda name: notion.value(page, name)
     return {'id': page['id'], 'name': get('Task') or 'Untitled task',
             'status': (get('Status') or 'Inbox').lower(), 'focus': bool(get('Focus')),
-            'difficulty': get('Difficulty') or 'Unrated', 'course': get('Course') or '', 'project': get('Project') or '',
+            'difficulty': get('Difficulty') or 'Unrated', 'priority': get('Priority') or 'Normal', 'course': get('Course') or '', 'project': get('Project') or '',
             'projectIds':[r['id'] for r in get('Projects') or []],
             'due': get('Deadline'), 'scheduledFor': get('Do date'),
             'planningMode':(get('Planning Mode') or 'Automatic').lower(), 'sourceId':get('Source ID') or None, 'sourceUrl':get('Source') or None, 'sourceCalendar':get('Source calendar') or None,
@@ -32,6 +33,8 @@ def validate(data, creating=False):
                 raise ValueError('A task name is required.')
     if 'difficulty' in data and data['difficulty'] not in ('Unrated','Easy','Medium','Hard'):
         raise ValueError('Invalid difficulty.')
+    if 'priority' in data and data['priority'] not in PRIORITIES:
+        raise ValueError('Invalid priority.')
     if 'status' in data and data['status'] not in STATUSES:
         raise ValueError('Invalid task status.')
     if 'focus' in data and type(data['focus']) is not bool:
@@ -63,6 +66,26 @@ def validate(data, creating=False):
 
 
 class NotionTaskStore:
+    def schema(self):
+        return notion.request('GET', '/data_sources/' + notion.TASKS).get('properties', {})
+
+    def ensure_priority(self):
+        current = self.schema().get('Priority')
+        if current and current.get('type') == 'select':
+            return
+        if current:
+            raise ValueError('The Notion Priority property must be a Select field.')
+        notion.request('PATCH', '/data_sources/' + notion.TASKS, {'properties': {
+            'Priority': {'select': {'options': [{'name': level} for level in PRIORITIES]}}
+        }})
+
+    def clear_focus(self, except_id=None):
+        pages = notion.query(notion.TASKS, {'property': 'Focus', 'checkbox': {'equals': True}})
+        for page in pages:
+            task = normalize(page)
+            if page['id'] != except_id and not str(task.get('sourceId') or '').startswith('brightspace:'):
+                notion.request('PATCH', '/pages/' + page['id'], {'properties': {'Focus': {'checkbox': False}}})
+
     def list(self):
         from lib.integrations.coursework import visible_tasks
         tasks = [normalize(p) for p in notion.query(notion.TASKS)]
@@ -83,6 +106,8 @@ class NotionTaskStore:
             props['Planning Mode']={'select':{'name':data['planningMode'].capitalize()}}
         if 'difficulty' in data:
             props['Difficulty']={'select':{'name':data['difficulty']} if data['difficulty']!='Unrated' else None}
+        if 'priority' in data:
+            props['Priority']={'select':{'name':data['priority']}}
         if 'course' in data:
             props['Course'] = {'select': {'name': data['course']} if data['course'] else None}
         if 'focus' in data:
@@ -122,8 +147,12 @@ class NotionTaskStore:
         data = validate(data, creating=True)
         if 'id' in data:
             raise ValueError('New tasks cannot specify an ID.')
-        data.setdefault('focus', True)
+        data.setdefault('focus', False)
+        data.setdefault('priority', 'Normal')
         data.setdefault('status', 'next')
+        self.ensure_priority()
+        if data['focus']:
+            self.clear_focus()
         relation = self.project_properties(data)
         page = notion.request('POST', '/pages', {
             'parent': {'type': 'data_source_id', 'data_source_id': notion.TASKS},
@@ -146,6 +175,10 @@ class NotionTaskStore:
     def update(self, data):
         data = validate(data)
         page = self.owned_page(data)
+        if 'priority' in data:
+            self.ensure_priority()
+        if data.get('focus'):
+            self.clear_focus(page['id'])
         relation = self.project_properties(data)
         return normalize(notion.request('PATCH', '/pages/' + page['id'],
                          {'properties': {**self.properties(data, page),**relation}}))
