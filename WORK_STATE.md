@@ -1,4 +1,49 @@
-# NOcean Work State
+# Willpower Work State
+
+## Product direction — 2026-09-26
+
+**Product name:** Willpower. `NOcean` is now a legacy project/repository name and may remain in code until a deliberate rename/migration. The product is no longer conceptually tied to Notion.
+
+**Target:** reach a finished, daily-driver version by **October 10, 2026**. The goal is a product that is used far more than it is modified. Avoid speculative features, redesign churn, and infrastructure work that does not directly improve daily use.
+
+**Purpose:** Willpower is a personal control system designed to live on a second monitor and give one place to understand, manage, and improve day-to-day life. It should combine high information density with low interface clutter, surface reality rather than make decisions for the user, and preserve long-term progress/experiments without turning into another system that requires constant maintenance.
+
+### Core product surfaces
+
+- **Home:** calm default screen with time, a deliberate non-AI-generated quote, a Focus Mode entry point, minimal text, and a subtle Formula-1-style daily productivity indicator using three low-key sector bars (purple = exceptional, green = good, yellow = mediocre). Also expose a user-controlled lockdown/focus control when technically practical.
+- **Tasks:** fast task capture and management, academic deadlines, Gmail sync, future Outlook sync, a compact view of what is next, and optionally a small week/calendar view. Tasks should be executable actions; bounded multi-part deliverables may contain subtasks without becoming full Projects.
+- **Calendar:** Google Calendar remains authoritative. A dedicated Willpower calendar view is optional rather than required for 1.0 unless it adds clear value beyond Google Calendar; workload visualization and compact calendar context may instead live in Tasks/Home.
+- **Projects:** specialized full-screen project workspaces selected from a top project switcher, with Short-term and Long-term categories. Core long-term examples are Typing, Gym, and Soccer. Projects support longitudinal progress, consistency/heatmap views, notes, measurements, experiments/changes, and project-specific analytics. Typing should eventually ingest Monkeytype and Nitrotype stats/races with WPM history and graphs. Short-term examples include COM 114 test-out or reaching a 225 lb bench.
+- **Health:** workout logging plus health tracking. Planned domains include sleep (eventually Oura-connected), nutrition with Purdue dining data and later AI image estimates, and other useful health/training signals.
+- **Analytics & Reflections:** searchable/filterable longitudinal data across tasks, focus-session duration, typing, workouts, sleep, meditation, projects, nutrition, and other tracked domains. Reflections are short daily debriefs—what worked, what did not, and what to adjust—not long journal entries. A future AI assistant should have permissioned access to this data to identify patterns and suggest improvements.
+- **Campus:** a full Purdue situational-awareness page: dining hall best picks, facility occupancy (CoRec/TREC/AREC/WALC where available), operating status, relevant special events with time/place, and eventual BoilerLink/event integration. Goal: avoid checking many Purdue sites separately.
+- **Settings:** configuration for appearance/themes, quotes, integrations, and page-specific options without turning Willpower into an endlessly customizable dashboard builder.
+
+### Core integrations / capabilities
+
+Current or desired core capabilities include task management, Google Calendar sync, Focus Mode, nutrition tracking, Monkeytype/Nitrotype statistics, sleep tracking, productivity/screen-time limiting, workout logging, academic deadlines/events, Gmail sync, eventual Outlook sync, and Purdue campus data.
+
+### Product rules
+
+- **High information density, low visual clutter.**
+- **Icons for familiar actions; words for information.** Hover/tooltips and accessible labels must preserve discoverability.
+- **Surface only what is relevant now; deeper data belongs one interaction deeper.**
+- **Capture must be fast, with richer details available afterward.**
+- **Show reality, trends, and status; do not over-prescribe decisions.**
+- **Longitudinal tracking should make it obvious when effort is not producing results and when an experiment/change deserves review.**
+- **Reuse authoritative external systems when they are already good (especially Google Calendar) instead of rebuilding them without clear ROI.**
+- **Willpower should eventually enter maintenance mode. A feature is worth adding only when it removes recurring real-world friction or produces actionable insight.**
+- **No filler/helper copy or AI-slop microcopy. Text must be intentional.**
+- **The finished product should feel calm enough to remain open all day on a second monitor.**
+
+### Near-term priority
+
+Finish and stabilize the pieces already closest to daily use before expanding scope: task/deadline reliability, Focus Mode, visual/CSS cleanup, Projects progress tracking, and the nutrition foundation. Defer optional calendar replacement, deep AI, and additional integrations if they threaten the October 10 finish line.
+
+
+---
+
+## Current implementation handoff
 
 ## Multi-step tasks + Projects upgrade — 2026-09-26
 
