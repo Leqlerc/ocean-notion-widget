@@ -12,7 +12,7 @@ const wait=()=>new Promise(resolve=>setTimeout(resolve,10));
   const item={...data,id:data.id||'block-'+items.length,editedAt:'now'};delete item.plan;delete item.projectId;
   items=items.filter(x=>x.id!==item.id);items.push(item);return {item};
  }};
- w.eval(fs.readFileSync('project-plan.js','utf8'));w.NOceanProjectPlan.mount('p1');await wait();
+ w.eval(fs.readFileSync('nocean-planning.js','utf8'));w.eval(fs.readFileSync('project-plan.js','utf8'));w.NOceanProjectPlan.mount('p1');await wait();
  $('addGoalItem').click();$('goalText').value='Build a useful goal';$('goalForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await wait();
  assert.match($('goalItems').textContent,/0 \/ 1 objectives/);assert.equal(items.length,1);
  const box=$('goalItems').querySelector('input');box.checked=true;box.dispatchEvent(new w.Event('change'));await wait();assert.match($('goalItems').textContent,/1 \/ 1 objectives/);

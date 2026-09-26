@@ -6,11 +6,15 @@ from urllib.request import urlopen
 from urllib.parse import urlsplit
 from uuid import uuid4
 import sys
+from datetime import datetime, timezone
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from lib.integrations.coursework import visible_tasks
 
 records=visible_tasks(json.loads(Path('.vercel/production-tasks.json').read_text())['tasks'])
+for task in records:
+    task.setdefault('taskType','Simple');task.setdefault('steps',[])
 cache={}
+plans={}
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -18,8 +22,15 @@ class Handler(SimpleHTTPRequestHandler):
         body=json.dumps(data).encode();self.send_response(200);self.send_header('Content-Type','application/json');self.end_headers();self.wfile.write(body)
 
     def do_GET(self):
-        path=urlsplit(self.path).path
+        parsed=urlsplit(self.path);path=parsed.path
         if path=='/api/tasks': return self.respond({'tasks':records,'courses':sorted({t['course'] for t in records if t.get('course')}),'statuses':['next','done']})
+        if path=='/api/task-steps':
+            task_id=dict(part.split('=',1) for part in parsed.query.split('&') if '=' in part).get('task','')
+            task=next((t for t in records if t['id']==task_id),None)
+            return self.respond({'taskId':task_id,'steps':task.get('steps',[]) if task else []})
+        if path=='/api/projects' and parsed.query.startswith('plan='):
+            project_id=parsed.query.split('=',1)[1]
+            return self.respond({'projectId':project_id,'items':plans.get(project_id,[])})
         if path=='/api/integration-session': return self.respond({'configured':True,'authenticated':False})
         if path.startswith('/api/'):
             if path not in ['/api/projects','/api/events','/api/recwell','/api/dining']: return self.send_error(404)
@@ -30,14 +41,30 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path!='/api/tasks': return self.send_error(404)
-        task={'id':str(uuid4()),'status':'next',**json.loads(self.rfile.read(int(self.headers['Content-Length'])))}
-        records.append(task);self.respond({'task':task})
+        data=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        if self.path=='/api/tasks':
+            task={'id':str(uuid4()),'status':'next','steps':[],'projectIds':[data['projectId']] if data.get('projectId') else [],**data};records.append(task);return self.respond({'task':task})
+        if self.path=='/api/task-steps':
+            task=next(t for t in records if t['id']==data['taskId']);step={'id':str(uuid4()),'editedAt':'preview','done':False,**data};task['steps'].append(step);return self.respond({'step':step,'parent':{'id':task['id'],'status':task['status']}})
+        if self.path=='/api/projects' and data.pop('plan',False):
+            item={'id':str(uuid4()),'editedAt':datetime.now(timezone.utc).isoformat(),'createdAt':data.get('createdAt') or datetime.now(timezone.utc).isoformat(),'status':data.get('status'),**data};plans.setdefault(data['projectId'],[]).append(item);return self.respond({'item':item})
+        return self.send_error(404)
 
     def do_PATCH(self):
-        if self.path!='/api/tasks': return self.send_error(404)
         change=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-        task=next(t for t in records if t['id']==change['id']);task.update(change);self.respond({'task':task})
+        if self.path=='/api/tasks':
+            task=next(t for t in records if t['id']==change['id']);task.update(change);return self.respond({'task':task})
+        if self.path=='/api/task-steps':
+            task=next(t for t in records if t['id']==change['taskId']);step=next(s for s in task['steps'] if s['id']==change['id']);step.update(change);step['editedAt']='preview';task['status']='done' if task['steps'] and all(s['done'] for s in task['steps']) else 'next';return self.respond({'step':step,'parent':{'id':task['id'],'status':task['status']}})
+        if self.path=='/api/projects' and change.pop('plan',False):
+            item=next(i for i in plans.get(change['projectId'],[]) if i['id']==change['id']);item.update(change);return self.respond({'item':item})
+        return self.send_error(404)
+
+    def do_DELETE(self):
+        data=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        if self.path=='/api/task-steps':
+            task=next(t for t in records if t['id']==data['taskId']);task['steps']=[s for s in task['steps'] if s['id']!=data['id']];return self.respond({'removed':data['id'],'parent':{'id':task['id'],'status':task['status']}})
+        return self.send_error(404)
 
 
 if __name__=='__main__': ThreadingHTTPServer(('127.0.0.1',8765),Handler).serve_forever()

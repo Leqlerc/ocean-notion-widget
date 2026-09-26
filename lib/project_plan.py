@@ -4,13 +4,15 @@ Every item is an independently addressable native block. No JSON document or
 history blob is stored in a page property. Existing unmarked notes are untouched.
 SQL can later adopt these stable block IDs without rewriting task planning.
 """
-from datetime import date
+from datetime import date, datetime, timezone
 from urllib.parse import urlsplit, parse_qs, urlencode
 from uuid import UUID
 from lib import notion
 from lib.projects import NotionProjectStore
 
-KINDS={'objective':'to_do','milestone':'to_do','overview':'paragraph','note':'paragraph'}
+KINDS={'objective':'to_do','milestone':'to_do','overview':'paragraph','note':'paragraph','experiment':'paragraph','progress':'paragraph'}
+EXPERIMENT_STATES=('Trying','Adopted','Dropped')
+CHECKIN_STATES=('On track','Uncertain','Blocked')
 MARKER='https://ocean-notion-widget.vercel.app/projects.html'
 
 
@@ -30,15 +32,19 @@ def normalize(block):
     for entry in rich[1:]:
         if entry.get('type')=='mention' and entry.get('mention',{}).get('type')=='date':
             due=entry['mention']['date'].get('start')
-    return {'id':block['id'],'requestId':key,'kind':kind,'text':title,'due':due,
+    status=q.get('goalStatus',[None])[0] or None
+    created_at=q.get('goalCreated',[None])[0] or None
+    if kind=='experiment' and status not in EXPERIMENT_STATES: status='Trying'
+    if kind=='progress' and status not in CHECKIN_STATES: status=None
+    return {'id':block['id'],'requestId':key,'kind':kind,'text':title,'due':due,'status':status,'createdAt':created_at,
             'done':bool(content.get('checked',False)),'editedAt':block.get('last_edited_time')}
 
 
 def validate(data):
-    if set(data)-{'projectId','id','requestId','kind','text','due','done','editedAt','action'}:
+    if set(data)-{'projectId','id','requestId','kind','text','due','done','status','createdAt','editedAt','action'}:
         raise ValueError('Unknown goal field.')
     kind=data.get('kind')
-    if kind not in KINDS: raise ValueError('Choose objective, milestone, overview or note.')
+    if kind not in KINDS: raise ValueError('Choose a valid project-plan item type.')
     value=data.get('text')
     maximum=1800 if kind in ('overview','note') else 300
     if not isinstance(value,str) or not 1<=len(value.strip())<=maximum: raise ValueError(f'Use text of 1–{maximum} characters.')
@@ -47,11 +53,23 @@ def validate(data):
         if kind!='milestone' or not isinstance(due,str) or len(due)!=10: raise ValueError('Only milestones have a date, in YYYY-MM-DD format.')
         date.fromisoformat(due)
     if type(data.get('done',False)) is not bool: raise ValueError('Completion must be true or false.')
-    return {**data,'text':value.strip(),'due':due,'done':data.get('done',False)}
+    status=data.get('status') or None
+    if kind=='experiment' and status not in EXPERIMENT_STATES: raise ValueError('Choose Trying, Adopted or Dropped.')
+    if kind=='progress' and status not in (*CHECKIN_STATES,None): raise ValueError('Choose On track, Uncertain or Blocked.')
+    if kind not in ('experiment','progress') and status: raise ValueError('Only experiments and progress logs have a state.')
+    created=data.get('createdAt') or None
+    if kind in ('experiment','progress'):
+        if created:
+            datetime.fromisoformat(created.replace('Z','+00:00'))
+        else: created=datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
+    return {**data,'text':value.strip(),'due':due,'done':data.get('done',False),'status':status,'createdAt':created}
 
 
 def block_payload(data):
-    kind=data['kind'];rich=[{'type':'text','text':{'content':data['text'],'link':{'url':MARKER+'?'+urlencode({'goalKind':kind,'goalKey':data['requestId']})}}}]
+    kind=data['kind'];marker={'goalKind':kind,'goalKey':data['requestId']}
+    if data.get('status'):marker['goalStatus']=data['status']
+    if data.get('createdAt'):marker['goalCreated']=data['createdAt']
+    rich=[{'type':'text','text':{'content':data['text'],'link':{'url':MARKER+'?'+urlencode(marker)}}}]
     if data.get('due'):
         rich.extend([{'type':'text','text':{'content':' · '}},
                      {'type':'mention','mention':{'type':'date','date':{'start':data['due']}}}])
@@ -82,7 +100,7 @@ class ProjectPlanStore:
         existing=[x for x in records if x['requestId']==data['requestId']]
         if len(existing)>1:raise ValueError('This save already has duplicate blocks. Review them in Notion.')
         if existing:
-            if any(existing[0][key]!=data[key] for key in ('kind','text','due','done')):raise ValueError('This save ID belongs to another item. Refresh before creating a new one.')
+            if any(existing[0][key]!=data[key] for key in ('kind','text','due','done','status','createdAt')):raise ValueError('This save ID belongs to another item. Refresh before creating a new one.')
             return {'item':existing[0]}
         result=notion.request('PATCH','/blocks/'+data['projectId']+'/children',{'children':[block_payload(data)]})
         return {'item':normalize(result['results'][0])}

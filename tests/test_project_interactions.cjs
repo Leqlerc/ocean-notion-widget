@@ -6,7 +6,7 @@ const source=file=>fs.readFileSync(file,'utf8');
 const clone=value=>JSON.parse(JSON.stringify(value));
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const project={id:'p1',name:'Pull-up progression',status:'Active',due:'2026-12-01',url:'https://www.notion.so/p1',taskIds:['t1']};
-const task={id:'t1',name:'Baseline test',status:'next',projectIds:['p1'],project:project.name,due:'2026-09-21T15:30:00-04:00',difficulty:'Medium',planningMode:'planned',scheduledFor:'2026-09-20'};
+ const task={id:'t1',name:'Baseline test',status:'next',taskType:'Simple',priority:'Normal',steps:[],projectIds:['p1'],project:project.name,due:'2026-09-21T15:30:00-04:00',planningMode:'planned',scheduledFor:'2026-09-20'};
 
 function page(file,url){
  const dom=new JSDOM(source(file),{url,runScripts:'outside-only'}),w=dom.window;
@@ -23,7 +23,7 @@ function page(file,url){
   list:()=>hold?hold:Promise.resolve({projects:clone(records)}),
   create:async data=>{if(fail)throw Error('Save unavailable');const p={...data,id:'p2',status:'Active',taskIds:[]};records.push(p);return {project:clone(p)};},
   update:async data=>{updates.push(clone(data));if(fail)throw Error('Save unavailable');records=records.map(p=>p.id===data.id?{...p,...data}:p);return {project:clone(records.find(p=>p.id===data.id))};}
- },tasks:{list:async()=>({tasks:[clone(task)]})}};
+ },tasks:{list:async()=>({tasks:[clone(task)],courses:[]}),create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')}},steps:{create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')},remove:async()=>{throw Error('unused')}}};
  vm.runInContext(source('project-model.js'),dom.getInternalVMContext());vm.runInContext(source('projects.js'),dom.getInternalVMContext());await tick();
  try{
   assert.match($('projectGrid').textContent,/Pull-up progression/);
@@ -31,7 +31,7 @@ function page(file,url){
   $('projectSearch').value='';$('projectSearch').dispatchEvent(new w.Event('input'));
   w.location.hash='p1';w.dispatchEvent(new w.HashChangeEvent('hashchange'));await tick();
   assert.equal($('projectIndex').hidden,false);assert.match($('projectDetail').textContent,/Baseline test/);
-  assert.match($('projectDetail').innerHTML,/tasks.html\?project=p1&amp;view=all&amp;task=t1/);
+   assert.ok($('projectDetail').querySelector('[data-project-task="t1"]'));$('projectDetail').querySelector('[data-project-task="t1"]').click();assert.equal($('projectTaskEditor').open,true);$('cancelProjectTask').click();
   $('editProject').click();$('projectDue').value='2027-01-18';$('projectLifecycle').value='Completed';
   fail=true;$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
   assert.equal($('projectEditor').open,true);assert.match($('projectError').textContent,/Save unavailable/);
@@ -49,19 +49,19 @@ function page(file,url){
   w.location.hash='';w.dispatchEvent(new w.HashChangeEvent('hashchange'));$('newProject').click();
   $('projectName').value='   ';$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.match($('projectError').textContent,/Enter a project name/);
   $('projectName').value='Second goal';$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
-  assert.equal(w.location.hash,'#p2');assert.match($('projectDetail').textContent,/No task progress yet/);
+   assert.equal(w.location.hash,'#p2');assert.match($('projectDetail').textContent,/Add a related task/);
   assert.equal(records.length,2);assert.equal(task.due,'2026-09-21T15:30:00-04:00');
  }finally{dom.window.close();}
  const td=page('tasks.html','https://nocean.test/tasks.html?project=p1&view=all&task=t1');
  try{
   const t=td.window;
-  t.NOceanData={tasks:{list:async()=>({tasks:[clone(task)]})},projects:{list:async()=>({projects:[clone(project)]})}};
+  t.NOceanData={tasks:{list:async()=>({tasks:[clone(task)],courses:[]})},projects:{list:async()=>({projects:[clone(project)]})},steps:{}};
   t.NOceanIcons={slot:()=>''};vm.runInContext(source('tasks.js'),td.getInternalVMContext());await tick();
   const get=id=>t.document.getElementById(id);
   assert.equal(get('projectFilter').value,'p1');assert.equal(get('captureProject').value,'p1');
   assert.equal(get('taskEditor').open,true);assert.equal(get('editId').value,'t1');
   assert.equal(get('editDue').value,'2026-09-21');assert.equal(get('editTime').value,get('editTime').dataset.original);
-  assert.match(get('viewHint').textContent,/All current tasks/);
+   assert.match(get('viewHint').textContent,/All current manual tasks/);
   get('cancelEdit').click();get('refresh').click();await tick();assert.equal(get('taskEditor').open,false);
  }finally{td.window.close();}
  console.log('Project interactions passed: search, detail, create, persisted-state reload, save failure, stale-read guard, missing ID, scoped task editor and capture.');

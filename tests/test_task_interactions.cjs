@@ -13,7 +13,7 @@ let records=[
  {id:'upcoming',name:'Upcoming action',scheduledFor:'2026-09-25',planningMode:'planned'},
  {id:'backlog',name:'Backlog action',planningMode:'backlog',due:'2026-09-21T23:59:00-04:00'},
  {id:'distant',name:'Distant action',planningMode:'automatic',due:'2026-10-25T23:59:00-04:00'},
-].map(t=>({status:'next',difficulty:'Unrated',projectIds:['p1'],project:'Project',focus:false,...t}));
+ ].map(t=>({status:'next',taskType:'Simple',priority:'Normal',steps:[],projectIds:['p1'],project:'Project',focus:false,...t}));
 let writes=[],fail=false,created=0;
 const api={
  projects:{list:async()=>({projects:[{id:'p1',name:'Project',status:'Active'}]})},
@@ -51,7 +51,7 @@ async function boot(){
   assert.equal(records.find(t=>t.id==='today').planningMode,'backlog');assert.equal(records.find(t=>t.id==='today').due,deadline);
   await view('later');w.document.querySelector('[data-task="today"][data-plan="today"]').click();await tick();
   await view('today');w.document.querySelector('[data-edit="today"]').click();
-  $('editName').value='Edited action';$('editDifficulty').value='Hard';
+   $('editName').value='Edited action';$('editPriority').value='High';
   $('editForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
   assert.equal(records.find(t=>t.id==='today').name,'Edited action');assert.equal(records.find(t=>t.id==='today').due,deadline);
   assert.ok(!('due' in writes.at(-1)));assert.equal($('taskEditor').open,false);

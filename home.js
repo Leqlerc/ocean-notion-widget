@@ -22,6 +22,7 @@
   function overdue(value){return value&&(value.length===10?dateDay(value)<dayKey():new Date(value).getTime()<Date.now());}
   const priorityRank={Critical:0,High:1,Normal:2,Low:3};
   const isImported=task=>String(task?.sourceId||'').startsWith('brightspace:');
+  const isMulti=task=>task.taskType==='Multi-step';
   function applyLayout(){
     const prefs=NOceanStore.settings().dashboard;
     document.querySelectorAll('[data-home-module]').forEach(node=>{node.hidden=prefs[node.dataset.homeModule]===false;});
@@ -36,9 +37,10 @@
     return TaskPlanning.matches(task,tab,dayKey());
   }
   function taskRow(task){
-    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',difficulty=String(task.difficulty||'Unrated').toLowerCase();
-    const priority=task.priority||'Normal';
-    return `<article class="task-row difficulty-${esc(difficulty)} ${task.focus?'is-focused':''} ${done?'done':''}" data-task-id="${esc(task.id)}"><input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}"><div class="task-text"><div class="task-primary"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button>${!done?`<span class="priority-chip priority-${esc(priority.toLowerCase())}">${esc(priority)}</span><button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>Focus</button>`:''}</div><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${task.difficulty&&task.difficulty!=='Unrated'?`<span class="difficulty-indicator difficulty-${esc(difficulty)}">${esc(task.difficulty)}</span>`:''}${due?`<span class="${overdue(task.due)?'overdue':''}">Due ${esc(due)}</span>`:''}${!done&&state.tab!=='today'&&!task.focus?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}</div></div></article>`;
+    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',priority=task.priority||'Normal',multi=isMulti(task),steps=task.steps||[],relevant=TaskPlanning.relevantSteps(task,state.tab),completed=steps.filter(s=>s.done).length;
+    const stepHtml=relevant.map(step=>`<label class="home-task-step"><input type="checkbox" data-step-complete="${esc(step.id)}" data-task="${esc(task.id)}" ${busy?'disabled':''}><span>${esc(step.name)}</span></label>`).join('');
+    const warning=multi&&!done&&TaskPlanning.dateKey(task.due)<=dayKey()&&!TaskPlanning.relevantSteps(task,'today').length?'<span class="due-warning">Due now · no step planned</span>':'';
+    return `<article class="task-row ${task.focus?'is-focused':''} ${done?'done':''}" data-task-id="${esc(task.id)}">${multi?`<span class="task-progress" aria-label="${completed} of ${steps.length} steps complete">${completed}/${steps.length}</span>`:`<input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}">`}<div class="task-text"><div class="task-primary"><button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button>${!done?`<span class="priority-chip priority-${esc(priority.toLowerCase())}">${esc(priority)}</span><button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>Focus</button>`:''}</div><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${due?`<span class="${overdue(task.due)?'overdue':''}">Due ${esc(due)}</span>`:''}${warning}${!multi&&!done&&state.tab!=='today'&&!task.focus?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}</div>${multi?`<div class="home-task-steps">${stepHtml||(task.focus?'<span class="muted">No incomplete step in this view.</span>':'')}<details><summary>All steps</summary>${steps.map(step=>`<label class="home-task-step"><input type="checkbox" data-step-complete="${esc(step.id)}" data-task="${esc(task.id)}" ${step.done?'checked':''} ${busy?'disabled':''}><span>${esc(step.name)}</span></label>`).join('')}</details></div>`:''}</div></article>`;
   }
   function visibleTasks(tab=state.tab){
     const sort=NOceanStore.settings().dashboard.taskSort||'plan',tie=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.name.localeCompare(b.name),compare=sort==='priority'?(a,b)=>(priorityRank[a.priority||'Normal']??2)-(priorityRank[b.priority||'Normal']??2)||tie(a,b):sort==='due'?tie:(a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999')||a.name.localeCompare(b.name);
@@ -97,7 +99,7 @@
   function calendarItems(day){
     const deadlines=state.tasks.filter(t=>t.due&&dateDay(t.due)===day&&isImported(t)&&NOceanStore.verification(t)==='pending');
     const deadlineIds=new Set(deadlines.map(t=>t.id));
-    const work=state.tasks.filter(t=>!isImported(t)&&t.status!=='done'&&!deadlineIds.has(t.id)&&(t.scheduledFor===day||dateDay(t.due)===day));
+    const work=state.tasks.filter(t=>!isImported(t)&&t.status!=='done'&&!deadlineIds.has(t.id)&&TaskPlanning.plannedOn(t,day));
     const events=state.events.filter(e=>e.at&&dateDay(e.at)===day);
     return {deadlines,work,events};
   }
@@ -117,7 +119,7 @@
     const rows=[
       ...items.deadlines.map(t=>`<div class="agenda-row agenda-deadline"><small>Deadline · ${esc(t.course||'Course')}</small><strong>${esc(t.name)}</strong></div>`),
       ...items.events.map(e=>`<div class="agenda-row"><small>${esc(eventWhen(e.at))} · ${esc(CalendarSemantics.classify(e).short||CalendarSemantics.classify(e).label)}</small>${safeURL(e.url)?`<a href="${esc(safeURL(e.url))}" target="_blank" rel="noopener">${esc(CalendarSemantics.cleanName(e))}</a>`:`<strong>${esc(CalendarSemantics.cleanName(e))}</strong>`}</div>`),
-      ...items.work.map(t=>`<div class="agenda-row"><small>Task${t.project?' · '+esc(t.project):''}</small><strong>${esc(t.name)}</strong></div>`)
+      ...items.work.map(t=>`<div class="agenda-row"><small>Task${t.project?' · '+esc(t.project):''}</small><strong>${esc(t.name)}</strong>${isMulti(t)?`<span>${(t.steps||[]).filter(s=>!s.done&&s.plannedFor===state.selectedDay).map(s=>esc(s.name)).join(' · ')}</span>`:''}</div>`)
     ];
     $('calendarAgenda').innerHTML=`<h3>${esc(label)}</h3>${rows.join('')||empty('Nothing tracked for this date.')}`;
   }
@@ -149,7 +151,7 @@
     if(completing){state.rowPositions.set(id,visibleTasks().findIndex(t=>t.id===id));state.lingering.add(id);state.lingerTabs.set(id,state.tab);}
     if(changes.status!=='done'){state.lingering.delete(id);state.lingerTabs.delete(id);state.rowPositions.delete(id);}
     state.pending.add(id);state.tasks=state.tasks.map(t=>t.id===id?{...t,...changes,...('status' in changes?{completedOn:changes.status==='done'?dayKey():null}:{})}:t);renderTasks();renderRadar();renderCalendar();
-    try{const result=await tasks.update({id,...changes});state.tasks=state.tasks.map(t=>t.id===id?result.task:t);
+    try{const result=await tasks.update({id,...changes});result.task.steps=original.steps||[];state.tasks=state.tasks.map(t=>t.id===id?result.task:t);
       if(completing){const remove=()=>{state.lingering.delete(id);state.lingerTabs.delete(id);state.rowPositions.delete(id);state.removalTimers.delete(id);renderTasks();};state.removalTimers.set(id,setTimeout(remove,Math.max(0,3000-(Date.now()-started))));notify('Task completed.',allowUndo?()=>updateTask(id,{status:original.status},false):null);}
       renderTasks();renderRadar();renderCalendar();return true;}
     catch(error){state.lingering.delete(id);state.lingerTabs.delete(id);state.rowPositions.delete(id);state.tasks=state.tasks.map(t=>t.id===id?original:t);$('taskMessage').textContent=error.message;notify('Save failed. The task was restored.');renderTasks();renderRadar();renderCalendar();return false;}
@@ -157,7 +159,7 @@
   }
   function openEditor(id){
     const task=state.tasks.find(t=>t.id===id);if(!task)return;const d=Deadlines.fields(task.due);
-    $('editId').value=id;$('editName').value=task.name;$('editProject').value=task.project||'';$('editDue').value=d.date;$('editTime').value=d.time;$('editDifficulty').value=task.difficulty||'Unrated';$('editPriority').value=task.priority||'Normal';$('editFocus').checked=task.focus;
+    $('editId').value=id;$('editName').value=task.name;$('editProject').value=task.project||'';$('editDue').value=d.date;$('editTime').value=d.time;$('editType').value=task.taskType||'Simple';$('editPriority').value=task.priority||'Normal';$('editFocus').checked=task.focus;
     $('editCourse').innerHTML='<option value="">None</option>'+[...new Set([...state.courses,task.course].filter(Boolean))].map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');$('editCourse').value=task.course||'';$('editError').textContent='';editingPlan=null;
     document.querySelectorAll('#editDialog [data-plan]').forEach(b=>b.classList.remove('active'));$('editDialog').showModal();
   }
@@ -205,7 +207,7 @@
     }catch{$('eventList').innerHTML=empty('Calendar unavailable.');$('calendarSource').textContent='Use Open calendar to check directly.';}finally{setLoading('events',false);}
   }
   function refresh(){applyLayout();loadCore();loadCampus();loadEvents();}
-  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim(),plan=state.tab==='upcoming'?'automatic':state.tab;if(!name||creating)return;creating=true;taskRevision++;$('addButton').disabled=true;try{const result=await tasks.create({name,project:$('taskProject').value.trim(),course:$('taskCourse').value,priority:$('taskPriority').value,difficulty:$('taskDifficulty').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:false,...TaskPlanning.change(plan)});state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify(`Added to ${{today:'today',tomorrow:'tomorrow',automatic:'upcoming',later:'backlog'}[plan]}.`);}catch(error){$('taskMessage').textContent=error.message;}finally{creating=false;$('addButton').disabled=false;}});
+  $('quickAdd').addEventListener('submit',async event=>{event.preventDefault();const name=$('taskName').value.trim(),taskType=$('taskType').value,plan=taskType==='Multi-step'?'automatic':state.tab==='upcoming'?'automatic':state.tab;if(!name||creating)return;creating=true;taskRevision++;$('addButton').disabled=true;try{const result=await tasks.create({name,taskType,project:$('taskProject').value.trim(),course:$('taskCourse').value,priority:$('taskPriority').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:false,...TaskPlanning.change(plan)});result.task.steps=[];state.tasks.unshift(result.task);$('taskName').value='';$('taskDue').value='';$('taskTime').value='';renderTasks();renderRadar();renderCalendar();notify(taskType==='Multi-step'?'Multi-step task added. Open All tasks to add its steps.':`Added to ${{today:'today',tomorrow:'tomorrow',automatic:'upcoming',later:'backlog'}[plan]}.`);}catch(error){$('taskMessage').textContent=error.message;}finally{creating=false;$('addButton').disabled=false;}});
   document.querySelector('.tabs').addEventListener('click',event=>{const button=event.target.closest('[data-tab]');if(button){state.tab=button.dataset.tab;renderTasks();}});
   $('taskList').addEventListener('click',async event=>{
     const focus=event.target.closest('[data-focus]'),today=event.target.closest('[data-today]'),button=event.target.closest('[data-edit]');
@@ -213,7 +215,7 @@
     else if(today)updateTask(today.dataset.today,TaskPlanning.change('today'));
     else if(button)openEditor(button.dataset.edit);
   });
-  $('taskList').addEventListener('change',event=>{if(event.target.dataset.complete)updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'});});
+  $('taskList').addEventListener('change',async event=>{if(event.target.dataset.complete)updateTask(event.target.dataset.complete,{status:event.target.checked?'done':'next'});if(event.target.dataset.stepComplete){const task=state.tasks.find(t=>t.id===event.target.dataset.task),step=task?.steps.find(s=>s.id===event.target.dataset.stepComplete);if(!task||!step)return;state.pending.add(task.id);try{const result=await NOceanData.steps.update({taskId:task.id,...step,done:event.target.checked});state.tasks=state.tasks.map(t=>t.id===task.id?{...t,status:result.parent.status,steps:t.steps.map(s=>s.id===step.id?result.step:s)}:t);}catch(error){$('taskMessage').textContent=error.message;}finally{state.pending.delete(task.id);renderTasks();renderCalendar();}}});
   $('deadlineView').addEventListener('change',renderRadar);
   $('academicRadar').addEventListener('click',async event=>{
     const toggle=event.target.closest('[data-course-toggle]');
@@ -231,7 +233,7 @@
   $('calendarGrid').addEventListener('click',event=>{const button=event.target.closest('[data-calendar-day]');if(!button)return;state.selectedDay=button.dataset.calendarDay;renderCalendar();});
   $('calendarPrev').addEventListener('click',()=>moveCalendar(-1));$('calendarNext').addEventListener('click',()=>moveCalendar(1));
   document.querySelector('.plan-actions').addEventListener('click',event=>{const button=event.target.closest('[data-plan]');if(!button)return;editingPlan=button.dataset.plan;document.querySelectorAll('#editDialog [data-plan]').forEach(b=>b.classList.toggle('active',b===button));});
-  $('editTask').addEventListener('submit',async event=>{event.preventDefault();const id=$('editId').value,changes={name:$('editName').value.trim(),project:$('editProject').value.trim(),course:$('editCourse').value,difficulty:$('editDifficulty').value,priority:$('editPriority').value,focus:$('editFocus').checked,due:Deadlines.serialize($('editDue').value,$('editTime').value)};if(editingPlan)Object.assign(changes,TaskPlanning.change(editingPlan));if(changes.focus)state.tasks=state.tasks.map(t=>isImported(t)?t:{...t,focus:t.id===id});$('saveEdit').disabled=true;if(await updateTask(id,changes)){$('editDialog').close();notify('Task saved.');}$('saveEdit').disabled=false;});
+  $('editTask').addEventListener('submit',async event=>{event.preventDefault();const id=$('editId').value,changes={name:$('editName').value.trim(),taskType:$('editType').value,project:$('editProject').value.trim(),course:$('editCourse').value,priority:$('editPriority').value,focus:$('editFocus').checked,due:Deadlines.serialize($('editDue').value,$('editTime').value)};if(editingPlan&&changes.taskType==='Simple')Object.assign(changes,TaskPlanning.change(editingPlan));if(changes.focus)state.tasks=state.tasks.map(t=>isImported(t)?t:{...t,focus:t.id===id});$('saveEdit').disabled=true;if(await updateTask(id,changes)){$('editDialog').close();notify('Task saved.');}$('saveEdit').disabled=false;});
   $('archiveTask').addEventListener('click',async()=>{const id=$('editId').value;try{await tasks.archive(id);state.tasks=state.tasks.filter(t=>t.id!==id);$('editDialog').close();renderTasks();renderRadar();renderCalendar();notify('Task archived.');}catch(error){$('editError').textContent=error.message;}});
   $('taskSort').addEventListener('change',()=>{NOceanStore.saveSettings({dashboard:{taskSort:$('taskSort').value}});renderTasks();});
   $('closeEdit').onclick=$('cancelEdit').onclick=()=>$('editDialog').close();$('refresh').addEventListener('click',refresh);

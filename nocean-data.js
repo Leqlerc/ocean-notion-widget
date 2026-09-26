@@ -9,6 +9,7 @@ const NOceanData=(()=>{
  return {
   cache:{peek},
   tasks:{list:()=>list('tasks','/api/tasks'),create:task=>NOcean.request('/api/tasks',{method:'POST',body:JSON.stringify(task)}),update:task=>NOcean.request('/api/tasks',{method:'PATCH',body:JSON.stringify(task)}),archive:id=>NOcean.request('/api/tasks',{method:'DELETE',body:JSON.stringify({id})})},
+  steps:{list:taskId=>NOcean.request('/api/task-steps?task='+encodeURIComponent(taskId)),create:step=>NOcean.request('/api/task-steps',{method:'POST',body:JSON.stringify(step)}),update:step=>NOcean.request('/api/task-steps',{method:'PATCH',body:JSON.stringify(step)}),remove:step=>NOcean.request('/api/task-steps',{method:'DELETE',body:JSON.stringify(step)})},
   projects:{list:()=>list('projects','/api/projects'),create:project=>NOcean.request('/api/projects',{method:'POST',body:JSON.stringify(project)}),update:project=>NOcean.request('/api/projects',{method:'PATCH',body:JSON.stringify(project)})}
  };
 })();

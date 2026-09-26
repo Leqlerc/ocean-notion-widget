@@ -42,5 +42,13 @@ class ProjectPlanTests(unittest.TestCase):
  def test_validate(self):
   for data in ({**DATA,'due':'bad'},{**DATA,'kind':'objective'},{**DATA,'text':''},{**DATA,'unknown':1}):
    with self.assertRaises(ValueError):validate(data)
+ def test_experiment_and_progress_metadata(self):
+  experiment=validate({'projectId':PROJECT,'requestId':KEY,'kind':'experiment','text':'Try a shorter review','status':'Trying'})
+  value=normalize({**block_payload(experiment),'id':BLOCK,'last_edited_time':'2026-09-26T00:00:00Z'})
+  self.assertEqual(value['status'],'Trying');self.assertTrue(value['createdAt'])
+  progress=validate({'projectId':PROJECT,'requestId':KEY,'kind':'progress','text':'Prototype improved','status':'On track'})
+  value=normalize({**block_payload(progress),'id':BLOCK,'last_edited_time':'2026-09-26T00:00:00Z'})
+  self.assertEqual(value['status'],'On track')
+  with self.assertRaises(ValueError):validate({'projectId':PROJECT,'requestId':KEY,'kind':'experiment','text':'Bad','status':'Blocked'})
 
 if __name__=='__main__':unittest.main()

@@ -36,8 +36,9 @@ class Tasks(unittest.TestCase):
             NotionTaskStore().create({'name': 'Prepare notes', 'project': 'Exam prep'})
             props = api.call_args.args[2]['properties']
             self.assertEqual(props['Projects']['relation'][0]['id'],'22222222-2222-4222-8222-222222222222')
-            self.assertTrue(props['Focus']['checkbox'])
+            self.assertFalse(props['Focus']['checkbox'])
             self.assertEqual(props['Status']['select']['name'], 'Next')
+            self.assertEqual(props['Task Type']['select']['name'], 'Simple')
             self.assertEqual(props['Project']['rich_text'][0]['text']['content'], 'Exam prep')
 
     def test_completion_stamps_and_reopen_clears(self):

@@ -5,14 +5,15 @@ from lib import notion
 
 STATUSES = {'inbox': 'Inbox', 'next': 'Next', 'doing': 'Doing', 'waiting': 'Waiting', 'done': 'Done'}
 PRIORITIES = ('Critical', 'High', 'Normal', 'Low')
-FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty', 'priority', 'scheduledFor', 'planningMode'}
+TASK_TYPES = ('Simple', 'Multi-step')
+FIELDS = {'id', 'name', 'status', 'focus', 'course', 'project', 'projectId', 'due', 'difficulty', 'priority', 'scheduledFor', 'planningMode', 'taskType'}
 
 
 def normalize(page):
     get = lambda name: notion.value(page, name)
     return {'id': page['id'], 'name': get('Task') or 'Untitled task',
             'status': (get('Status') or 'Inbox').lower(), 'focus': bool(get('Focus')),
-            'difficulty': get('Difficulty') or 'Unrated', 'priority': get('Priority') or 'Normal', 'course': get('Course') or '', 'project': get('Project') or '',
+            'difficulty': get('Difficulty') or 'Unrated', 'priority': get('Priority') or 'Normal', 'taskType': get('Task Type') or 'Simple', 'course': get('Course') or '', 'project': get('Project') or '',
             'projectIds':[r['id'] for r in get('Projects') or []],
             'due': get('Deadline'), 'scheduledFor': get('Do date'),
             'planningMode':(get('Planning Mode') or 'Automatic').lower(), 'sourceId':get('Source ID') or None, 'sourceUrl':get('Source') or None, 'sourceCalendar':get('Source calendar') or None,
@@ -35,6 +36,8 @@ def validate(data, creating=False):
         raise ValueError('Invalid difficulty.')
     if 'priority' in data and data['priority'] not in PRIORITIES:
         raise ValueError('Invalid priority.')
+    if 'taskType' in data and data['taskType'] not in TASK_TYPES:
+        raise ValueError('Invalid task type.')
     if 'status' in data and data['status'] not in STATUSES:
         raise ValueError('Invalid task status.')
     if 'focus' in data and type(data['focus']) is not bool:
@@ -79,6 +82,16 @@ class NotionTaskStore:
             'Priority': {'select': {'options': [{'name': level} for level in PRIORITIES]}}
         }})
 
+    def ensure_task_type(self):
+        current = self.schema().get('Task Type')
+        if current and current.get('type') == 'select':
+            return
+        if current:
+            raise ValueError('The Notion Task Type property must be a Select field.')
+        notion.request('PATCH', '/data_sources/' + notion.TASKS, {'properties': {
+            'Task Type': {'select': {'options': [{'name': value} for value in TASK_TYPES]}}
+        }})
+
     def clear_focus(self, except_id=None):
         pages = notion.query(notion.TASKS, {'property': 'Focus', 'checkbox': {'equals': True}})
         for page in pages:
@@ -90,6 +103,10 @@ class NotionTaskStore:
         from lib.integrations.coursework import visible_tasks
         tasks = [normalize(p) for p in notion.query(notion.TASKS)]
         tasks = visible_tasks(tasks)
+        from lib.task_steps import TaskStepStore
+        step_store = TaskStepStore()
+        for task in tasks:
+            task['steps'] = step_store.list_for_page(task['id']) if task['taskType'] == 'Multi-step' and not str(task.get('sourceId') or '').startswith('brightspace:') else []
         schema = notion.request('GET', '/data_sources/' + notion.TASKS)['properties']
         courses = [x['name'] for x in schema.get('Course', {}).get('select', {}).get('options', [])]
         return {'tasks': tasks, 'courses': courses, 'statuses': list(STATUSES),
@@ -108,6 +125,8 @@ class NotionTaskStore:
             props['Difficulty']={'select':{'name':data['difficulty']} if data['difficulty']!='Unrated' else None}
         if 'priority' in data:
             props['Priority']={'select':{'name':data['priority']}}
+        if 'taskType' in data:
+            props['Task Type']={'select':{'name':data['taskType']}}
         if 'course' in data:
             props['Course'] = {'select': {'name': data['course']} if data['course'] else None}
         if 'focus' in data:
@@ -149,8 +168,10 @@ class NotionTaskStore:
             raise ValueError('New tasks cannot specify an ID.')
         data.setdefault('focus', False)
         data.setdefault('priority', 'Normal')
+        data.setdefault('taskType', 'Simple')
         data.setdefault('status', 'next')
         self.ensure_priority()
+        self.ensure_task_type()
         if data['focus']:
             self.clear_focus()
         relation = self.project_properties(data)
@@ -177,6 +198,10 @@ class NotionTaskStore:
         page = self.owned_page(data)
         if 'priority' in data:
             self.ensure_priority()
+        if 'taskType' in data:
+            if str(normalize(page).get('sourceId') or '').startswith('brightspace:') and data['taskType'] != 'Simple':
+                raise ValueError('Imported coursework cannot become a multi-step manual task.')
+            self.ensure_task_type()
         if data.get('focus'):
             self.clear_focus(page['id'])
         relation = self.project_properties(data)

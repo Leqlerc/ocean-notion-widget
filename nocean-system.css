@@ -121,3 +121,4 @@ dialog{background:#0d1c22;border:1px solid rgba(167,215,213,.25);border-radius:1
   .quick-add .capture-options{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:480px){.focus-button{display:inline-flex}}
+.task-progress{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:26px;border:1px solid var(--accent-line);border-radius:999px;color:var(--accent);font-size:11px;font-weight:700}.home-task-steps{margin-top:7px;padding-left:4px}.home-task-step{display:flex;align-items:center;gap:8px;min-height:40px;font-size:12px}.home-task-step input{width:19px;height:19px}.home-task-steps summary{color:var(--muted);cursor:pointer;font-size:11px}.due-warning{color:#ffc08f}

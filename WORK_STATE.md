@@ -1,27 +1,43 @@
 # NOcean Work State
 
-## Release checkpoint — 2026-09-25
+## Multi-step tasks + Projects upgrade — 2026-09-26
 
-The current release candidate is `integration/home-functionality-current-main`, rebuilt directly on top of `main` at `f4c74e8` rather than merging the stale Codex branch wholesale. A backup of the pre-promotion main exists at `backup/pre-home-functionality-merge-2026-09-25`.
+Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934fdc`. Implementation commit is recorded after the final verification pass. This branch is Preview-only and must not be promoted to Production without review.
 
-## Implemented
+## Task model and persistence
 
-- Task Manager is manual-work only on Home and the full Tasks page; Brightspace imports remain stored but do not populate task views. Today planning no longer implies Focus.
-- Quick-add/edit support Course and persistent Critical / High / Normal / Low Priority. Home supports persisted Plan / Priority / Due date sorting. Focus is exclusive and appears in a separate highlighted section above normal tasks.
-- Academic Safety Net contains Brightspace-source coursework only. Manual course-tagged tasks cannot enter it. Standalone Brightspace availability/open lifecycle notices are excluded, pending yellow bars are removed, and empty configured courses can show that no coursework was detected while noting feed coverage is incomplete.
-- Current-main deadline behavior is preserved: deadlines default to one chronological list and can switch to class grouping. Current-main Home layout is preserved, including the expanded Events column and no Dragonair Habitat.
-- Events retain current ordering/significance behavior and add minute-level countdowns plus conservative class section-label cleanup.
-- Weather adds condition icons, feels-like temperature, wind, highs/lows and rain windows using the existing Open-Meteo provider.
-- Dining renders up to three existing ranked protein picks per displayed court and surfaces Wiley Sizzling Pasta Strip only when the current published meal contains that station.
-- Existing newer main work, including Cove Tree/background repairs and current Home proportions/layout, is preserved.
+- Tasks now expose `taskType: Simple | Multi-step`. Missing `Task Type` values normalize to `Simple`; the Notion adapter lazily adds a compatible Select property on the first write. Existing `Difficulty` values remain stored and supported by the server but Difficulty is removed from normal task creation/editing/filtering UI.
+- A Multi-step task is one concrete deliverable with a mostly-known checklist. A Project remains a changing outcome containing tasks, objectives, checkpoints, experiments, progress history, and notes.
+- Steps are NOcean-tagged native child `to_do` blocks under the task page. The marker stores a stable request UUID and optional planned date. Only tagged blocks are listed, updated, or removed; unrelated task content is untouched. `/api/task-steps` is the dedicated ownership-checked CRUD boundary with edited-time conflict checks and idempotent creates.
+- Completing the last open step marks the parent Done. Reopening a step reopens a Done parent to Next. Parent rows with steps use progress (`x/y`) instead of a completion checkbox, so parent completion never silently completes remaining steps.
+
+## Planning and calendar semantics
+
+- Simple tasks keep Today / Tomorrow / Upcoming / Backlog planning.
+- Multi-step work-plan membership comes from open step dates. Unscheduled steps are Backlog. A due-today or overdue parent is forced into Today even when no step is planned there and shows a warning.
+- Home and Tasks show only the steps relevant to the active work-plan view plus an all-steps disclosure. Focus remains parent-level and surfaces the next relevant open step.
+- Calendar workload uses one parent boolean per date: any number of open steps on a date counts the parent once, the deadline also counts the parent on its date, and a same-day step plus deadline remains one workload item. The agenda can list that date's step names beneath the parent.
+- Brightspace records remain excluded from manual task managers and are explicitly refused as Multi-step step owners.
+
+## Projects workspace
+
+- The old Projects → Tasks capture link is replaced by an in-place related-task composer/editor. It preserves the selected project relation and supports Simple/Multi-step type, priority, course, deadline, Simple planning, and Multi-step step editing without leaving Projects.
+- Progress Snapshot reports truthful independent signals: task completion, objective achievement, checkpoint achievement, next checkpoint, target date, current workload, and last progress log when data exists. The bar is explicitly labeled `Task completion`; project lifecycle remains independent.
+- Existing `milestone` blocks remain unchanged in storage and are presented as Checkpoints with target date, achieved state, sorting, and overdue styling.
+- Additive native ProjectPlan kinds store Experiments (`Trying / Adopted / Dropped`) and dated Progress Log entries with optional `On track / Uncertain / Blocked` check-in state. Stable marker metadata carries state/timestamp; existing Overview, Objectives, Milestones, Notes, and all unrelated Notion blocks remain intact.
+- Workspace hierarchy is Progress Snapshot, Immediate Focus / Related Work, then Checkpoints, Objectives, Experiments, Progress Log, Overview, and Notes with disclosures to limit visual weight.
 
 ## Verification
 
-- The original functionality sprint passed all 20 Node CJS suites and 86 Python tests (6 disposable-database integration tests skipped), plus JS syntax, Python compile, desktop and 390 px browser checks.
-- The resolved integration branch is a strict descendant of current main and changes only 12 intended files: Home/task UI and logic, task persistence/planning, coursework filtering, event semantics, weather config, and dining station data.
-- Vercel Preview for resolved commit `72b40df` built READY and the Home route returned HTTP 200 with the expected current-main layout plus new task controls/assets.
-- Direct local re-run of the test suite was not possible from this chat runtime because outbound Git clone/DNS is unavailable; no claim is made that the reconstructed branch reran the complete local suite here.
+- JavaScript syntax passed for `tasks.js`, `home.js`, `projects.js`, `project-plan.js`, and `nocean-planning.js`.
+- Focused Node suites passed: planning, multi-step planning/calendar deduplication, project model, Tasks DOM interactions, Projects interactions/progressive load, and ProjectPlan UI.
+- Focused Python suites passed: task planning/type, task-step ownership/validation/completion semantics, project-plan compatibility/metadata, and provider task contracts. `python -m compileall -q api lib tests/preview_server.py` passed with the bundled runtime.
+- Full Python discovery ran 91 tests: 82 passed, 6 disposable-database tests skipped, and 3 unrelated current-main assertions failed in coursework/calendar legacy fixtures. Focused changed-area suites are green.
+- Browser QA used the local read-only/in-memory Preview server. Desktop and 390 px verified Tasks type/step editor, Projects workspace, in-place Multi-step creation, step completion and reopening, Checkpoint creation/snapshot, Experiment status, Progress Log state, touch sizing, and no horizontal overflow. Browser console had no warnings/errors. No production promotion occurred.
+- `git diff --check` passed.
 
-## Main follow-up
+## Known limitations / next highest ROI
 
-The Brightspace integration is still an iCalendar feed and cannot guarantee complete assignment/submission coverage. Highest-priority follow-up: investigate authenticated direct Brightspace/D2L APIs for current courses, Assignment/Dropbox folders, due dates, and the current user's submission state. Prefer an official API integration; evaluate browser automation only if Purdue does not expose usable authentication.
+- Home quick-add can create a Multi-step parent but intentionally redirects detailed step authoring to the full Tasks or Projects editor to keep Home dense.
+- Notion task listing currently loads child blocks for each Multi-step task; if the number of Multi-step tasks becomes large, add bounded parallelism or a short-lived server cache.
+- Preview used the local fixture boundary because live Notion credentials were not exercised. After review, highest-value follow-up is a real Preview deployment smoke test against the configured Notion workspace before any Production promotion.
