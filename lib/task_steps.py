@@ -83,7 +83,7 @@ class TaskStepStore:
             if not data.get('has_more'):
                 return records
             cursor = data['next_cursor']
-        raise ValueError('Task content is too large to safely edit here. Open its Notion page.')
+        raise ValueError('This task has too much embedded content to edit here.')
 
     def list(self, task_id):
         page = self.parent(task_id)
@@ -100,7 +100,7 @@ class TaskStepStore:
             raise ValueError('A stable save ID is required.')
         existing = [x for x in self.list_for_page(page['id']) if x['requestId'] == data['requestId']]
         if len(existing) > 1:
-            raise ValueError('This save already has duplicate steps. Review them in Notion.')
+            raise ValueError('This subtask was saved more than once. Refresh and review the task.')
         if existing:
             if any(existing[0][key] != data[key] for key in ('name', 'plannedFor', 'done')):
                 raise ValueError('This save ID belongs to another step. Refresh before creating a new one.')
@@ -115,21 +115,17 @@ class TaskStepStore:
         old = next((x for x in records if x['id'] == data.get('id')), None)
         if not old:
             raise ValueError('Step is outside this task or was removed.')
-        if data.get('editedAt') != old['editedAt']:
-            raise ValueError('This step changed in Notion. Refresh before saving.')
         data = validate({**old, **data, 'requestId': old['requestId']})
         result = notion.request('PATCH', '/blocks/' + old['id'], {'to_do': block_payload(data)['to_do']})
         return {'step': normalize(result), 'parent': self.sync_parent(page['id'])}
 
     def remove(self, data):
-        if set(data) != {'taskId', 'id', 'editedAt'}:
-            raise ValueError('Expected task and step identity.')
+        if set(data) - {'taskId', 'id', 'editedAt'} or not {'taskId', 'id'} <= set(data):
+            raise ValueError('Expected task and subtask identity.')
         page = self.parent(data.get('taskId'))
         old = next((x for x in self.list_for_page(page['id']) if x['id'] == data.get('id')), None)
         if not old:
             raise ValueError('Step is outside this task or was removed.')
-        if data.get('editedAt') != old['editedAt']:
-            raise ValueError('This step changed in Notion. Refresh before removing it.')
         notion.request('PATCH', '/blocks/' + old['id'], {'in_trash': True})
         return {'removed': old['id'], 'parent': self.sync_parent(page['id'])}
 
