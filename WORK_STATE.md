@@ -8,7 +8,7 @@ Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934
 
 - Tasks now expose `taskType: Simple | Multi-step`. Missing `Task Type` values normalize to `Simple`; the Notion adapter lazily adds a compatible Select property on the first write. Existing `Difficulty` values remain stored and supported by the server but Difficulty is removed from normal task creation/editing/filtering UI.
 - A Multi-step task is one concrete deliverable with a mostly-known checklist. A Project remains a changing outcome containing tasks, objectives, checkpoints, experiments, progress history, and notes.
-- Steps are NOcean-tagged native child `to_do` blocks under the task page. The marker stores a stable request UUID and optional planned date. Only tagged blocks are listed, updated, or removed; unrelated task content is untouched. `/api/task-steps` is the dedicated ownership-checked CRUD boundary with edited-time conflict checks and idempotent creates.
+- Steps are NOcean-tagged native child `to_do` blocks under the task page. The marker stores a stable request UUID and optional planned date. Only tagged blocks are listed, updated, or removed; unrelated task content is untouched. `TaskStepStore` is the dedicated ownership-checked CRUD boundary with edited-time conflict checks and idempotent creates; its HTTP operations share `/api/tasks` to remain within the Vercel Hobby function cap.
 - Completing the last open step marks the parent Done. Reopening a step reopens a Done parent to Next. Parent rows with steps use progress (`x/y`) instead of a completion checkbox, so parent completion never silently completes remaining steps.
 
 ## Planning and calendar semantics
