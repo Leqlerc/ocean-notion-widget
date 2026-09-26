@@ -2,7 +2,7 @@
 
 ## Multi-step tasks + Projects upgrade — 2026-09-26
 
-Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934fdc`. Implementation commit is recorded after the final verification pass. This branch is Preview-only and must not be promoted to Production without review.
+Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934fdc`. The verified implementation is commit `d56aa48`. This branch is Preview-only and must not be promoted to Production without review.
 
 ## Task model and persistence
 
