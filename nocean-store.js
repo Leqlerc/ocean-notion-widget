@@ -19,7 +19,7 @@ const NOceanStore = (() => {
   const defaults = {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
-    dashboard: {showTasks:true,showDeadlines:true,showEvents:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',collapsedCourses:{}},
+    dashboard: {showTasks:true,showDeadlines:true,showEvents:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',taskSort:'plan',collapsedCourses:{}},
     appearance: {topBiomeHeight:176,cardOpacity:100,accent:'green',difficultyColors:'off',calendarWorkload:'solid',cardArt:{}}
   };
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -60,18 +60,10 @@ const NOceanStore = (() => {
   function saveSettings(value) { const current=settings();return write(SETTINGS_KEY,{...current,...value,dashboard:{...current.dashboard,...(value.dashboard||{})}}); }
   function verificationId(task) { return task?.sourceId || task?.id || ''; }
   function isRadarItem(task) {
-    const name=String(task?.name||'');
-    const lifecycle=/\s[-–—]\s(?:Available|Availability Ends)\s*$/i.test(name)||
-      /\b(?:becomes? available|availability (?:starts|ends)|opens?)\b/i.test(name);
-    if(lifecycle)return false;
-    if (String(task?.sourceId||'').startsWith('brightspace:')) return true;
-    return Boolean(task?.id && read(RADAR_KEY,{})[String(task.id)]);
+    return String(task?.sourceId||'').startsWith('brightspace:');
   }
   function setRadarItem(task,tracked) {
-    if (!task?.id || String(task?.sourceId||'').startsWith('brightspace:')) return false;
-    const all=read(RADAR_KEY,{}),key=String(task.id);
-    if(tracked) all[key]=true; else delete all[key];
-    return write(RADAR_KEY,all);
+    return false;
   }
   function verification(task) {
     const item=read(VERIFY_KEY,{})[verificationId(task)];
