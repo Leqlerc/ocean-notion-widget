@@ -18,12 +18,12 @@ function page(file,url){
 
 (async()=>{
  const dom=page('projects.html','https://nocean.test/projects.html');const w=dom.window,$=id=>w.document.getElementById(id);
- let records=[clone(project)],fail=false,hold=null,updates=[];
+ let records=[clone(project)],taskRecords=[clone(task)],fail=false,hold=null,updates=[],createdTask=null;
  w.NOceanData={projects:{
   list:()=>hold?hold:Promise.resolve({projects:clone(records)}),
   create:async data=>{if(fail)throw Error('Save unavailable');const p={...data,id:'p2',status:'Active',taskIds:[]};records.push(p);return {project:clone(p)};},
   update:async data=>{updates.push(clone(data));if(fail)throw Error('Save unavailable');records=records.map(p=>p.id===data.id?{...p,...data}:p);return {project:clone(records.find(p=>p.id===data.id))};}
- },tasks:{list:async()=>({tasks:[clone(task)],courses:[]}),create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')}},steps:{create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')},remove:async()=>{throw Error('unused')}}};
+ },tasks:{list:async()=>({tasks:clone(taskRecords),courses:[]}),create:async data=>{createdTask={...clone(data),id:'t2',status:'next',steps:[],projectIds:[data.projectId]};taskRecords.push(createdTask);return {task:clone(createdTask)};},update:async()=>{throw Error('unused')}},steps:{create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')},remove:async()=>{throw Error('unused')}}};
  vm.runInContext(source('project-model.js'),dom.getInternalVMContext());vm.runInContext(source('projects.js'),dom.getInternalVMContext());await tick();
  try{
   assert.match($('projectGrid').textContent,/Pull-up progression/);
@@ -32,6 +32,8 @@ function page(file,url){
   w.location.hash='p1';w.dispatchEvent(new w.HashChangeEvent('hashchange'));await tick();
   assert.equal($('projectIndex').hidden,false);assert.match($('projectDetail').textContent,/Baseline test/);
    assert.ok($('projectDetail').querySelector('[data-project-task="t1"]'));$('projectDetail').querySelector('[data-project-task="t1"]').click();assert.equal($('projectTaskEditor').open,true);$('cancelProjectTask').click();
+  $('addProjectTask').click();$('projectTaskName').value='New project task';$('projectTaskDue').value='2026-09-22';$('projectTaskTime').value='14:30';$('projectTaskForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
+  assert.equal(createdTask.projectId,'p1');assert.match(createdTask.due,/^2026-09-22T14:30:00[+-]\d\d:\d\d$/);assert.equal($('projectTaskEditor').open,false);assert.match($('projectDetail').textContent,/New project task/);
   $('editProject').click();$('projectDue').value='2027-01-18';$('projectLifecycle').value='Completed';
   fail=true;$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
   assert.equal($('projectEditor').open,true);assert.match($('projectError').textContent,/Save unavailable/);
@@ -49,7 +51,7 @@ function page(file,url){
   w.location.hash='';w.dispatchEvent(new w.HashChangeEvent('hashchange'));$('newProject').click();
   $('projectName').value='   ';$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.match($('projectError').textContent,/Enter a project name/);
   $('projectName').value='Second goal';$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
-   assert.equal(w.location.hash,'#p2');assert.match($('projectDetail').textContent,/Add a related task/);
+   assert.equal(w.location.hash,'#p2');assert.match($('projectDetail').textContent,/Add task/);
   assert.equal(records.length,2);assert.equal(task.due,'2026-09-21T15:30:00-04:00');
  }finally{dom.window.close();}
  const td=page('tasks.html','https://nocean.test/tasks.html?project=p1&view=all&task=t1');
@@ -61,7 +63,7 @@ function page(file,url){
   assert.equal(get('projectFilter').value,'p1');assert.equal(get('captureProject').value,'p1');
   assert.equal(get('taskEditor').open,true);assert.equal(get('editId').value,'t1');
   assert.equal(get('editDue').value,'2026-09-21');assert.equal(get('editTime').value,get('editTime').dataset.original);
-   assert.match(get('viewHint').textContent,/All current manual tasks/);
+   assert.equal(get('taskSort').closest('nav').id,'taskViews');assert.equal(t.document.querySelector('[id*=difficulty i]'),null);
   get('cancelEdit').click();get('refresh').click();await tick();assert.equal(get('taskEditor').open,false);
  }finally{td.window.close();}
  console.log('Project interactions passed: search, detail, create, persisted-state reload, save failure, stale-read guard, missing ID, scoped task editor and capture.');

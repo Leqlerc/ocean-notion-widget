@@ -11,6 +11,7 @@ let records=[
  {id:'today',name:'Today action',scheduledFor:'2026-09-20',planningMode:'planned',due:deadline},
  {id:'tomorrow',name:'Deferred action',scheduledFor:'2026-09-21',planningMode:'planned',due:'2026-09-19T15:30:00-04:00'},
  {id:'upcoming',name:'Upcoming action',scheduledFor:'2026-09-25',planningMode:'planned'},
+ {id:'backlog-today',name:'Due from backlog today',planningMode:'backlog',priority:'Low',due:'2026-09-20T23:59:00-04:00'},
  {id:'backlog',name:'Backlog action',planningMode:'backlog',due:'2026-09-21T23:59:00-04:00'},
  {id:'distant',name:'Distant action',planningMode:'automatic',due:'2026-10-25T23:59:00-04:00'},
  ].map(t=>({status:'next',taskType:'Simple',priority:'Normal',steps:[],projectIds:['p1'],project:'Project',focus:false,...t}));
@@ -37,10 +38,12 @@ async function boot(){
  try{
   let w=dom.window,$=id=>w.document.getElementById(id);
   const view=async key=>{w.document.querySelector(`[data-view="${key}"]`).click();await tick();};
-  assert.match($('moduleTasks').textContent,/Today action/);assert.doesNotMatch($('moduleTasks').textContent,/Deferred action/);
-  await view('tomorrow');assert.match($('moduleTasks').textContent,/Deferred action/);
+  assert.match($('moduleTasks').textContent,/Today action/);assert.match($('moduleTasks').textContent,/Due from backlog today/);assert.match(w.document.querySelector('[data-task-id="backlog-today"]').textContent,/Critical/);assert.doesNotMatch($('moduleTasks').textContent,/Deferred action/);
+  $('taskSort').value='priority';$('taskSort').dispatchEvent(new w.Event('change'));assert.equal($('moduleTasks').querySelector('[data-task-id]').dataset.taskId,'backlog-today');
+  let surfaced=w.document.querySelector('[data-complete="backlog-today"]');surfaced.checked=true;surfaced.dispatchEvent(new w.Event('change',{bubbles:true}));await tick();assert.equal(records.find(t=>t.id==='backlog-today').status,'done');$('moduleToast').querySelector('button').click();await tick();assert.equal(records.find(t=>t.id==='backlog-today').status,'next');
+  await view('tomorrow');assert.match($('moduleTasks').textContent,/Deferred action/);assert.match($('moduleTasks').textContent,/Backlog action/);assert.equal(w.document.querySelectorAll('[data-task-id="backlog"]').length,1);
   await view('upcoming');assert.match($('moduleTasks').textContent,/Upcoming action/);assert.doesNotMatch($('moduleTasks').textContent,/Distant action/);
-  await view('later');assert.match($('moduleTasks').textContent,/Backlog action/);assert.match($('moduleTasks').textContent,/Distant action/);
+  await view('later');assert.match($('moduleTasks').textContent,/Backlog action/);assert.match($('moduleTasks').textContent,/Due from backlog today/);assert.match($('moduleTasks').textContent,/Distant action/);
   await view('today');w.document.querySelector('[data-task="today"][data-plan="tomorrow"]').click();await tick();
   assert.equal(records.find(t=>t.id==='today').scheduledFor,'2026-09-21');assert.equal(records.find(t=>t.id==='today').due,deadline);
   assert.ok(!('due' in writes.at(-1)));

@@ -24,14 +24,14 @@ const source=name=>fs.readFileSync(name,'utf8'),tick=()=>new Promise(resolve=>se
  };
  w.eval(['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean-planning.js','calendar-semantics.js','nocean-store.js','home.js'].map(source).join('\n'));
  await tick();
- assert.match($('taskList').textContent,/Draft project notes/);assert.match($('taskList').textContent,/CS 159 Homework/);
+ assert.match($('taskList').textContent,/Draft project notes/);assert.doesNotMatch($('taskList').textContent,/CS 159 Homework/);
  assert.match($('academicRadar').textContent,/CS 159 Homework/);assert.doesNotMatch($('academicRadar').textContent,/Draft project notes/);
- assert.match($('academicRadar').textContent,/Other coursework/);assert.match($('academicRadar').textContent,/Feed item without course metadata/);
+ assert.match($('academicRadar').textContent,/Coursework/);assert.match($('academicRadar').textContent,/Feed item without course metadata/);
  assert.match($('eventList').textContent,/ENGR team meeting/);assert.ok($('calendarGrid').querySelectorAll('[data-calendar-day]').length>=28);
  $('calendarGrid').querySelector('[data-calendar-day="2026-09-22"]').click();assert.match($('calendarAgenda').textContent,/CS 159 Homework/);assert.match($('calendarAgenda').textContent,/Draft project notes/);
- assert.match($('homeHeading').textContent,/^Good (morning|afternoon|evening), Will$/);assert.ok($('homeSubtitle').textContent.length>5);
+ assert.match($('homeHeading').textContent,/^Good (morning|afternoon|evening), Will$/);assert.equal($('homeSubtitle'),null);
  assert.match($('dining').textContent,/Wiley/);assert.match($('dining').textContent,/Windsor/);assert.doesNotMatch($('dining').textContent,/Ford/);assert.match($('dining').textContent,/Turkey bowl/);assert.match($('dining').textContent,/Protein-forward item unavailable/);
- w.document.querySelector('[data-tab="tomorrow"]').click();assert.equal($('addButton').textContent,'Add to tomorrow');$('taskName').value='Tomorrow capture';$('taskDue').value='2026-10-02';$('quickAdd').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal(created.planningMode,'planned');assert.equal(created.focus,false);assert.match(created.due,/^2026-10-02T23:59:00/);assert.match($('toast').textContent,/Added to tomorrow/);
+ w.document.querySelector('[data-tab="tomorrow"]').click();assert.equal($('addButton').textContent,'Add to tomorrow');$('taskName').value='Tomorrow capture';$('taskDue').value='2026-10-02';$('quickAdd').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal(created.planningMode,'planned');assert.equal(created.focus,false);assert.match(created.due,/^2026-10-02T23:59:00/);assert.match($('toast').textContent,/Task added/);
  w.document.querySelector('[data-tab="today"]').click();const checkbox=w.document.querySelector('[data-complete="work"]');checkbox.checked=true;checkbox.dispatchEvent(new w.Event('change',{bubbles:true}));await tick();assert.ok(w.document.querySelector('[data-task-id="work"].done'));assert.match($('toast').textContent,/Task completed/);$('toast').querySelector('button').click();await tick();assert.ok(w.document.querySelector('[data-task-id="work"]:not(.done)'));
  dom.window.close();console.log('Home sketch UI passed: work tasks, trusted deadlines, events, and selected-date calendar remain distinct.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

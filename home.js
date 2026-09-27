@@ -91,13 +91,13 @@
     return TaskPlanning.matches(task,tab,dayKey());
   }
   function taskRow(task){
-    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',priority=task.priority||'Normal',multi=isMulti(task),steps=task.steps||[],completed=steps.filter(s=>s.done).length;
+    const busy=state.pending.has(task.id),due=dueText(task.due),done=task.status==='done',priority=TaskPlanning.surfacedBacklog(task,state.tab,dayKey())?'Critical':task.priority||'Normal',multi=isMulti(task),steps=task.steps||[],completed=steps.filter(s=>s.done).length;
     const warning=multi&&!done&&TaskPlanning.dateKey(task.due)<=dayKey()&&!TaskPlanning.relevantSteps(task,'today').length?'<span class="due-warning">Due now · no subtask planned today</span>':'';
     const subtasks=steps.map(step=>`<label class="home-task-step"><input type="checkbox" data-step-complete="${esc(step.id)}" data-task="${esc(task.id)}" ${step.done?'checked':''} ${busy?'disabled':''}><span>${esc(step.name)}</span></label>`).join('');
     return `<article class="task-row ${task.focus?'is-focused':''} ${done?'done':''}" data-task-id="${esc(task.id)}">${multi?'':`<input type="checkbox" data-complete="${esc(task.id)}" ${done?'checked':''} ${busy?'disabled':''} aria-label="${done?'Reopen':'Complete'} ${esc(task.name)}">`}<div class="task-text"><div class="task-primary">${multi?`<span class="task-progress" aria-label="${completed} of ${steps.length} subtasks complete">${completed}/${steps.length}</span>`:''}<button class="task-name quiet" data-edit="${esc(task.id)}" ${busy?'disabled':''}>${esc(task.name)}</button>${!done?`<span class="priority-chip priority-${esc(priority.toLowerCase())}">${esc(priority)}</span><button type="button" class="focus-button ${task.focus?'on':''}" data-focus="${esc(task.id)}" aria-pressed="${Boolean(task.focus)}" aria-label="Toggle focus for ${esc(task.name)}" ${busy?'disabled':''}>Focus</button>`:''}</div><div class="task-meta">${task.course||task.project?`<span>${esc(task.course||task.project)}</span>`:''}${due?`<span class="${overdue(task.due)?'overdue':''}">Due ${esc(due)}</span>`:''}${warning}${!multi&&!done&&state.tab!=='today'&&!task.focus?`<button type="button" class="plan-today" data-today="${esc(task.id)}" ${busy?'disabled':''} aria-label="Plan ${esc(task.name)} for Today">+ Today</button>`:''}</div>${multi&&steps.length?`<details class="home-subtasks"><summary aria-label="Show subtasks">⌄</summary><div class="home-subtask-list">${subtasks}</div></details>`:''}</div></article>`;
   }
   function visibleTasks(tab=state.tab){
-    const sort=NOceanStore.settings().dashboard.taskSort||'plan',tie=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.name.localeCompare(b.name),compare=sort==='priority'?(a,b)=>(priorityRank[a.priority||'Normal']??2)-(priorityRank[b.priority||'Normal']??2)||tie(a,b):sort==='due'?tie:(a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999')||a.name.localeCompare(b.name);
+    const sort=NOceanStore.settings().dashboard.taskSort||'plan',effectivePriority=task=>TaskPlanning.surfacedBacklog(task,tab,dayKey())?'Critical':task.priority||'Normal',tie=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.name.localeCompare(b.name),compare=sort==='priority'?(a,b)=>(priorityRank[effectivePriority(a)]??2)-(priorityRank[effectivePriority(b)]??2)||tie(a,b):sort==='due'?tie:(a,b)=>Number(a.status==='done')-Number(b.status==='done')||Number(b.status==='doing')-Number(a.status==='doing')||(a.scheduledFor||a.due||'9999').localeCompare(b.scheduledFor||b.due||'9999')||a.name.localeCompare(b.name);
     const visible=state.tasks.filter(t=>!isImported(t)&&(!t.focus||t.status==='done')&&plannedFor(t,tab)).sort(compare);
     for(const id of state.lingering)if(state.lingerTabs.get(id)===tab){const at=visible.findIndex(t=>t.id===id);if(at>=0){const [task]=visible.splice(at,1);visible.splice(Math.min(state.rowPositions.get(id)??at,visible.length),0,task);}}
     return visible;
@@ -110,7 +110,6 @@
     $('taskSort').value=NOceanStore.settings().dashboard.taskSort||'plan';
     const blank=empty('No tasks.');
     $('taskList').innerHTML=(focused?`<section class="focus-section" aria-label="Focused task"><span class="focus-section-label">Focus</span>${taskRow(focused)}</section>`:'')+(visible.map(taskRow).join('')||(!focused?blank:''));
-    $('taskHint').textContent='';
     $('addButton').textContent={today:'Add to today',tomorrow:'Add to tomorrow',upcoming:'Add task',later:'Add to backlog'}[state.tab];
     updateLifeStatus();
   }

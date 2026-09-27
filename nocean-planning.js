@@ -13,8 +13,8 @@ const TaskPlanning=(()=>{
    if(buckets.has('upcoming'))return 'upcoming';
    return 'later';
   }
-  if(task.planningMode==='backlog')return 'later';
   const planned=dateKey(task.scheduledFor),due=dateKey(task.due);
+  if(task.planningMode==='backlog')return due===today?'today':due===add(today,1)?'tomorrow':'later';
   if(planned)return planned<=today?'today':planned===add(today,1)?'tomorrow':planned<=add(today,14)?'upcoming':'later';
   if(task.focus||task.status==='doing'||(due&&due<=today))return 'today';
   if(due===add(today,1))return 'tomorrow';
@@ -33,7 +33,12 @@ const TaskPlanning=(()=>{
   if(task.taskType==='Multi-step'&&Array.isArray(task.steps))return (task.steps||[]).some(step=>!step.done&&dateKey(step.plannedFor)===date)||dateKey(task.due)===date;
   return dateKey(task.scheduledFor)===date||dateKey(task.due)===date;
  }
- function matches(task,view,today=day()){return view==='all'||bucket(task,today)===view;}
+ function matches(task,view,today=day()){
+  if(view==='all')return true;
+  if(view==='later'&&task.taskType!=='Multi-step'&&task.planningMode==='backlog')return true;
+  return bucket(task,today)===view;
+ }
+ function surfacedBacklog(task,view,today=day()){return task.taskType!=='Multi-step'&&task.planningMode==='backlog'&&(view==='today'||view==='tomorrow')&&bucket(task,today)===view;}
  function change(destination,today=day()){
   if(destination==='today'||destination==='tomorrow')return {planningMode:'planned',scheduledFor:add(today,destination==='tomorrow'?1:0),focus:false};
   if(destination==='later')return {planningMode:'backlog',scheduledFor:null,focus:false};
@@ -45,5 +50,5 @@ const TaskPlanning=(()=>{
   const planned=dateKey(task.scheduledFor);if(!planned)return '';
   return planned<today?'Rolled over · '+planned:planned===today?'Planned today':planned===add(today,1)?'Planned tomorrow':'Planned '+planned;
  }
- return {day,add,dateKey,bucket,stepBucket,relevantSteps,plannedOn,matches,change,label};
+ return {day,add,dateKey,bucket,stepBucket,relevantSteps,plannedOn,matches,surfacedBacklog,change,label};
 })();

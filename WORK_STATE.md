@@ -45,45 +45,25 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 
 ## Current implementation handoff
 
-## Multi-step tasks + Projects upgrade — 2026-09-26
+## Current branch
 
-Branch: `codex/multistep-projects-upgrade`, created from current `main` at `c934fdc`. Feature implementation is `d56aa48`; Vercel function-cap compatibility is `1b7b4a5`. This branch is Preview-only and must not be promoted to Production without review.
+`codex/multistep-projects-upgrade` remains a Preview-only branch and must not be promoted to Production without review. It contains the Multi-step Tasks / Projects upgrade plus the current targeted QOL pass.
 
-## Task model and persistence
+## Current behavior
 
-- Tasks now expose `taskType: Simple | Multi-step`. Missing `Task Type` values normalize to `Simple`; the Notion adapter lazily adds a compatible Select property on the first write. Existing `Difficulty` values remain stored and supported by the server but Difficulty is removed from normal task creation/editing/filtering UI.
-- A Multi-step task is one concrete deliverable with a mostly-known checklist. A Project remains a changing outcome containing tasks, objectives, checkpoints, experiments, progress history, and notes.
-- Steps are NOcean-tagged native child `to_do` blocks under the task page. The marker stores a stable request UUID and optional planned date. Only tagged blocks are listed, updated, or removed; unrelated task content is untouched. `TaskStepStore` is the dedicated ownership-checked CRUD boundary with edited-time conflict checks and idempotent creates; its HTTP operations share `/api/tasks` to remain within the Vercel Hobby function cap.
-- Completing the last open step marks the parent Done. Reopening a step reopens a Done parent to Next. Parent rows with steps use progress (`x/y`) instead of a completion checkbox, so parent completion never silently completes remaining steps.
-
-## Planning and calendar semantics
-
-- Simple tasks keep Today / Tomorrow / Upcoming / Backlog planning.
-- Multi-step work-plan membership comes from open step dates. Unscheduled steps are Backlog. A due-today or overdue parent is forced into Today even when no step is planned there and shows a warning.
-- Home and Tasks show only the steps relevant to the active work-plan view plus an all-steps disclosure. Focus remains parent-level and surfaces the next relevant open step.
-- Calendar workload uses one parent boolean per date: any number of open steps on a date counts the parent once, the deadline also counts the parent on its date, and a same-day step plus deadline remains one workload item. The agenda can list that date's step names beneath the parent.
-- Brightspace records remain excluded from manual task managers and are explicitly refused as Multi-step step owners.
-
-## Projects workspace
-
-- The old Projects → Tasks capture link is replaced by an in-place related-task composer/editor. It preserves the selected project relation and supports Simple/Multi-step type, priority, course, deadline, Simple planning, and Multi-step step editing without leaving Projects.
-- Progress Snapshot reports truthful independent signals: task completion, objective achievement, checkpoint achievement, next checkpoint, target date, current workload, and last progress log when data exists. The bar is explicitly labeled `Task completion`; project lifecycle remains independent.
-- Existing `milestone` blocks remain unchanged in storage and are presented as Checkpoints with target date, achieved state, sorting, and overdue styling.
-- Additive native ProjectPlan kinds store Experiments (`Trying / Adopted / Dropped`) and dated Progress Log entries with optional `On track / Uncertain / Blocked` check-in state. Stable marker metadata carries state/timestamp; existing Overview, Objectives, Milestones, Notes, and all unrelated Notion blocks remain intact.
-- Workspace hierarchy is Progress Snapshot, Immediate Focus / Related Work, then Checkpoints, Objectives, Experiments, Progress Log, Overview, and Notes with disclosures to limit visual weight.
+- Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls.
+- Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog.
+- Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
+- Projects create and edit related tasks in-place through the modern task modal pattern. The selected project is always supplied as `projectId`; name, type, priority, course, due date/time, planning, and Multi-step steps use the existing task/deadline/planning APIs. Successful creates are inserted into the selected project immediately.
+- Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged.
 
 ## Verification
 
-- JavaScript syntax passed for `tasks.js`, `home.js`, `projects.js`, `project-plan.js`, and `nocean-planning.js`.
-- Focused Node suites passed: planning, multi-step planning/calendar deduplication, project model, Tasks DOM interactions, Projects interactions/progressive load, and ProjectPlan UI.
-- Focused Python suites passed: task planning/type, task-step ownership/validation/completion semantics, project-plan compatibility/metadata, and provider task contracts. `python -m compileall -q api lib tests/preview_server.py` passed with the bundled runtime.
-- Full Python discovery ran 91 tests: 82 passed, 6 disposable-database tests skipped, and 3 unrelated current-main assertions failed in coursework/calendar legacy fixtures. Focused changed-area suites are green.
-- Browser QA used the local read-only/in-memory Preview server. Desktop and 390 px verified Tasks type/step editor, Projects workspace, in-place Multi-step creation, step completion and reopening, Checkpoint creation/snapshot, Experiment status, Progress Log state, touch sizing, and no horizontal overflow. Browser console had no warnings/errors.
-- GitHub/Vercel Preview for `1b7b4a5` reached READY at `https://ocean-notion-widget-ffhpqhf43-yiqwill-3102.vercel.app` after keeping the deployment at the Hobby-plan limit of 12 functions. The protected Preview returned its Vercel login gate externally, so authenticated live-data UI was not re-exercised there. No Production promotion occurred.
-- `git diff --check` passed.
+- JavaScript syntax checks pass for `nocean-planning.js`, `tasks.js`, `home.js`, and `projects.js`.
+- Focused planning, Tasks DOM, Projects interaction, and Home sketch suites pass using the existing `.test-deps/node_modules` runtime.
+- `git diff --check` passes.
 
-## Known limitations / next highest ROI
+## Known limitations / next validation
 
-- Home quick-add can create a Multi-step parent but intentionally redirects detailed step authoring to the full Tasks or Projects editor to keep Home dense.
-- Notion task listing currently loads child blocks for each Multi-step task; if the number of Multi-step tasks becomes large, add bounded parallelism or a short-lived server cache.
-- Preview used the local fixture boundary because live Notion credentials were not exercised. After review, highest-value follow-up is a real Preview deployment smoke test against the configured Notion workspace before any Production promotion.
+- The Projects modal intentionally keeps page-local form markup to avoid a broader component refactor, while sharing the same task store, planning, deadline, and step APIs as Tasks.
+- No live Notion records were mutated and no production deployment was performed in this QOL pass. A real Preview smoke test remains the next release validation before promotion.
