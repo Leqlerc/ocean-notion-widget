@@ -139,11 +139,12 @@ dialog{background:#0d1c22;border:1px solid rgba(167,215,213,.25);border-radius:1
 .task-row .task-primary{display:flex;align-items:center;gap:7px;min-width:0}
 .task-row .task-progress{flex:none;min-width:34px;height:22px;font-size:.66rem;margin:0}
 .task-row .task-name{min-width:0}
-.home-subtasks{margin:2px 0 0 auto;width:max-content;position:relative}
-.home-subtasks>summary{list-style:none;display:grid;place-items:center;width:26px;height:20px;border-radius:7px;color:var(--muted);cursor:pointer;user-select:none}
+.task-row .task-text:has(>.home-subtasks){position:relative}
+.task-row .task-text:has(>.home-subtasks)>.task-primary{padding-right:30px}
+.home-subtasks{margin:0;width:0;height:0}
+.home-subtasks>summary{position:absolute;right:0;top:1px;list-style:none;display:grid;place-items:center;width:26px;height:20px;border-radius:7px;color:var(--muted);cursor:pointer;user-select:none}
 .home-subtasks>summary::-webkit-details-marker{display:none}
-.home-subtasks[open]{width:100%;margin:6px 0 0}
-.home-subtasks[open]>summary{margin-left:auto}
-.home-subtask-list{display:grid;gap:2px;padding:5px 0 0 40px}
+.home-subtasks[open]{width:100%;height:auto;margin:2px 0 0}
+.home-subtask-list{display:grid;gap:2px;padding:2px 0 0 40px}
 .home-task-step{min-height:28px!important;font-size:.72rem!important}
 .home-task-step input{width:16px!important;height:16px!important}

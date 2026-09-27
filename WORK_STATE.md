@@ -55,6 +55,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 - Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog.
 - Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
+- On Home, a collapsed Multi-step chevron stays inline at the right edge of the parent title; only the expanded subtask list occupies space beneath the parent.
 - Projects create and edit related tasks in-place through the modern task modal pattern. The selected project is always supplied as `projectId`; name, type, priority, course, due date/time, planning, and Multi-step steps use the existing task/deadline/planning APIs. Successful creates are inserted into the selected project immediately.
 - Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged.
 
