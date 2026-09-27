@@ -50,5 +50,19 @@ const TaskPlanning=(()=>{
   const planned=dateKey(task.scheduledFor);if(!planned)return '';
   return planned<today?'Rolled over · '+planned:planned===today?'Planned today':planned===add(today,1)?'Planned tomorrow':'Planned '+planned;
  }
- return {day,add,dateKey,bucket,stepBucket,relevantSteps,plannedOn,matches,surfacedBacklog,change,label};
+ function category(task,today=day()){
+  if(task.taskType==='Multi-step')return bucket(task,today);
+  if(task.planningMode==='backlog')return 'later';
+  const planned=dateKey(task.scheduledFor);
+  if(task.planningMode==='planned'||planned){
+   if(!planned||planned<=today)return 'today';
+   if(planned===add(today,1))return 'tomorrow';
+   return 'scheduled';
+  }
+  return 'automatic';
+ }
+ function categoryLabel(task,today=day()){
+  return ({today:'Today',tomorrow:'Tomorrow',upcoming:'Upcoming',later:'Backlog',automatic:'Automatic',scheduled:'Scheduled'})[category(task,today)]||'Automatic';
+ }
+ return {day,add,dateKey,bucket,stepBucket,relevantSteps,plannedOn,matches,surfacedBacklog,change,label,category,categoryLabel};
 })();
