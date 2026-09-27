@@ -47,15 +47,15 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 
 ## Current branch
 
-`codex/multistep-projects-upgrade` remains a Preview-only branch and must not be promoted to Production without review. It contains the Multi-step Tasks / Projects upgrade plus the current targeted QOL pass.
+`main` contains the reviewed Multi-step Tasks / Projects upgrade and the current targeted NOcean QOL patches. Production still follows the repository's existing GitHub → Vercel integration.
 
 ## Current behavior
 
 - Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls.
-- Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog.
+- Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that matching day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog. Home now shows each task's underlying planning category, and the edit modal preselects the current Today / Tomorrow / Backlog / Automatic state so rollover can be changed explicitly.
 - Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
-- On Home, a collapsed Multi-step chevron stays inline at the right edge of the parent title; only the expanded subtask list occupies space beneath the parent.
+- On Home, Multi-step disclosure is a filled triangle immediately after the task title, so it no longer shifts priority/focus controls. Expanding it reveals the subtask list beneath the row.
 - Projects create and edit related tasks in-place through the modern task modal pattern. The selected project is always supplied as `projectId`; name, type, priority, course, due date/time, planning, and Multi-step steps use the existing task/deadline/planning APIs. Successful creates are inserted into the selected project immediately.
 - Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged.
 
