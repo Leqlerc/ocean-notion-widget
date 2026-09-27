@@ -7,9 +7,10 @@
 .module-task-title{display:flex;align-items:center;gap:8px;min-width:0}
 .module-task-title .task-name{min-width:0}
 .module-task-title .task-progress{flex:none;min-width:34px;height:22px;font-size:.66rem}
-.task-subtasks{margin:3px 0 0 auto;width:max-content}
+.module-task-content:has(>.task-subtasks) .task-meta{margin-bottom:0}
+.task-subtasks{margin:2px 0 0 auto;width:max-content}
 .task-subtasks>summary{list-style:none;display:grid;place-items:center;width:26px;height:20px;border-radius:7px;color:var(--muted);cursor:pointer}
 .task-subtasks>summary::-webkit-details-marker{display:none}
-.task-subtasks[open]{width:100%;margin-top:7px}
+.task-subtasks[open]{width:100%;margin-top:2px}
 .task-subtasks[open]>summary{margin-left:auto}
 .task-subtasks[open]>div{padding-left:40px}
