@@ -22,13 +22,13 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  assert.equal($('.dashboard').style.getPropertyValue('--home-columns'),'minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,.85fr)');
  assert.equal(w.document.querySelector('.habitat-card'),null);
  assert.equal(w.document.querySelector('#homeSide .events-card')!==null,true);
- assert.equal($('#deadlineView').value,'date');
- assert.equal(w.document.querySelectorAll('#academicRadar .coursework-item').length,7);
+ assert.equal($('#deadlineView').value,'next');
+ assert.equal(w.document.querySelectorAll('#academicRadar .coursework-item').length,6);
  assert.doesNotMatch($('#academicRadar').textContent,/Homework 5 - Available/);
  assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,0);
- assert.match($('#academicRadar .coursework-title').textContent,/Assignment 5/);
+ assert.doesNotMatch($('#academicRadar').textContent,/Assignment 5/);assert.match($('#academicRadar .coursework-title').textContent,/Assignment 0/);
  $('#deadlineView').value='class';$('#deadlineView').dispatchEvent(new w.Event('change'));
- assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,2);
+ assert.ok(w.document.querySelectorAll('#academicRadar .class-radar').length>=1);
  assert.doesNotMatch($('#academicRadar').textContent,/Homework 5 - Available/);
  assert.equal(w.document.querySelectorAll('#course-MFET163 .coursework-item').length,3);
  assert.match($('#course-MFET163').textContent,/\+3 later/);

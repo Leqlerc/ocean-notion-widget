@@ -127,16 +127,13 @@
     const classes=NOceanStore.settings().classes,today=dayKey(),groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ])),all=[];let total=0,open=0;
     for(const task of state.tasks){
       if(!task.due||!isImported(task))continue;
+      if(dateDay(task.due)<today)continue;
       const submitted=NOceanStore.verification(task)==='submitted';
-      if(submitted&&dateDay(task.due)<TaskPlanning.add(today,-2))continue;
-      // Old completed work remains in Tasks, without crowding the daily deadline view.
-      // This display horizon never changes its submission confirmation.
-      if(task.status==='done'&&dateDay(task.due)<TaskPlanning.add(today,-14))continue;
       const course=task.course||'Other coursework',key=courseKey(course);
       if(!groups.has(key))groups.set(key,{course,work:[]});
       groups.get(key).work.push(task);all.push(task);total++;if(!submitted)open++;
     }
-    const mode=$('deadlineView')?.value||'date';
+    const mode=$('deadlineView')?.value||'next';
     let content='';
     if(mode==='class'){
       const nearest=group=>group.work.filter(t=>NOceanStore.verification(t)==='pending').map(t=>t.due).sort()[0]||'9999';

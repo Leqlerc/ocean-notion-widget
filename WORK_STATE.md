@@ -57,6 +57,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
 - On Home, Multi-step disclosure is a filled triangle immediately after the task title, so it no longer shifts priority/focus controls. Expanding it reveals the subtask list beneath the row.
 - Projects create and edit related tasks in-place through the modern task modal pattern. The selected project is always supplied as `projectId`; name, type, priority, course, due date/time, planning, and Multi-step steps use the existing task/deadline/planning APIs. Successful creates are inserted into the selected project immediately.
+- Academic Safety Net defaults to Next, sorting upcoming coursework chronologically with the nearest due item first. Coursework from dates before today is hidden from the Safety Net automatically without deleting its underlying record or historical calendar data.
 - Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged. The project-item editor now gives labels and controls explicit grid spacing so Objective / Checkpoint forms do not visually collide.
 
 ## Verification
