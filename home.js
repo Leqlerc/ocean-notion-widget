@@ -6,12 +6,17 @@
   let editingPlan=null,toastTimer,taskRevision=0,coreRequest=0,creating=false,quickDrafts=[],editDrafts=[];
   const tomorrow=()=>TaskPlanning.add(dayKey(),1);
   const dateFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'long',month:'long',day:'numeric'});
-  $('homeDate').textContent=dateFmt.format(new Date());
-  function renderGreeting(now=new Date()){
-    const hour=now.getHours(),period=hour>=5&&hour<12?'morning':hour>=12&&hour<17?'afternoon':'evening';
+  const timeFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,hour:'numeric',minute:'2-digit'});
+  const hourFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,hour:'2-digit',hourCycle:'h23'});
+  function renderHomeClock(now=new Date()){
+    $('homeTime').textContent=timeFmt.format(now);
+    $('homeDate').textContent=dateFmt.format(now);
+    const hour=Number(hourFmt.format(now));
+    const period=hour>=5&&hour<12?'morning':hour>=12&&hour<17?'afternoon':'evening';
     $('homeHeading').textContent=`Good ${period}, Will`;
   }
-  renderGreeting();
+  renderHomeClock();
+  setInterval(renderHomeClock,1000);
 
   function notify(text,undo){const node=$('toast');node.replaceChildren(document.createTextNode(text));if(undo){const button=document.createElement('button');button.type='button';button.className='quiet';button.textContent='Undo';button.onclick=()=>{node.hidden=true;undo();};node.append(button);}node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.hidden=true,7000);}
   function setLoading(name,on){if(on)state.loading.add(name);else state.loading.delete(name);$('syncStatus').textContent=state.loading.size?'Refreshing…':'Up to date';}

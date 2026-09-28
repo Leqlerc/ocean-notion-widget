@@ -51,7 +51,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 
 ## Current behavior
 
-- Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls.
+- Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls. Home now has a large live time display above the greeting while retaining the date beneath it.
 - Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that matching day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog. Home keeps planning controls out of task rows; the edit modal preselects the current Today / Tomorrow / Backlog / Automatic state and highlights that selection with the active accent color, so planning changes happen one interaction deeper without list clutter.
 - Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Home quick-add no longer assigns Projects; Project-linked tasks are normally created from the Projects workspace, while quick-add exposes Type as Simple / Complex (Complex maps to the existing Multi-step model). Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
