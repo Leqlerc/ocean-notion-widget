@@ -27,8 +27,10 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  assert.doesNotMatch($('#academicRadar').textContent,/Homework 5 - Available/);
  assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,0);
  assert.doesNotMatch($('#academicRadar').textContent,/Assignment 5/);assert.match($('#academicRadar .coursework-title').textContent,/Assignment 0/);
+ $('#deadlineView').value='upcoming';$('#deadlineView').dispatchEvent(new w.Event('change'));
+ assert.equal(w.document.querySelectorAll('#academicRadar .coursework-item').length,7);assert.match($('#academicRadar').textContent,/Assignment 5/);
  $('#deadlineView').value='class';$('#deadlineView').dispatchEvent(new w.Event('change'));
- assert.ok(w.document.querySelectorAll('#academicRadar .class-radar').length>=1);
+ assert.equal(w.document.querySelectorAll('#academicRadar .class-radar').length,2);
  assert.doesNotMatch($('#academicRadar').textContent,/Homework 5 - Available/);
  assert.equal(w.document.querySelectorAll('#course-MFET163 .coursework-item').length,3);
  assert.match($('#course-MFET163').textContent,/\+3 later/);

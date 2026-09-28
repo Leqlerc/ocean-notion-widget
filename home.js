@@ -124,16 +124,17 @@
     return work.map(t=>{const submitted=NOceanStore.verification(t)==='submitted';return `<div class="coursework-item ${submitted?'is-submitted':''}"><span class="coursework-title">${safeURL(t.sourceUrl)?`<a href="${esc(safeURL(t.sourceUrl))}" target="_blank" rel="noopener">${esc(t.name)}</a>`:esc(t.name)}</span><div class="coursework-meta"><span>${esc(t.course||'Coursework')} · ${esc(dueText(t.due))}${!submitted&&overdue(t.due)?' · OVERDUE':''} · Brightspace${t.status==='done'?' · work done':''}</span><button type="button" class="coursework-state" data-verify="${esc(t.id)}" aria-pressed="${submitted}" ${state.pending.has(t.id)?'disabled':''} aria-label="${submitted?'Undo submission for':'Mark submitted:'} ${esc(t.name)}">${submitted?'✓ Submitted · Undo':'Mark submitted'}</button></div></div>`;}).join('')||'<p class="coursework-empty">No upcoming coursework detected <small>Brightspace feed coverage may be incomplete.</small></p>';
   }
   function renderRadar(){
-    const classes=NOceanStore.settings().classes,today=dayKey(),groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ])),all=[];let total=0,open=0;
+    const classes=NOceanStore.settings().classes,today=dayKey(),mode=$('deadlineView')?.value||'next',groups=new Map(classes.map(course=>[courseKey(course),{course,work:[]} ])),all=[];let total=0,open=0;
     for(const task of state.tasks){
       if(!task.due||!isImported(task))continue;
-      if(dateDay(task.due)<today)continue;
+      const dueDay=dateDay(task.due);
+      if(mode==='next'&&dueDay<today)continue;
+      if(mode!=='next'&&dueDay<today&&task.status==='done')continue;
       const submitted=NOceanStore.verification(task)==='submitted';
       const course=task.course||'Other coursework',key=courseKey(course);
       if(!groups.has(key))groups.set(key,{course,work:[]});
       groups.get(key).work.push(task);all.push(task);total++;if(!submitted)open++;
     }
-    const mode=$('deadlineView')?.value||'next';
     let content='';
     if(mode==='class'){
       const nearest=group=>group.work.filter(t=>NOceanStore.verification(t)==='pending').map(t=>t.due).sort()[0]||'9999';
