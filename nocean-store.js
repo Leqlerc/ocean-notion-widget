@@ -19,7 +19,7 @@ const NOceanStore = (() => {
   const defaults = {
     classes: defaultClasses,
     maintenance: defaultMaintenance,
-    dashboard: {showTasks:true,showDeadlines:true,showEvents:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',taskSort:'plan',collapsedCourses:{}},
+    dashboard: {showClock:true,showTasks:true,showDeadlines:true,showEvents:true,showCampus:true,showCalendar:true,showWeather:true,showFacilities:true,showDining:true,rainThreshold:35,eventCount:3,deadlineCount:'3',taskSort:'plan',collapsedCourses:{}},
     appearance: {topBiomeHeight:176,cardOpacity:100,accent:'green',difficultyColors:'off',calendarWorkload:'solid',cardArt:{}}
   };
   const clone = value => JSON.parse(JSON.stringify(value));

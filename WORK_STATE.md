@@ -21,7 +21,7 @@
 
 ### Core integrations / capabilities
 
-Current or desired core capabilities include task management, Google Calendar sync, Focus Mode, nutrition tracking, Monkeytype/Nitrotype statistics, sleep tracking, productivity/screen-time limiting, workout logging, academic deadlines/events, Gmail sync, eventual Outlook sync, and Purdue campus data.
+Current or desired core capabilities include task management, Google Calendar sync, Focus Mode, nutrition tracking, Monkeytype/Nitrotype statistics, sleep tracking, productivity/screen-time limiting, workout logging, academic deadlines/events, custom academic schedule imports, Gmail sync, eventual Outlook sync, and Purdue campus data.
 
 ### Product rules
 
@@ -51,7 +51,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 
 ## Current behavior
 
-- Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls. Home now has a prominent live time display above the greeting while retaining the date beneath it; the clock is sized to stay visually subordinate to the overall header.
+- Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls. Home has a prominent live time display above the greeting while retaining the date beneath it; the clock is sized to stay visually subordinate to the overall header and can be hidden from Settings → Home Layout.
 - Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that matching day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog. Home keeps planning controls out of task rows; the edit modal preselects the current Today / Tomorrow / Backlog / Automatic state and highlights that selection with the active accent color, so planning changes happen one interaction deeper without list clutter.
 - Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Home quick-add no longer assigns Projects; Project-linked tasks are normally created from the Projects workspace, while quick-add exposes Type as Simple / Complex (Complex maps to the existing Multi-step model). Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
@@ -64,6 +64,10 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 - JavaScript syntax checks pass for `nocean-planning.js`, `tasks.js`, `home.js`, and `projects.js`.
 - Focused planning, Tasks DOM, Projects interaction, and Home sketch suites pass using the existing `.test-deps/node_modules` runtime.
 - `git diff --check` passes.
+
+## Planned academic-source extension
+
+- Add a Custom Schedule import source for courses whose obligations are not represented in the Brightspace calendar feed (for example MA 261/MyLab). Accept syllabus/calendar documents, extract candidate obligations into the same normalized academic-deadline model, and require a preview/confirm step before saving. Preserve source identity so re-imports update/dedupe rather than duplicate deadlines. Brightspace remains one source, not the definition of coursework.
 
 ## Known limitations / next validation
 

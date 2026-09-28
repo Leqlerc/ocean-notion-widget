@@ -48,6 +48,7 @@ const scripts=['nocean-shared.js','nocean-data.js','nocean-deadlines.js','nocean
  w.eval("sprintStore.saveSettings({dashboard:{showTasks:false,showEvents:false,showWeather:false,showDining:false}})");w.dispatchEvent(new w.StorageEvent('storage',{key:'nocean.command.settings.v1'}));await tick();
  assert.equal($('.tasks-card').hidden,true);assert.equal($('#homeSide').hidden,true);assert.equal($('[data-home-module="showWeather"]').hidden,true);assert.equal($('.deadlines-card').hidden,false);
  assert.equal($('.dashboard').style.getPropertyValue('--home-columns'),'minmax(0,1.2fr)');
+ w.eval("sprintStore.saveSettings({dashboard:{showClock:false}})");w.dispatchEvent(new w.StorageEvent('storage',{key:'nocean.command.settings.v1'}));await tick();assert.equal($('#homeTime').hidden,true);
  dom.window.close();
  const settings=new JSDOM(read('integrations.html'),{url:'https://nocean.test',runScripts:'outside-only'}),v=settings.window;
  v.eval(['nocean-shared.js','nocean-store.js','nocean-dashboard-appearance.js','nocean-ui.js','settings.js'].map(read).join('\n'));
