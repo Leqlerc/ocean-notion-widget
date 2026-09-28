@@ -131,6 +131,7 @@
       if(mode==='next'&&dueDay<today)continue;
       if(mode!=='next'&&dueDay<today&&task.status==='done')continue;
       const submitted=NOceanStore.verification(task)==='submitted';
+      if(mode==='next'&&submitted)continue;
       const course=task.course||'Other coursework',key=courseKey(course);
       if(!groups.has(key))groups.set(key,{course,work:[]});
       groups.get(key).work.push(task);all.push(task);total++;if(!submitted)open++;
