@@ -9,7 +9,7 @@
   const timeFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,hour:'numeric',minute:'2-digit'});
   const hourFmt=new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,hour:'2-digit',hourCycle:'h23'});
   function renderHomeClock(now=new Date()){
-    $('homeTime').textContent=timeFmt.format(now);
+    $('homeTime').textContent=timeFmt.formatToParts(now).filter(part=>part.type!=='dayPeriod').map(part=>part.value).join('').trim();
     $('homeDate').textContent=dateFmt.format(now);
     const hour=Number(hourFmt.format(now));
     const period=hour>=5&&hour<12?'morning':hour>=12&&hour<17?'afternoon':'evening';
