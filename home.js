@@ -271,7 +271,7 @@
     if(taskType==='Multi-step'){try{validateDraftSteps(quickDrafts);}catch(error){$('taskMessage').textContent=error.message;return;}}
     creating=true;taskRevision++;$('addButton').disabled=true;let createdTask=null;
     try{
-      const result=await tasks.create({name,taskType,project:$('taskProject').value.trim(),course:$('taskCourse').value,priority:$('taskPriority').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:false,...TaskPlanning.change(plan)});
+      const result=await tasks.create({name,taskType,project:'',course:$('taskCourse').value,priority:$('taskPriority').value,due:Deadlines.serialize($('taskDue').value,$('taskTime').value),focus:false,...TaskPlanning.change(plan)});
       result.task.steps=[];createdTask=result.task;state.tasks.unshift(result.task);
       if(taskType==='Multi-step'){
         result.task.steps=await saveDraftSteps(result.task.id,quickDrafts);

@@ -23,3 +23,10 @@
 @media(max-width:680px){.project-selector-toolbar{align-items:stretch}.project-filters{flex:1;display:grid;grid-template-columns:1fr auto}.project-filters input{width:100%}.project-selector-toolbar>button{padding-inline:10px}.project-tab{flex-basis:165px}.project-control-panel{padding:17px}.project-control-head{align-items:flex-start}.project-progress-strip{grid-template-columns:1fr 1fr}.goal-plan-grid{grid-template-columns:1fr}.goal-plan-actions{margin:0 0 8px;justify-content:space-between}.project-control-foot{display:grid}.workspace-section-head{align-items:start}.project-task-fields,.project-step-row{grid-template-columns:1fr}.project-step-row button{width:100%}}
 @media(max-width:440px){.project-filters{grid-template-columns:1fr}.project-filters select{width:100%}.project-control-head h2{font-size:1.55rem}.project-progress-strip{grid-template-columns:1fr}.project-progress-strip>div:first-child{grid-column:auto}}
 .project-step-editor .workspace-section-head button{min-height:44px}
+
+/* Keep project-item editing readable and prevent label/control collisions. */
+#goalEditor{width:min(560px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
+#goalEditor form{gap:14px}
+#goalEditor label{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;min-width:0;color:var(--muted);font-size:.75rem;line-height:1.3}
+#goalEditor input,#goalEditor select,#goalEditor textarea{box-sizing:border-box;width:100%;min-width:0}
+#goalEditor .module-actions{margin-top:2px}

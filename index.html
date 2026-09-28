@@ -17,7 +17,7 @@
   <script src="/nocean-planning.js?v=5" defer></script>
   <script src="/calendar-semantics.js?v=5" defer></script>
   <script src="/nocean-motion.js?v=2" defer></script>
-  <script src="/home.js?v=15" defer></script>
+  <script src="/home.js?v=16" defer></script>
 </head>
 <body data-page="home">
 <div class="app">
@@ -39,12 +39,11 @@
           <input id="taskName" required maxlength="500" placeholder="Task name" autocomplete="off">
           <button type="submit" class="primary" id="addButton">Add to today</button>
           <div class="capture-options">
-            <label>Project<input id="taskProject" list="projectOptions" placeholder="Optional" maxlength="100"></label>
+            <label>Type<select id="taskType"><option value="Simple">Simple</option><option value="Multi-step">Complex</option></select></label>
             <label>Course<select id="taskCourse"><option value="">None</option></select></label>
             <label>Priority<select id="taskPriority"><option>Critical</option><option>High</option><option selected>Normal</option><option>Low</option></select></label>
             <label>Due date<input id="taskDue" type="date"></label>
             <label>Time<input id="taskTime" type="time"></label>
-            <label>Type<select id="taskType"><option>Simple</option><option>Multi-step</option></select></label>
           </div>
           <div id="quickSteps" class="inline-step-editor" hidden>
             <div class="inline-step-head"><strong>Subtasks</strong><button type="button" id="addQuickStep" class="quiet">+ Add</button></div>

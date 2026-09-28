@@ -53,11 +53,11 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 
 - Home, Tasks, and Projects use reduced page copy. Home no longer generates motivational quotes, and obvious Refresh/Edit actions use labeled icon controls.
 - Simple tasks retain Today / Tomorrow / Upcoming / Backlog planning. A canonical Backlog task due today or tomorrow is also derived into that matching day view without moving or duplicating it; due-today surfaced rows display Critical in Today. The same record remains editable/completable and continues to appear in Backlog. Home keeps planning controls out of task rows; the edit modal preselects the current Today / Tomorrow / Backlog / Automatic state and highlights that selection with the active accent color, so planning changes happen one interaction deeper without list clutter.
-- Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
+- Home and Tasks place Sort in the same responsive row as Today / Tomorrow / Upcoming / Backlog. Home quick-add no longer assigns Projects; Project-linked tasks are normally created from the Projects workspace, while quick-add exposes Type as Simple / Complex (Complex maps to the existing Multi-step model). Difficulty remains stored and provider-compatible but is absent from normal task list/create/edit UI.
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
 - On Home, Multi-step disclosure is a filled triangle immediately after the task title, so it no longer shifts priority/focus controls. Expanding it reveals the subtask list beneath the row.
 - Projects create and edit related tasks in-place through the modern task modal pattern. The selected project is always supplied as `projectId`; name, type, priority, course, due date/time, planning, and Multi-step steps use the existing task/deadline/planning APIs. Successful creates are inserted into the selected project immediately.
-- Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged.
+- Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged. The project-item editor now gives labels and controls explicit grid spacing so Objective / Checkpoint forms do not visually collide.
 
 ## Verification
 
