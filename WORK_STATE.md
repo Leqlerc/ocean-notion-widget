@@ -47,7 +47,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 
 ## Current branch
 
-`main` contains the reviewed Multi-step Tasks / Projects upgrade and the current targeted NOcean QOL patches. Production still follows the repository's existing GitHub → Vercel integration.
+`task-remove-delete` contains the current task-action patch on top of the reviewed Multi-step Tasks / Projects upgrade and NOcean QOL patches. Production remains on `main`; this branch deploys as Preview through the existing GitHub → Vercel integration.
 
 ## Current behavior
 
@@ -57,6 +57,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 - Multi-step task disclosures sit directly beneath their parent metadata with the same compact spacing when collapsed or expanded.
 - On Home, Multi-step disclosure is a filled triangle immediately after the task title, so it no longer shifts priority/focus controls. Expanding it reveals the subtask list beneath the row.
 - Projects create and edit related tasks in-place through the modern task modal pattern. The selected project is always supplied as `projectId`; name, type, priority, course, due date/time, planning, and Multi-step steps use the existing task/deadline/planning APIs. Successful creates are inserted into the selected project immediately.
+- Existing project tasks now expose two distinct actions in the Project task editor: **Remove from project** clears the project relation while keeping the task in Tasks, while **Delete task** asks for confirmation and moves the underlying Notion task to Trash. The main Tasks editor also labels the existing Trash-backed removal as **Delete task** and confirms before acting.
 - Academic Safety Net defaults to Next: only unsubmitted coursework due today or later, nearest first. Submitted items are hidden from Next even when their due date is still ahead. Upcoming is the broader chronological view: it keeps unfinished overdue coursework visible and also keeps future submitted coursework visible; completed past-due coursework drops out. Class uses that broader set grouped by course. Hidden items are never deleted from underlying history.
 - Multi-step parents, native tagged child steps, project checkpoints/objectives/experiments/progress logs, calendar workload semantics, Brightspace separation, and the Home / Projects / Athletics / Settings boundaries remain unchanged. The project-item editor now gives labels and controls explicit grid spacing so Objective / Checkpoint forms do not visually collide.
 
@@ -65,6 +66,7 @@ Finish and stabilize the pieces already closest to daily use before expanding sc
 - JavaScript syntax checks pass for `nocean-planning.js`, `tasks.js`, `home.js`, and `projects.js`.
 - Focused planning, Tasks DOM, Projects interaction, and Home sketch suites pass using the existing `.test-deps/node_modules` runtime.
 - `git diff --check` passes.
+- `projects.js`, `tasks.js`, and the two updated interaction tests pass source-level syntax parsing; a READY Vercel Preview served the updated Tasks editor with the Delete action. Full local DOM execution was not available in the current tool runtime.
 
 ## Planned academic-source extension
 
