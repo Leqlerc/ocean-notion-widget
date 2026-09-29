@@ -27,7 +27,7 @@ const api={
 };
 async function boot(){
  const dom=new JSDOM(fs.readFileSync('tasks.html','utf8'),{url:'https://nocean.test/tasks.html',runScripts:'outside-only'});
- const w=dom.window;w.Date=TestDate;w.NOceanData=api;w.NOceanIcons={slot:()=>''};
+ const w=dom.window;w.Date=TestDate;w.NOceanData=api;w.NOceanIcons={slot:()=>''};w.confirm=()=>true;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
  w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  for(const file of ['nocean-shared.js','nocean-deadlines.js','nocean-filters.js','nocean-planning.js','tasks.js'])vm.runInContext(fs.readFileSync(file,'utf8'),dom.getInternalVMContext());
@@ -74,6 +74,6 @@ async function boot(){
   fail=false;$('archiveTask').click();await tick();assert.ok(!records.some(t=>t.id==='new1'));assert.equal($('taskEditor').open,false);
   $('refresh').click();await tick();assert.doesNotMatch($('moduleTasks').textContent,/Date only capture/);
   assert.equal(records.find(t=>t.id==='today').due,deadline);
-  console.log('Tasks DOM regression passed: all queues, fresh-page reload, plan moves, edit, completion/Undo, failure rollback, archive and unchanged/default deadlines.');
+  console.log('Tasks DOM regression passed: all queues, fresh-page reload, plan moves, edit, completion/Undo, failure rollback, deletion and unchanged/default deadlines.');
  }finally{dom.window.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
