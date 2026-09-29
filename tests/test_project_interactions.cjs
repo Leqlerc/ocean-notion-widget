@@ -12,6 +12,7 @@ function page(file,url){
  const dom=new JSDOM(source(file),{url,runScripts:'outside-only'}),w=dom.window;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
  w.HTMLDialogElement.prototype.close=function(){this.open=false;};
+ w.confirm=()=>true;
  for(const script of ['nocean-shared.js','nocean-deadlines.js','nocean-filters.js','nocean-planning.js'])vm.runInContext(source(script),dom.getInternalVMContext());
  return dom;
 }
@@ -23,7 +24,7 @@ function page(file,url){
   list:()=>hold?hold:Promise.resolve({projects:clone(records)}),
   create:async data=>{if(fail)throw Error('Save unavailable');const p={...data,id:'p2',status:'Active',taskIds:[]};records.push(p);return {project:clone(p)};},
   update:async data=>{updates.push(clone(data));if(fail)throw Error('Save unavailable');records=records.map(p=>p.id===data.id?{...p,...data}:p);return {project:clone(records.find(p=>p.id===data.id))};}
- },tasks:{list:async()=>({tasks:clone(taskRecords),courses:[]}),create:async data=>{createdTask={...clone(data),id:'t2',status:'next',steps:[],projectIds:[data.projectId]};taskRecords.push(createdTask);return {task:clone(createdTask)};},update:async()=>{throw Error('unused')}},steps:{create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')},remove:async()=>{throw Error('unused')}}};
+ },tasks:{list:async()=>({tasks:clone(taskRecords),courses:[]}),create:async data=>{createdTask={...clone(data),id:'t'+(taskRecords.length+1),status:'next',steps:[],projectIds:[data.projectId],project:project.name};taskRecords.push(createdTask);return {task:clone(createdTask)};},update:async data=>{if(fail)throw Error('Save unavailable');taskRecords=taskRecords.map(t=>t.id===data.id?{...t,...clone(data),...('projectId' in data?{projectIds:data.projectId?[data.projectId]:[],project:data.projectId?project.name:''}:{})}:t);return {task:clone(taskRecords.find(t=>t.id===data.id))};},archive:async id=>{if(fail)throw Error('Delete unavailable');taskRecords=taskRecords.filter(t=>t.id!==id);return {id,archived:true};}},steps:{create:async()=>{throw Error('unused')},update:async()=>{throw Error('unused')},remove:async()=>{throw Error('unused')}}};
  vm.runInContext(source('project-model.js'),dom.getInternalVMContext());vm.runInContext(source('projects.js'),dom.getInternalVMContext());await tick();
  try{
   assert.match($('projectGrid').textContent,/Pull-up progression/);
@@ -34,6 +35,10 @@ function page(file,url){
    assert.ok($('projectDetail').querySelector('[data-project-task="t1"]'));$('projectDetail').querySelector('[data-project-task="t1"]').click();assert.equal($('projectTaskEditor').open,true);$('cancelProjectTask').click();
   $('addProjectTask').click();$('projectTaskName').value='New project task';$('projectTaskDue').value='2026-09-22';$('projectTaskTime').value='14:30';$('projectTaskForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
   assert.equal(createdTask.projectId,'p1');assert.match(createdTask.due,/^2026-09-22T14:30:00[+-]\d\d:\d\d$/);assert.equal($('projectTaskEditor').open,false);assert.match($('projectDetail').textContent,/New project task/);
+  w.document.querySelector(`[data-project-task="${createdTask.id}"]`).click();assert.equal($('removeProjectTask').hidden,false);$('removeProjectTask').click();await tick();
+  assert.ok(taskRecords.some(t=>t.id===createdTask.id));assert.deepEqual(taskRecords.find(t=>t.id===createdTask.id).projectIds,[]);assert.doesNotMatch($('projectDetail').textContent,/New project task/);
+  $('addProjectTask').click();$('projectTaskName').value='Delete project task';$('projectTaskForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();const deleteId=createdTask.id;
+  w.document.querySelector(`[data-project-task="${deleteId}"]`).click();$('deleteProjectTask').click();await tick();assert.ok(!taskRecords.some(t=>t.id===deleteId));assert.doesNotMatch($('projectDetail').textContent,/Delete project task/);
   $('editProject').click();$('projectDue').value='2027-01-18';$('projectLifecycle').value='Completed';
   fail=true;$('projectForm').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
   assert.equal($('projectEditor').open,true);assert.match($('projectError').textContent,/Save unavailable/);
