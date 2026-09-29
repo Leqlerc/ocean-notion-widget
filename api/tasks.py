@@ -39,4 +39,4 @@ class handler(JsonHandler):
         except ValueError as exc:
             self.send_json(400, {'error': str(exc)})
         except Exception:
-            self.send_json(502, {'error': 'Could not confirm the archive. Refresh before retrying.'})
+            self.send_json(502, {'error': 'Could not confirm the removal. Refresh before retrying.'})
