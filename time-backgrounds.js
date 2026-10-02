@@ -60,7 +60,7 @@
     document.body.dataset.biomeMode = mode;
 
     const id = ++requestId;
-    const url = `/assets/backgrounds/${key}.png`;
+    const url = key === 'cove-tree' ? '/assets/backgrounds/cove-tree-2026.jpg' : `/assets/backgrounds/${key}.png`;
     const image = new Image();
     image.onload = () => {
       if (id !== requestId || key !== activeKey) return;
